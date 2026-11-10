@@ -98,7 +98,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 8,
+    version: 9,
     commander,
     ship,
     createdAt: now,

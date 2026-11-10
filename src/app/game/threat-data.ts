@@ -46,6 +46,9 @@ export function eventDef(kind: EventKind): EventDef {
 }
 
 export const THREAT = {
+  /** After Break the Cycle: share of raids that are Meridian Security, and how much harder they hit. */
+  corporateChance: 0.3,
+  corporateStrength: 1.2,
   /** No hostile events for this long (game time) in a new game. */
   graceSec: 1200,
   /** Seconds between events, picked at random in this range. */

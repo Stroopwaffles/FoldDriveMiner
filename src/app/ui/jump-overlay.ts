@@ -9,12 +9,12 @@ import { GameService } from '../services/game.service';
   selector: 'fdm-jump-overlay',
   template: `
     @if (game.jump(); as j) {
-      <div class="jump" [class]="'jump ' + j.phase + ' ' + ending()" role="alert">
+      <div class="jump" [class]="'jump ' + j.phase + ' ' + ending() + (j.deep ? ' deep' : '')" role="alert">
         @switch (j.phase) {
           @case ('arm') {
             <div class="stripes"></div>
             <div class="arm">
-              <div class="arm-title">FOLD DRIVE ARMED</div>
+              <div class="arm-title">{{ j.deep ? 'DEEP FOLD ARMED' : 'FOLD DRIVE ARMED' }}</div>
               <div class="arm-sub">ALL HANDS TO CORE</div>
               <div class="kana">フォールドドライブ・きどう</div>
             </div>
@@ -41,7 +41,7 @@ import { GameService } from '../services/game.service';
                 <span [style.--a]="i * 15 + 'deg'" [style.--d]="(i % 5) * 0.12 + 's'"></span>
               }
             </div>
-            <div class="folding">FOLDING…</div>
+            <div class="folding">{{ j.deep ? 'FOLDING DEEP…' : 'FOLDING…' }}</div>
           }
           @case ('flash') {
             <div class="flash"></div>
@@ -190,6 +190,9 @@ import { GameService } from '../services/game.service';
         opacity: 1;
         transform: rotate(var(--a)) scaleY(1.2);
       }
+    }
+    .deep .tunnel {
+      background: radial-gradient(circle, #fff 0%, #ff3b3b 4%, #20000a 24%, #000 55%);
     }
     .break .tunnel {
       background: radial-gradient(circle, #fff 0%, #ffe08a 8%, #ff9a5a 30%, #1d2a5a 75%);

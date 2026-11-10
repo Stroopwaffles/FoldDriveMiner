@@ -138,7 +138,7 @@ export class SortieModal {
     const p = E.pilotById(s, pilotId);
     const m = s.mechs.find((x) => x.pilotId === pilotId);
     if (!p) return;
-    this.game.cutIn.set({
+    this.game.showCutIn({
       pilot: p.name,
       callsign: p.callsign,
       story: p.story,

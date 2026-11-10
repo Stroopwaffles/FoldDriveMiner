@@ -327,3 +327,28 @@
     box-shadow: none;
   }
 }
+
+.card.deep {
+  border-color: #8a1030;
+  background: radial-gradient(circle at 90% 0%, rgba(255, 59, 59, 0.18), transparent 60%), rgba(10, 5, 14, 0.8);
+
+  .sub {
+    color: #ff7a7a;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.jump-btn.deep-btn {
+  font-size: 0.9rem;
+  padding: 0.5rem 1.2rem;
+  background: linear-gradient(180deg, #c41f3e, #4a0818);
+  border-color: #ff7a7a;
+  box-shadow: 0 4px 0 #20030a, 0 0 18px rgba(255, 59, 59, 0.45);
+}

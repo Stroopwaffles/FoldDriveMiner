@@ -15,15 +15,30 @@ export const FOLD = {
   harmonicsPerLevel: 0.15,
   /** Over-charge cap: 100% plus this per Over-charge research level. */
   overchargePerLevel: 0.25,
-  /** Resonance = floor(sqrt(run credits / unit) × mult × (1 + overchargeBonus × extra charge)). */
+  /**
+   * Resonance = floor((run credits / unit) ^ exponent × mult × (1 + overchargeBonus × extra charge)).
+   * M8 balance: 0.35 instead of a square root, so a ~100M-credit first run still pays ~40
+   * but very long runs don't snowball (a day-long run pays ~800, not ~2,900).
+   */
   resonanceUnit: 1e6,
-  resonanceMult: 4,
+  resonanceExponent: 0.35,
+  resonanceMult: 8,
   overchargeBonus: 0.5,
   /** Passive production per lifetime Resonance point. */
   productionPerResonance: 0.02,
   /** Deeper sectors: production, clicks and raids all grow per depth. */
   depthProduction: 0.25,
   depthRaids: 0.3,
+  /**
+   * Deep Fold (Master the Cycle only): fold back to depth 1, trading the
+   * Resonance layer (Resonance, lifetime Resonance, Jump Core) for Echoes.
+   * Echoes = floor(sqrt(lifetime Resonance / echoUnit)).
+   */
+  deepMinDepth: 6,
+  echoUnit: 50,
+  /** Each Echo: more Resonance from every jump, and more production. */
+  echoResonance: 0.1,
+  echoProduction: 0.05,
   /** Mech frames you've built before cost this share of the price. */
   blueprintCost: 0.25,
   /** QoL and infrastructure research becomes permanent after this many runs. */

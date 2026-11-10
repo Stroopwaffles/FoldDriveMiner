@@ -224,6 +224,12 @@
     <div class="panel menu-modal" (click)="$event.stopPropagation()" role="dialog" aria-label="Menu">
       <div class="panel-title">Ship Menu <span class="kana">メニュー</span></div>
       <fdm-settings-panel />
+      <div class="hotkeys">
+        <div class="hk-title">HOTKEYS</div>
+        @for (h of hotkeys; track h[0]) {
+          <div class="hk"><kbd>{{ h[0] }}</kbd><span>{{ h[1] }}</span></div>
+        }
+      </div>
       <div class="menu-actions">
         <button type="button" class="btn" (click)="saveNow()">Save now</button>
         <button type="button" class="btn btn-amber" (click)="toTitle()">Return to title</button>
@@ -271,3 +277,4 @@
 <fdm-sortie-modal />
 <fdm-jump-overlay />
 <fdm-story-scene />
+<fdm-eyecatch />

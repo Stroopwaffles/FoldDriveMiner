@@ -520,7 +520,7 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
     const report: SortieReport = {
       id: t.nextEventId++,
       title: 'Pirate Raid',
-      enemy: ev.jackal ? `${JACKAL.name} and raiders` : 'Pirate raiders',
+      enemy: ev.jackal ? `${JACKAL.name} and raiders` : ev.corporate ? 'Meridian Security' : 'Pirate raiders',
       units: unitsFor(strength, !!ev.jackal),
       jackal: !!ev.jackal,
       strike: false,
@@ -743,6 +743,11 @@ export function startEvent(state: GameState, kind: EventKind, events: TickEvents
       (t.jackalEncounters > 0 && t.heat >= j.minHeat && t.raidsSinceJackal >= j.everyRaids && rng.next() < j.chance));
     ev.jackal = jackal;
     ev.strength = raidStrength(state) * (jackal ? jackalStrengthMult(state) : 1);
+    // Break the Cycle: Meridian sends its own security wings.
+    if (!jackal && choice(state) === 'break' && rng.next() < THREAT.corporateChance) {
+      ev.corporate = true;
+      ev.strength *= THREAT.corporateStrength;
+    }
   }
   if (kind === 'rogue') {
     ev.rogueMax = baseDrillPower(state) * THREAT.rogue.clicks;

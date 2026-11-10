@@ -73,7 +73,7 @@ describe('milestone 6: Fold Resonance and the Jump Core', () => {
     const s = ready();
     s.fold.charge = 1;
     const g = F.resonanceGain(s);
-    expect(g).toBe(Math.floor(Math.sqrt(1e8 / 1e6) * FOLD.resonanceMult));
+    expect(g).toBe(Math.floor((1e8 / 1e6) ** FOLD.resonanceExponent * FOLD.resonanceMult));
     s.fold.charge = 1.5;
     expect(F.resonanceGain(s)).toBeGreaterThan(g);
     s.fold.runStartCredits = 1e8;

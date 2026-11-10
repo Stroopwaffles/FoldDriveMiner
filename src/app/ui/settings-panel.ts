@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { NumberFormat } from '../game/format';
 import { AudioService } from '../services/audio.service';
 import { MusicService } from '../services/music.service';
@@ -78,6 +78,75 @@ import { Settings, SettingsService } from '../services/settings.service';
           }
         </div>
       </div>
+
+      <label class="row">
+        <span>Comm bleeps</span>
+        <input type="checkbox" [checked]="s.commBleeps" (change)="patch({ commBleeps: !s.commBleeps })" />
+        <span class="val">{{ s.commBleeps ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <label class="row">
+        <span>Film grain</span>
+        <input type="checkbox" [checked]="s.filmGrain" (change)="patch({ filmGrain: !s.filmGrain })" />
+        <span class="val">{{ s.filmGrain ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <label class="row">
+        <span>Screen shake</span>
+        <input type="checkbox" [checked]="s.screenShake" (change)="patch({ screenShake: !s.screenShake })" />
+        <span class="val">{{ s.screenShake ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <div class="row">
+        <span>Technique cut-ins</span>
+        <div class="seg">
+          @for (opt of cutInOpts; track opt) {
+            <button type="button" class="btn" [class.on]="s.cutIns === opt" (click)="patch({ cutIns: opt })">{{ opt }}</button>
+          }
+        </div>
+      </div>
+
+      <label class="row">
+        <span>Mid-run eyecatch</span>
+        <input type="checkbox" [checked]="s.eyecatch" (change)="patch({ eyecatch: !s.eyecatch })" />
+        <span class="val">{{ s.eyecatch ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <div class="row">
+        <span>UI scale</span>
+        <div class="seg">
+          @for (opt of scaleOpts; track opt) {
+            <button type="button" class="btn" [class.on]="s.uiScale === opt" (click)="patch({ uiScale: opt })">{{ round(opt * 100) }}%</button>
+          }
+        </div>
+      </div>
+
+      <div class="row">
+        <span>Autosave</span>
+        <div class="seg">
+          @for (opt of autosaveOpts; track opt) {
+            <button type="button" class="btn" [class.on]="s.autosaveSec === opt" (click)="patch({ autosaveSec: opt })">{{ opt }}s</button>
+          }
+        </div>
+      </div>
+
+      <label class="row">
+        <span>Confirm Fold Jumps</span>
+        <input type="checkbox" [checked]="s.confirmJump" (change)="patch({ confirmJump: !s.confirmJump })" />
+        <span class="val">{{ s.confirmJump ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <label class="row">
+        <span>Flash tab on alerts</span>
+        <input type="checkbox" [checked]="s.tabAlerts" (change)="patch({ tabAlerts: !s.tabAlerts })" />
+        <span class="val">{{ s.tabAlerts ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <label class="row">
+        <span>Browser notifications</span>
+        <input type="checkbox" [checked]="s.notifications" (change)="toggleNotifications()" />
+        <span class="val">{{ notifyLabel() }}</span>
+      </label>
 
       <div class="row">
         <span>Numbers</span>
@@ -171,6 +240,30 @@ export class SettingsPanel {
     { id: 'scientific', label: '1.2e3' },
     { id: 'engineering', label: 'ENG' },
   ];
+
+  protected readonly cutInOpts: Settings['cutIns'][] = ['full', 'short', 'off'];
+  protected readonly scaleOpts = [0.9, 1, 1.1, 1.25];
+  protected readonly autosaveOpts = [15, 30, 60, 120];
+  private readonly permission = signal(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
+
+  protected readonly notifyLabel = computed(() => {
+    if (typeof Notification === 'undefined') return 'N/A';
+    if (this.permission() === 'denied') return 'BLOCKED';
+    return this.settings.settings().notifications && this.permission() === 'granted' ? 'ON' : 'OFF';
+  });
+
+  /** Opt-in: turning notifications on asks the browser for permission. */
+  protected async toggleNotifications(): Promise<void> {
+    const on = !this.settings.settings().notifications;
+    if (on && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      this.permission.set(await Notification.requestPermission());
+    }
+    this.patch({ notifications: on && this.permission() === 'granted' });
+  }
+
+  protected round(n: number): number {
+    return Math.round(n);
+  }
 
   protected patch(p: Partial<Settings>): void {
     this.settings.update(p);

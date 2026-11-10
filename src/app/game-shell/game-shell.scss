@@ -669,3 +669,40 @@
   letter-spacing: 0.2em;
   color: #e0b8ff;
 }
+
+/* Hotkey list in the menu */
+.hotkeys {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 1rem;
+  padding: 0 1rem 0.6rem;
+  font-size: 0.72rem;
+}
+
+.hk-title {
+  grid-column: 1 / -1;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+}
+
+.hk {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    padding: 0 0.35rem;
+    border: 1px solid var(--bezel-hi);
+    background: #060818;
+    color: var(--cyan);
+    white-space: nowrap;
+  }
+
+  span {
+    color: var(--text-dim);
+  }
+}

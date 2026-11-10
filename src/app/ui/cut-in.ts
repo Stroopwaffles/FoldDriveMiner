@@ -1,5 +1,6 @@
 import { Component, DestroyRef, effect, inject } from '@angular/core';
 import { GameService } from '../services/game.service';
+import { SettingsService } from '../services/settings.service';
 import { PilotPortrait } from './pilot-portrait';
 
 /**
@@ -187,13 +188,14 @@ import { PilotPortrait } from './pilot-portrait';
 })
 export class CutIn {
   protected readonly game = inject(GameService);
+  private readonly settings = inject(SettingsService);
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     effect(() => {
       if (this.game.cutIn()) {
         if (this.timer) clearTimeout(this.timer);
-        this.timer = setTimeout(() => this.close(), 2600);
+        this.timer = setTimeout(() => this.close(), this.settings.settings().cutIns === 'short' ? 1300 : 2600);
       }
     });
     inject(DestroyRef).onDestroy(() => {

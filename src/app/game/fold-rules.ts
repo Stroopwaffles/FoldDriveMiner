@@ -30,6 +30,8 @@ export function emptyFold(): FoldState {
     runStartCredits: 0,
     archive: [],
     destination: 0,
+    echoes: 0,
+    deepFolds: 0,
   };
 }
 
@@ -45,7 +47,8 @@ export function driveOnline(state: GameState): boolean {
 
 /** Passive production from all Resonance ever earned. */
 export function resonanceMult(state: GameState): number {
-  return 1 + (state.fold?.lifetimeResonance ?? 0) * FOLD.productionPerResonance;
+  const f = state.fold;
+  return (1 + (f?.lifetimeResonance ?? 0) * FOLD.productionPerResonance) * (1 + (f?.echoes ?? 0) * FOLD.echoProduction);
 }
 
 /** Deeper sectors produce more (and their raids hit harder). */
@@ -126,7 +129,8 @@ export function runCredits(state: GameState): number {
 export function resonanceGain(state: GameState): number {
   const over = Math.max(0, state.fold.charge - 1);
   const finale = choice(state) === 'break' ? 0.75 : choice(state) === 'master' ? 1.5 : 1;
-  const raw = Math.sqrt(runCredits(state) / FOLD.resonanceUnit) * FOLD.resonanceMult * (1 + FOLD.overchargeBonus * over * 4) * finale;
+  const echoes = 1 + (state.fold.echoes ?? 0) * FOLD.echoResonance;
+  const raw = (runCredits(state) / FOLD.resonanceUnit) ** FOLD.resonanceExponent * FOLD.resonanceMult * (1 + FOLD.overchargeBonus * over * 4) * finale * echoes;
   return Math.max(1, Math.floor(raw));
 }
 
@@ -186,6 +190,23 @@ export function canJump(state: GameState): string | null {
   return null;
 }
 
+// ---------------------------------------------------------------- Deep Fold
+
+/** Echoes a Deep Fold would add (the whole Resonance layer converts). */
+export function deepFoldGain(state: GameState): number {
+  return Math.floor(Math.sqrt((state.fold.lifetimeResonance + resonanceGain(state)) / FOLD.echoUnit));
+}
+
+/** Why a Deep Fold can't happen yet, or null. */
+export function canDeepFold(state: GameState): string | null {
+  if (choice(state) !== 'master') return 'Only after Master the Cycle';
+  if (state.sector.depth < FOLD.deepMinDepth) return `Reach depth ${FOLD.deepMinDepth}`;
+  const jump = canJump(state);
+  if (jump) return jump;
+  if (deepFoldGain(state) < 1) return 'Not enough Resonance to echo';
+  return null;
+}
+
 /** Starting credits from the Emergency Fund. */
 function fundCredits(level: number): number {
   return level ? 5000 * 4 ** (level - 1) : 0;
@@ -196,6 +217,8 @@ function fundCredits(level: number): number {
 export interface JumpResult {
   state: GameState;
   gained: number;
+  /** Echoes from a Deep Fold (0 for an ordinary jump). */
+  echoes: number;
   from: { code: string; name: string };
   to: { code: string; name: string };
   first: boolean;
@@ -207,13 +230,16 @@ export interface JumpResult {
  * Resonance, the Jump Core, blueprints, unique parts, reputation, standing,
  * the Codex, Data Cores and lifetime stats come along.
  */
-export function foldJump(old: GameState, now = Date.now()): JumpResult | null {
+export function foldJump(old: GameState, now = Date.now(), deep = false): JumpResult | null {
   if (canJump(old) !== null) return null;
+  if (deep && canDeepFold(old) !== null) return null;
   const f = old.fold;
   const gained = resonanceGain(old);
+  const echoes = deep ? deepFoldGain(old) : 0;
   const seeds = destinationSeeds(old, destinationCount(old));
   const seed = seeds[Math.min(f.destination, seeds.length - 1)];
-  const depth = old.sector.depth + 1;
+  // A Deep Fold drops back to the first ring of sectors.
+  const depth = deep ? 1 : old.sector.depth + 1;
   generateSector(seed, depth);
 
   // Research that survives: the drive, permanent QoL/infrastructure, and the archive.
@@ -287,6 +313,14 @@ export function foldJump(old: GameState, now = Date.now()): JumpResult | null {
     archive: [],
     destination: 0,
   };
+  if (deep) {
+    // The Resonance layer folds into Echoes.
+    s.fold.resonance = 0;
+    s.fold.lifetimeResonance = 0;
+    s.fold.core = {};
+    s.fold.echoes = (f.echoes ?? 0) + echoes;
+    s.fold.deepFolds = (f.deepFolds ?? 0) + 1;
+  }
 
   // Jump Core head starts.
   s.drones.prospector += 10 * coreLevel(s, 'core_drones');
@@ -307,7 +341,8 @@ export function foldJump(old: GameState, now = Date.now()): JumpResult | null {
 
   return {
     state: s,
-    gained,
+    gained: deep ? 0 : gained,
+    echoes,
     from: { code: old.sector.code, name: old.sector.name },
     to: { code: s.sector.code, name: s.sector.name },
     first: f.jumps === 0,

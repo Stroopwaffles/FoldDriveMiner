@@ -12,6 +12,25 @@ export interface Settings {
   /** 'system' follows the OS reduced-motion setting. */
   reducedMotion: 'system' | 'on' | 'off';
   numberFormat: NumberFormat;
+  /** Speaker bleeps when a comm message arrives. */
+  commBleeps: boolean;
+  /** The asteroid shakes when hit. */
+  screenShake: boolean;
+  /** Special Technique cut-ins: full, short, or off. */
+  cutIns: 'full' | 'short' | 'off';
+  /** The mid-run eyecatch card (once per sector). */
+  eyecatch: boolean;
+  /** Film grain and colour fringing over the screen. */
+  filmGrain: boolean;
+  autosaveSec: number;
+  /** Two-step confirmation before a Fold Jump. */
+  confirmJump: boolean;
+  /** Interface scale (1 = 100%). */
+  uiScale: number;
+  /** Flash the tab title for urgent events while the tab is in the background. */
+  tabAlerts: boolean;
+  /** Browser notifications for urgent events (opt-in; asks permission). */
+  notifications: boolean;
 }
 
 const KEY = 'fdm.settings';
@@ -23,6 +42,16 @@ const DEFAULTS: Settings = {
   crt: true,
   reducedMotion: 'system',
   numberFormat: 'suffix',
+  commBleeps: true,
+  screenShake: true,
+  cutIns: 'full',
+  eyecatch: true,
+  filmGrain: true,
+  autosaveSec: 30,
+  confirmJump: true,
+  uiScale: 1,
+  tabAlerts: true,
+  notifications: false,
 };
 
 @Injectable({ providedIn: 'root' })

@@ -141,6 +141,10 @@ export const MEDALS: readonly MedalDef[] = [
     check: (s) => s.story.choice !== null,
   },
   {
+    id: 'deep_fold', name: 'Into the Deep', category: 'story', desc: 'Make a Deep Fold.', bonus: P(0.03),
+    check: (s) => (s.fold.deepFolds ?? 0) >= 1,
+  },
+  {
     id: 'side', name: 'Between Episodes', category: 'story', desc: 'Watch 3 side stories.', bonus: R(0.02),
     check: (s) => s.story.sideWatched >= 3,
   },

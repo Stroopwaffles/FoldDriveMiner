@@ -75,6 +75,8 @@ export interface JumpSequence {
   from: string;
   to: string;
   gained: number;
+  /** A Deep Fold: back to depth 1, Resonance into Echoes. */
+  deep: boolean;
 }
 
 export interface EpisodeCard {
@@ -137,6 +139,8 @@ export class GameService {
   readonly jump = signal<JumpSequence | null>(null);
   readonly sortie = signal<SortieView | null>(null);
   readonly scene = signal<Scene | null>(null);
+  /** The mid-run eyecatch card. */
+  readonly eyecatch = signal(false);
 
   // Derived values used across the HUD.
   readonly power = computed(() => this.withState(E.drillPower, 0));
@@ -291,7 +295,8 @@ export class GameService {
     this.publish();
 
     this.sinceSave += CONFIG.tickMs / 1000;
-    if (this.sinceSave >= CONFIG.save.autosaveSec) {
+    this.checkEyecatch(s);
+    if (this.sinceSave >= (this.settings.settings().autosaveSec || CONFIG.save.autosaveSec)) {
       this.sinceSave = 0;
       this.save();
     }
@@ -611,7 +616,7 @@ export class GameService {
     }
     const p = E.mechPilot(s, m)!;
     const name = E.techniqueName(s, m);
-    this.cutIn.set({
+    this.showCutIn({
       pilot: p.name,
       callsign: p.callsign,
       story: p.story,
@@ -676,12 +681,19 @@ export class GameService {
 
   // ------------------------------------------------------------ threats
 
-  private announceThreat(e: { id: number; kind: string; jackal?: boolean; ore?: OreId; phase: string }): void {
+  private announceThreat(e: { id: number; kind: string; jackal?: boolean; corporate?: boolean; ore?: OreId; phase: string }): void {
     const def = eventDef(e.kind as never);
     if (def.hostile) this.audio.klaxon();
     switch (e.kind) {
       case 'raid':
+        if (e.corporate) {
+          this.say('VESPER', `WARNING: Meridian Security wing on approach. Raid in ${def.warning} seconds. They hit harder than pirates.`);
+          this.say('HALE', 'Nothing personal, Commander. You broke something that belonged to us.', 1200);
+          this.alert('Meridian Security raid incoming!');
+          break;
+        }
         this.say('VESPER', `WARNING: pirate signal on approach. Raid in ${def.warning} seconds. Ready a sortie or check your standing orders.`);
+        this.alert('Pirate raid incoming!');
         if (e.jackal) {
           const s = this._state()!;
           const line = JACKAL.arrive[Math.min(s.threats.jackalEncounters, JACKAL.arrive.length - 1)];
@@ -694,6 +706,7 @@ export class GameService {
         break;
       case 'rogue':
         this.say('VESPER', `WARNING: rogue asteroid on collision course! Impact in ${def.warning} seconds. Crack it with the drill — or let a mech intercept.`);
+        this.alert('Rogue asteroid on collision course!');
         break;
       case 'micrometeor':
         this.say('VESPER', 'Micrometeor storm! Drones are taking hits. Guardians will shield the swarm.');
@@ -941,14 +954,21 @@ export class GameService {
   }
 
   /** Arm the drive and play the jump; the sector changes at the white flash. */
-  startJump(): void {
+  startJump(deep = false): void {
     const s = this._state();
-    if (!s || this.jump() || F.canJump(s) !== null) {
+    if (!s || this.jump() || F.canJump(s) !== null || (deep && F.canDeepFold(s) !== null)) {
       this.audio.denied();
       return;
     }
     const dest = S.destinationPreview(s, F.destinationCount(s))[s.fold.destination] ?? S.destinationPreview(s)[0];
-    const seq: JumpSequence = { phase: 'arm', count: 3, from: `${s.sector.code} · ${s.sector.name}`, to: `${dest.def.code} · ${dest.def.name}`, gained: F.resonanceGain(s) };
+    const seq: JumpSequence = {
+      phase: 'arm',
+      count: 3,
+      from: `${s.sector.code} · ${s.sector.name}`,
+      to: deep ? 'THE DEEP FOLD · DEPTH 01' : `${dest.def.code} · ${dest.def.name}`,
+      gained: deep ? F.deepFoldGain(s) : F.resonanceGain(s),
+      deep,
+    };
     const quick = this.settings.reducedMotion();
     const t = (ms: number) => (quick ? Math.min(ms, 400) : ms);
     this.save();
@@ -966,7 +986,7 @@ export class GameService {
       [t(2600), () => {
         this.audio.crack();
         this.jump.set({ ...seq, phase: 'flash' });
-        this.completeJump();
+        this.completeJump(seq.deep);
       }],
       [t(700), () => this.jump.set(null)],
     ];
@@ -977,10 +997,10 @@ export class GameService {
     }
   }
 
-  private completeJump(): void {
+  private completeJump(deep = false): void {
     const s = this._state();
     if (!s) return;
-    const r = F.foldJump(s);
+    const r = F.foldJump(s, Date.now(), deep);
     if (!r) return;
     this.comms.set([]);
     this._state.set(r.state);
@@ -997,14 +1017,21 @@ export class GameService {
     const quiet = pending !== null && r.first;
     this.episode.set({
       number: r.state.fold.jumps + 1,
-      label: `FOLD JUMP ${String(r.state.fold.jumps).padStart(2, '0')}`,
+      label: deep ? `DEEP FOLD ${String(r.state.fold.deepFolds).padStart(2, '0')}` : `FOLD JUMP ${String(r.state.fold.jumps).padStart(2, '0')}`,
       teaser: pending ? `NOW PLAYING · EPISODE ${pending}: ${episodeDef(pending)!.title}` : next ? `NEXT EPISODE · ${next.title}` : undefined,
       title: def.name,
-      subtitle: `Sector ${def.code} · ${S.starLabel(def)} · +${r.gained} Fold Resonance`,
+      subtitle: deep
+        ? `Sector ${def.code} · ${S.starLabel(def)} · +${r.echoes} Echo${r.echoes === 1 ? '' : 'es'}`
+        : `Sector ${def.code} · ${S.starLabel(def)} · +${r.gained} Fold Resonance`,
       arrival: [
         ...(quiet ? [] : ([['VESPER', lines[0]]] as [Speaker, string][])),
         ...(lines[1] && !quiet ? ([['JUNO', lines[1]]] as [Speaker, string][]) : []),
-        ['VESPER', `Fold Resonance +${r.gained}. Production is now ×${F.resonanceMult(r.state).toFixed(2)} from Resonance. Spend it in the FOLD tab's Jump Core.`],
+        deep
+          ? ([
+              'VESPER',
+              `Deep Fold complete. The Resonance layer collapsed into ${r.echoes} Echo${r.echoes === 1 ? '' : 'es'} (${r.state.fold.echoes} in all). Every jump now pays ×${(1 + r.state.fold.echoes * 0.1).toFixed(1)} Resonance.`,
+            ] as [Speaker, string])
+          : ['VESPER', `Fold Resonance +${r.gained}. Production is now ×${F.resonanceMult(r.state).toFixed(2)} from Resonance. Spend it in the FOLD tab's Jump Core.`],
       ],
     });
   }
@@ -1125,6 +1152,7 @@ export class GameService {
   private storySay(items: { kind: 'episode' | 'medal'; id: string; text: string }[]): void {
     const eps = items.filter((x) => x.kind === 'episode');
     const medals = items.filter((x) => x.kind === 'medal');
+    if (eps.length) this.alert(eps.length === 1 ? `Episode ${eps[0].id} is ready: ${eps[0].text}` : `${eps.length} episodes are ready`);
     if (eps.length === 1) {
       this.say('VESPER', `Incoming transmission: Episode ${eps[0].id}, "${eps[0].text}". Press PLAY in the comm log when you're ready.`);
     } else if (eps.length > 1) {
@@ -1142,11 +1170,61 @@ export class GameService {
     if (medals.length) this.audio.dataCore();
   }
 
+  // ------------------------------------------------------------ presentation
+
+  /** A Special Technique cut-in, respecting the cut-in setting. */
+  showCutIn(c: CutIn): void {
+    if (this.settings.settings().cutIns === 'off') return;
+    this.cutIn.set(c);
+  }
+
+  /** Once per sector, after 15 minutes there: the "A-part / B-part" eyecatch. */
+  private checkEyecatch(s: GameState): void {
+    if (!this.settings.settings().eyecatch || this.eyecatch()) return;
+    const log = ST.currentLog(s);
+    if (!log || s.playtimeSec - log.arrived < 900) return;
+    const key = `eyecatch:${log.code}:${log.arrived}`;
+    if (s.flags[key]) return;
+    // Never on top of something else.
+    if (this.episode() || this.scene() || this.jump() || this.sortie() || this.cutIn() || this.offlineReport()) return;
+    s.flags[key] = true;
+    this.eyecatch.set(true);
+    setTimeout(() => this.eyecatch.set(false), this.settings.reducedMotion() ? 1500 : 3200);
+  }
+
+  private titleTimer: ReturnType<typeof setInterval> | null = null;
+
+  /** Urgent news while the tab is in the background: flash the title and/or notify. */
+  private alert(text: string): void {
+    if (typeof document === 'undefined' || document.visibilityState === 'visible') return;
+    const set = this.settings.settings();
+    if (set.notifications && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification('Fold Drive Miner', { body: text, tag: 'fdm-alert' });
+      } catch {
+        // Some browsers only allow notifications from a service worker.
+      }
+    }
+    if (!set.tabAlerts || this.titleTimer) return;
+    const original = document.title;
+    let on = false;
+    this.titleTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        document.title = original;
+        if (this.titleTimer) clearInterval(this.titleTimer);
+        this.titleTimer = null;
+        return;
+      }
+      on = !on;
+      document.title = on ? `⚠ ${text}` : original;
+    }, 1000);
+  }
+
   // ------------------------------------------------------------ comms
 
   say(from: Speaker, text: string, delayMs = 0, pilot?: PilotState, name?: string): void {
     const push = () => {
-      this.audio.comm(SPEAKER_PITCH[from]);
+      if (this.settings.settings().commBleeps) this.audio.comm(SPEAKER_PITCH[from]);
       const msg: CommMessage = { id: ++this.commId, from, text, at: Date.now() };
       if (name) msg.name = name;
       if (from === 'PILOT' && pilot) {

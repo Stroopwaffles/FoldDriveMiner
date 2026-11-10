@@ -169,6 +169,8 @@ export interface ActiveEvent {
   /** Raids: enemy strength and whether the Jackal leads them. */
   strength?: number;
   jackal?: boolean;
+  /** A Meridian Security raid (after Break the Cycle). */
+  corporate?: boolean;
   /** Rogue asteroids: HP left and total. */
   rogueHp?: number;
   rogueMax?: number;
@@ -396,10 +398,13 @@ export interface FoldState {
   archive: string[];
   /** Destination picked for the next jump (index into the long-range scan). */
   destination: number;
+  /** Deep Fold (after Master the Cycle): Echoes earned and Deep Folds made. */
+  echoes: number;
+  deepFolds: number;
 }
 
 export interface GameState {
-  version: 8;
+  version: 9;
   commander: string;
   ship: string;
   createdAt: number;

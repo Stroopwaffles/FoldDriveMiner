@@ -255,8 +255,10 @@ export class AsteroidViewport {
 
     if (!this.settings.reducedMotion()) {
       this.burst(x, y, r.cracked ? 22 : r.overdrive ? 8 : 5);
-      this.shaking.set(false);
-      requestAnimationFrame(() => this.shaking.set(true));
+      if (this.settings.settings().screenShake) {
+        this.shaking.set(false);
+        requestAnimationFrame(() => this.shaking.set(true));
+      }
     }
     if (r.cracked) {
       this.flash.set(true);

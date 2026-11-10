@@ -116,6 +116,29 @@
       </div>
     </div>
 
+    @if (deep(); as d) {
+      <div class="grid">
+        <div class="card wide deep">
+          <div class="sub">DEEP FOLD <span class="kana">ディープフォールド</span> <span class="dim">— Echoes {{ d.echoes }} · Deep Folds {{ d.folds }}</span></div>
+          <p class="small">
+            Meridian's harvest lets the drive fold all the way back to the first ring. Your Resonance, lifetime Resonance and Jump Core
+            collapse into <b>Echoes</b>: each one pays +{{ d.resonanceBonus }}% Resonance on every jump and +{{ d.productionBonus }}% production, forever.
+            Needs depth {{ d.minDepth }} and a full charge.
+          </p>
+          <div class="row">
+            <span class="gain">Deep Fold now → <b>+{{ d.gain }}</b> Echo{{ d.gain === 1 ? '' : 'es' }}</span>
+            <span class="spacer"></span>
+            @if (d.blocker; as b) {
+              <span class="warn small">{{ b }}</span>
+            }
+            <button type="button" class="jump-btn deep-btn" [class.confirm]="deepConfirming()" [disabled]="!!d.blocker" (click)="deepFold()">
+              {{ deepConfirming() ? 'CONFIRM — FOLD DEEP' : 'DEEP FOLD' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
     <div class="jump-bar">
       @if (blocker(); as b) {
         <span class="warn small">{{ b }}</span>

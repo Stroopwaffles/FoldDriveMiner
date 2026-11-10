@@ -8,7 +8,7 @@ import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
 import { ensureStory } from './story-rules';
 
-export const CURRENT_VERSION = 8;
+export const CURRENT_VERSION = 9;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -56,6 +56,10 @@ export function migrate(raw: unknown): GameState {
     // the first tick; the logbook opens with the current sector (from zero).
     data['story'] = { logbook: [], dismissed: [] };
     data['version'] = 8;
+  }
+  if (data['version'] === 8) {
+    // v9 adds Deep Fold Echoes and settings-driven polish; Echoes start at zero.
+    data['version'] = 9;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);

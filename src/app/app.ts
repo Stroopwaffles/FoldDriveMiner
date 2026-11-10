@@ -17,9 +17,13 @@ import { TitleScreen } from './title/title-screen';
     @if (settings.settings().crt) {
       <div class="crt-overlay" aria-hidden="true"></div>
     }
+    @if (settings.settings().filmGrain) {
+      <div class="film-grain" [class.still]="settings.reducedMotion()" aria-hidden="true"></div>
+    }
   `,
   host: {
     '[class.reduced-motion]': 'settings.reducedMotion()',
+    '[style.zoom]': 'settings.settings().uiScale',
   },
 })
 export class App {

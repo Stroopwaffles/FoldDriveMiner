@@ -6,6 +6,7 @@ import { formatDuration } from '../game/format';
 import { researchNode } from '../game/research';
 import * as S from '../game/sector-rules';
 import { GameService } from '../services/game.service';
+import { SettingsService } from '../services/settings.service';
 
 /** The FOLD tab: charge the drive, pick a destination, archive research, spend Resonance and jump. */
 @Component({
@@ -15,6 +16,7 @@ import { GameService } from '../services/game.service';
 })
 export class FoldPanel {
   protected readonly game = inject(GameService);
+  private readonly settings = inject(SettingsService);
   protected readonly s = computed(() => this.game.state()!);
 
   protected readonly online = computed(() => F.driveOnline(this.s()));
@@ -70,6 +72,32 @@ export class FoldPanel {
 
   protected readonly permanentAfter = FOLD.permanentAfter;
 
+  /** Deep Fold: only after Master the Cycle. */
+  protected readonly deep = computed(() => {
+    const s = this.s();
+    if (s.story.choice !== 'master') return null;
+    return {
+      blocker: F.canDeepFold(s),
+      gain: F.deepFoldGain(s),
+      echoes: s.fold.echoes ?? 0,
+      folds: s.fold.deepFolds ?? 0,
+      minDepth: FOLD.deepMinDepth,
+      resonanceBonus: Math.round(FOLD.echoResonance * 100),
+      productionBonus: Math.round(FOLD.echoProduction * 100),
+    };
+  });
+  protected readonly deepConfirming = signal(false);
+
+  protected deepFold(): void {
+    if (this.settings.settings().confirmJump && !this.deepConfirming()) {
+      this.deepConfirming.set(true);
+      setTimeout(() => this.deepConfirming.set(false), 5000);
+      return;
+    }
+    this.deepConfirming.set(false);
+    this.game.startJump(true);
+  }
+
   // Two-step confirm for the jump button.
   protected readonly confirming = signal(false);
   private confirmTimer: ReturnType<typeof setTimeout> | null = null;
@@ -81,6 +109,10 @@ export class FoldPanel {
   }
 
   protected jump(): void {
+    if (!this.settings.settings().confirmJump) {
+      this.game.startJump();
+      return;
+    }
     if (!this.confirming()) {
       this.confirming.set(true);
       this.confirmTimer = setTimeout(() => this.confirming.set(false), 5000);

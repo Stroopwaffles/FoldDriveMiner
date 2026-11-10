@@ -27,6 +27,7 @@ import { BoardPanel } from './board-panel';
 import { FoldPanel } from './fold-panel';
 import { ArchivePanel } from './archive-panel';
 import { StoryScene } from '../ui/story-scene';
+import { Eyecatch } from '../ui/eyecatch';
 import * as ST from '../game/story-rules';
 import { episodeDef } from '../game/story-data';
 import { JumpOverlay } from '../ui/jump-overlay';
@@ -64,6 +65,7 @@ interface NavItem {
     FoldPanel,
     ArchivePanel,
     StoryScene,
+    Eyecatch,
     JumpOverlay,
     ThreatBanner,
     SortieModal,
@@ -291,10 +293,35 @@ export class GameShell {
     this.game.toTitle();
   }
 
+  /** The hotkey list (shown in the menu). */
+  protected readonly hotkeys = [
+    ['1–9', 'Switch tabs (in nav order)'],
+    ['D', 'Drill the asteroid'],
+    ['S', 'Sell all ore'],
+    ['M', 'Music on / off'],
+    ['Space / Enter', 'Advance a story scene'],
+    ['Esc', 'Menu · close cards · skip scenes'],
+  ];
+
   protected onKey(e: KeyboardEvent): void {
     // The story scene handles its own keys.
     if (this.game.scene()) return;
-    const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+    const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
+    const plain = !typing && !e.ctrlKey && !e.metaKey && !e.altKey;
+    const overlay = this.menuOpen() || !!this.game.episode() || !!this.game.offlineReport() || !!this.game.sortie() || !!this.game.jump();
+    if (plain && !overlay && /^[1-9]$/.test(e.key)) {
+      const item = this.nav()[Number(e.key) - 1];
+      if (item) this.selectNav(item);
+      return;
+    }
+    if (plain && !overlay && (e.key === 'd' || e.key === 'D') && !e.repeat) {
+      this.game.drill();
+      return;
+    }
+    if (plain && !overlay && (e.key === 's' || e.key === 'S')) {
+      this.game.sellAll();
+      return;
+    }
     if ((e.key === 'm' || e.key === 'M') && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
       this.music.toggle();
       this.audio.blip();
