@@ -467,6 +467,16 @@ $horizon: 64%;
   letter-spacing: 0.2em;
   color: rgba(232, 236, 255, 0.45);
   z-index: 6;
+  display: grid;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+/* The AI disclaimer: readable, but quieter than the menu. */
+.ai-note {
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  color: rgba(255, 181, 71, 0.75);
 }
 
 /* ---------------- narrow screens ---------------- */
