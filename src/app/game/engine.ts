@@ -44,6 +44,7 @@ import {
   surveyMult,
   tradeSellMult,
 } from './trade-rules';
+import { advanceFold, coreLevel, depthMult, emptyFold, resonanceMult } from './fold-rules';
 import {
   LossContext,
   ONLINE,
@@ -95,7 +96,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 6,
+    version: 7,
     commander,
     ship,
     createdAt: now,
@@ -125,6 +126,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     trade: emptyTrade(),
     contracts: emptyContracts(),
     bonds: [],
+    fold: emptyFold(),
     asteroid: null as unknown as AsteroidState,
     sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
@@ -223,14 +225,15 @@ export function baseDrillPower(state: GameState): number {
 
 /** Power per click right now: upgrades × sector effects × Gravity Lens × comet. */
 export function drillPower(state: GameState): number {
-  return baseDrillPower(state) * sectorMods(state).clickPower * lensMult(state) * zoneBoost(state, state.zone);
+  return baseDrillPower(state) * sectorMods(state).clickPower * lensMult(state) * zoneBoost(state, state.zone) * depthMult(state);
 }
 
 export function overdriveMult(state: GameState): number {
   return (
     CONFIG.heat.overdriveMult +
     researchLevel(state, 'overdrive_tuning') * CONFIG.bonuses.overdrivePerLevel +
-    sectorMods(state).overdriveBonus
+    sectorMods(state).overdriveBonus +
+    coreLevel(state, 'core_overdrive') * 0.5
   );
 }
 
@@ -276,7 +279,10 @@ export function perDroneRate(state: GameState): number {
 
 /** Ore per second from mining drones (all dispatched zones, with Command Link). */
 export function droneRates(state: GameState): OreAmounts {
-  return miningDroneRates(state, sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state));
+  return miningDroneRates(
+    state,
+    sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state),
+  );
 }
 
 export function droneRateTotal(state: GameState): number {
@@ -304,12 +310,13 @@ export function offlineEfficiency(state: GameState): number {
     CONFIG.offline.efficiency +
     researchLevel(state, 'offline_efficiency') * CONFIG.bonuses.offlineEfficiencyPerLevel +
     nightOwlBonus(state) +
-    sectorMods(state).offlineBonus
+    sectorMods(state).offlineBonus +
+    coreLevel(state, 'core_offline') * 0.1
   );
 }
 
 export function offlineCapHours(state: GameState): number {
-  return CONFIG.offline.capHours + researchLevel(state, 'offline_cap') * CONFIG.bonuses.offlineCapHoursPerLevel;
+  return CONFIG.offline.capHours + researchLevel(state, 'offline_cap') * CONFIG.bonuses.offlineCapHoursPerLevel + coreLevel(state, 'core_offline') * 2;
 }
 
 // ---------------------------------------------------------------- market
@@ -824,7 +831,7 @@ function advance(
   // Hazards: sheltering from a flare stops drones; a reactor fault slows everything.
   const hazard = productionMult(state);
   const m = sectorMods(state);
-  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * hazard.all;
+  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * hazard.all;
   const amounts = miningDroneRates(state, efficiency * hazard.drones * m.droneOutput * boost);
   for (const id of ORE_IDS) amounts[id] *= dt;
   addOre(amounts, advanceFleet(state, dt, efficiency * boost, events));
@@ -835,6 +842,7 @@ function advance(
   events.ingots = advanceRefinery(state, dt);
   events.research = advanceResearch(state, dt);
   advanceTrade(state, dt, events, ctx.offline);
+  advanceFold(state);
   events.autoSoldCredits = runAutoSell(state);
   advanceThreats(state, dt, events, ctx);
   advanceAnomalies(state, dt, events, ctx.offline);

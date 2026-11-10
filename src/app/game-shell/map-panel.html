@@ -38,7 +38,11 @@
       <div class="range">
         <p class="dim small">
           Long-range sensors can see the sectors a Fold Jump could reach next. Only the first trait of each is clear — the rest is static.
-          <b class="warn">Fold Drive offline — arrives in Milestone 6.</b>
+          @if (!fold()) {
+            <b class="warn">Fold Drive offline — research it in the LAB (Fold Science).</b>
+          } @else {
+            <b class="ok">Choose your destination in the FOLD tab.</b>
+          }
         </p>
         <div class="dest-list">
           @for (d of destinations(); track d.def.seed) {

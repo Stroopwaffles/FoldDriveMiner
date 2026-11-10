@@ -305,9 +305,27 @@ export const RESEARCH: readonly ResearchNode[] = [
   // ---------------------------------------------------------------- Fold
   N({
     id: 'fold_drive', name: 'Fold Drive', branch: 'fold', maxLevel: 1,
-    sd: 0, cr: 0, sec: 0, teaser: 'Milestone 6',
-    effect: 'Jump to a new sector',
-    flavor: 'ACCESS RESTRICTED — MERIDIAN CLEARANCE REQUIRED.',
+    sd: 120, cr: 2000000, sec: 1800, requires: ['cryo_hold'],
+    effect: 'Bring the Fold Drive online: charge it and jump to a new sector',
+    flavor: 'Meridian clearance… accepted? I was not aware we had clearance.',
+  }),
+  N({
+    id: 'charge_efficiency', name: 'Charge Efficiency', branch: 'fold', maxLevel: 3,
+    sd: 40, cr: 500000, sec: 600, growth: 2.5, requires: ['fold_drive'],
+    effect: '+20% Fold Drive charge per unit of fuel',
+    flavor: "Less fuel, same fold. Meridian's engineers left a lot on the table.",
+  }),
+  N({
+    id: 'overcharge_cap', name: 'Over-charge Capacitors', branch: 'fold', maxLevel: 2,
+    sd: 60, cr: 1500000, sec: 900, growth: 3, requires: ['fold_drive'],
+    effect: '+25% maximum charge (over-charge pays more Resonance)',
+    flavor: 'The drive will hold more than it was rated for. Probably.',
+  }),
+  N({
+    id: 'beacon_decoding', name: 'Beacon Cryptography', branch: 'fold', maxLevel: 2,
+    sd: 30, cr: 200000, sec: 480, growth: 2.5, requires: ['survey_ring'],
+    effect: '+50% Silent Beacon decoding speed',
+    flavor: 'The cipher is… familiar. As if I wrote it.',
   }),
 ];
 

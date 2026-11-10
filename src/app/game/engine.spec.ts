@@ -236,8 +236,8 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
 
   it('teaser nodes cannot be researched', () => {
     const s = rich();
-    expect(E.researchStatus(s, 'fold_drive')).toBe('teaser');
-    expect(E.startResearch(s, 'fold_drive')).toBe(false);
+    expect(E.researchStatus(s, 'alloys')).toBe('teaser');
+    expect(E.startResearch(s, 'alloys')).toBe(false);
   });
 
   it('cancelling refunds the cost', () => {

@@ -60,11 +60,11 @@ export function pilotPost(state: GameState, p: PilotState): PostId | null {
 }
 
 export function rosterCap(state: GameState): number {
-  return CREW.baseRoster + researchLevel(state, 'crew_quarters') * CREW.rosterPerLevel;
+  return CREW.baseRoster + researchLevel(state, 'crew_quarters') * CREW.rosterPerLevel + (state.fold?.core['core_quarters'] ?? 0);
 }
 
 export function crewUnlocked(state: GameState): boolean {
-  return hasResearch(state, 'hangar');
+  return hasResearch(state, 'hangar') || state.pilots.length > 0;
 }
 
 // ---------------------------------------------------------------- post bonuses

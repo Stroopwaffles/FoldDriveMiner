@@ -4,6 +4,7 @@ import { RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
 import * as E from '../game/engine';
 import { researchNode } from '../game/research';
 import * as S from '../game/sector-rules';
+import * as F from '../game/fold-rules';
 import { GameService } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
 import { CodexPanel } from './codex-panel';
@@ -114,7 +115,7 @@ export class MapPanel {
 
   // ---------------------------------------------------------------- long-range scan
   protected readonly destinations = computed(() =>
-    S.destinationPreview(this.s()).map(({ def, revealed }) => ({
+    S.destinationPreview(this.s(), F.destinationCount(this.s()), F.revealedTraits(this.s())).map(({ def, revealed }) => ({
       def,
       star: S.mainStar(def),
       starLabel: S.starLabel(def),
@@ -123,6 +124,8 @@ export class MapPanel {
       zones: def.zones.length,
     })),
   );
+
+  protected readonly fold = computed(() => F.driveOnline(this.s()));
 
   protected setTab(t: MapTab): void {
     this.tab.set(t);

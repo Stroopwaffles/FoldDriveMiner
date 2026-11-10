@@ -1,0 +1,128 @@
+@let st = s();
+@let f = st.fold;
+<section class="panel fold">
+  <div class="panel-title">
+    <span class="led" [class.amber]="charge() >= 1"></span>Fold Drive <span class="kana">フォールドドライブ</span>
+    <span class="head-info">JUMPS {{ f.jumps }} · RESONANCE {{ f.resonance }} · LIFETIME {{ f.lifetimeResonance }}</span>
+  </div>
+
+  @if (!online()) {
+    <p class="section dim">
+      The Fold Drive is offline. Research <b>Fold Drive</b> in the LAB (Fold Science) to bring it online — it needs Cryo Hold first.
+    </p>
+  } @else {
+    <div class="grid">
+      <!-- Drive -->
+      <div class="card drive">
+        <div class="sub">DRIVE CHARGE <span class="kana">じゅうでん</span></div>
+        <div class="big" [class.full]="charge() >= 1">{{ pct(charge()) }}</div>
+        <div class="gauge" aria-hidden="true">
+          @for (seg of segments(); track $index) {
+            <span [class.on]="seg.on" [class.over]="seg.over"><i [style.width.%]="seg.part * 100"></i></span>
+          }
+        </div>
+        <div class="dim small">
+          Full charge needs {{ game.fmt(needed()) }} Helium-3 units here (depth {{ st.sector.depth }}). Over-charge cap: {{ pct(cap()) }}.
+        </div>
+        <div class="fuel">
+          @for (x of fuel(); track x.ore.id) {
+            <div class="fuel-row" [style.--oc]="x.ore.color">
+              <span class="fuel-name">{{ x.ore.name }}</span>
+              <span>{{ game.fmt(x.held) }} t × {{ x.units }}</span>
+              <span>{{ x.ingots }} ingots × {{ x.ingotUnits }}</span>
+            </div>
+          }
+        </div>
+        <div class="row">
+          <button type="button" class="btn btn-amber small" (click)="game.feedDrive()">Load fuel now</button>
+          <button type="button" class="auto" [class.on]="f.autoFeed" (click)="game.toggleAutoFeed()">AUTO-FEED {{ f.autoFeed ? 'ON' : 'OFF' }}</button>
+          @if (st.trade.inventory.fold_cell > 0) {
+            <button type="button" class="btn small" (click)="game.useFoldCell()">Use fold cell ({{ st.trade.inventory.fold_cell }})</button>
+          }
+        </div>
+      </div>
+
+      <!-- Resonance -->
+      <div class="card">
+        <div class="sub">FOLD RESONANCE <span class="kana">きょうめい</span></div>
+        <div class="gain">Jump now → <b>+{{ gain() }}</b> Resonance</div>
+        <div class="dim small">From {{ game.fmt(runCredits()) }} cr earned this run{{ charge() > 1 ? ', boosted by over-charge' : '' }}. Earn more (or over-charge) for a bigger payout.</div>
+        <div class="small">Passive bonus now: <b class="ok">×{{ mult().toFixed(2) }}</b> production (+2% per lifetime point).</div>
+        <div class="carry small">
+          <div><b class="ok">COMES WITH YOU</b> pilots (healed), Resonance, Jump Core, mech blueprints, unique parts, Data Cores, reputation & standing, Codex, stores</div>
+          <div><b class="warn">LEFT BEHIND</b> credits, cargo, drones, mechs, standard parts, upgrades, most research, contracts</div>
+        </div>
+      </div>
+
+      <!-- Destinations -->
+      <div class="card wide">
+        <div class="sub">DESTINATION <span class="kana">ゆきさき</span> <span class="dim">— depth {{ st.sector.depth + 1 }}</span></div>
+        <div class="dests">
+          @for (d of destinations(); track d.def.seed) {
+            <button type="button" class="dest" [class.on]="f.destination === d.i" [style.--sc]="d.star.color" (click)="game.setDestination(d.i)">
+              <div class="dest-name">SECTOR {{ d.def.code }} · {{ d.def.name }}</div>
+              <div class="dim small">{{ d.starLabel }} · {{ d.profile.name }} · {{ d.zones }} zones</div>
+              <div class="traits">
+                @for (t of d.traits; track $index) {
+                  @if (t) {
+                    <span [class]="'trait ' + t.polarity" [title]="t.desc">{{ t.name }}</span>
+                  } @else {
+                    <span class="trait unknown">???</span>
+                  }
+                }
+              </div>
+              <div class="dim small">{{ d.star.desc }}</div>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Research Archive -->
+      <div class="card">
+        <div class="sub">RESEARCH ARCHIVE {{ archive().chosen.length }}/{{ archive().slots }} <span class="kana">アーカイブ</span></div>
+        @if (archive().permanent.length) {
+          <div class="ok small">Permanent: {{ archive().permanent.join(', ') }}</div>
+        }
+        <div class="dim small">QoL and infrastructure research (refinery, auto-sell, hangar…) becomes permanent once you've had it in {{ permanentAfter }} runs.</div>
+        @if (archive().slots === 0) {
+          <div class="dim small">Buy <b>Research Archive</b> in the Jump Core to carry research through the fold.</div>
+        } @else {
+          <div class="chips">
+            @for (o of archive().options; track o.id) {
+              <button type="button" class="chip" [class.on]="archive().chosen.includes(o.id)" (click)="game.toggleArchive(o.id)">
+                {{ o.name }}{{ o.level > 1 ? ' ' + o.level : '' }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Jump Core -->
+      <div class="card">
+        <div class="sub">JUMP CORE <span class="kana">ジャンプコア</span> <span class="dim">— {{ f.resonance }} Resonance to spend</span></div>
+        @for (c of core(); track c.def.id) {
+          <div class="core-row">
+            <div>
+              <div class="core-name">{{ c.def.name }} <span class="lvl">{{ c.level }}/{{ c.def.maxLevel }}</span></div>
+              <div class="dim small">{{ c.def.desc }}</div>
+            </div>
+            @if (c.cost !== null) {
+              <button type="button" class="btn small" [disabled]="f.resonance < c.cost" (click)="game.buyCore(c.def.id)">◈ {{ c.cost }}</button>
+            } @else {
+              <span class="dim small">MAX</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="jump-bar">
+      @if (blocker(); as b) {
+        <span class="warn small">{{ b }}</span>
+      }
+      <button type="button" class="jump-btn" [class.confirm]="confirming()" [disabled]="!!blocker()" (click)="jump()">
+        {{ confirming() ? 'CONFIRM — FOLD NOW' : 'ENGAGE FOLD DRIVE' }}
+      </button>
+    </div>
+  }
+</section>

@@ -39,12 +39,12 @@
         <div class="empty-label">EMPTY BAY — BUILD A FRAME</div>
         <div class="build-list">
           @for (f of frames; track f.id) {
-            <button type="button" class="build" [style.--fc]="f.color" [disabled]="st.credits < f.cost" (click)="build(f.id)">
+            <button type="button" class="build" [style.--fc]="f.color" [disabled]="st.credits < buildCost(f.id)" (click)="build(f.id)">
               <fdm-mech-portrait [frame]="f.id" [parts]="{}" [size]="34" />
               <span class="build-text">
                 <b>{{ f.name }}</b>
                 <small>{{ f.role }}</small>
-                <span class="cost">{{ game.fmt(f.cost) }} cr</span>
+                <span class="cost">{{ game.fmt(buildCost(f.id)) }} cr{{ buildCost(f.id) < f.cost ? ' (blueprint)' : '' }}</span>
               </span>
             </button>
           }

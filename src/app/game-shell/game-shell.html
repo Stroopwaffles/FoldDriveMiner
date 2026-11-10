@@ -40,14 +40,14 @@
       <span class="r-val magenta">{{ st.dataCores }}</span>
     </div>
 
-    <div class="fold" title="Fold Drive — requires Fold Science research">
+    <div class="fold" [class.online]="foldGauge().online" [title]="foldGauge().online ? 'Fold Drive charge' : 'Fold Drive — requires Fold Science research'">
       <span class="r-label">FOLD DRIVE</span>
       <div class="fold-gauge">
-        @for (i of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; track i) {
-          <span class="seg"></span>
+        @for (on of foldGauge().segs; track $index) {
+          <span class="seg" [class.on]="on"></span>
         }
       </div>
-      <span class="fold-state">NOT INSTALLED</span>
+      <span class="fold-state">{{ foldGauge().online ? foldGauge().pct + '% · DEPTH ' + st.sector.depth : 'NOT INSTALLED' }}</span>
     </div>
 
     <fdm-music-toggle />
@@ -61,7 +61,7 @@
         type="button"
         class="nav-btn"
         [class.active]="item.id === game.tab()"
-        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady()) || (item.id === 'board' && boardReady())"
+        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady()) || (item.id === 'board' && boardReady()) || (item.id === 'fold' && foldReady())"
         [class.locked]="item.locked"
         [attr.aria-disabled]="item.locked"
         [title]="item.locked ? item.hint : item.label"
@@ -105,6 +105,9 @@
         }
         @case ('board') {
           <fdm-board-panel />
+        }
+        @case ('fold') {
+          <fdm-fold-panel />
         }
         @default {
           <fdm-ops-panel />
@@ -244,3 +247,4 @@
 
 <fdm-cut-in />
 <fdm-sortie-modal />
+<fdm-jump-overlay />

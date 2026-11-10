@@ -7,6 +7,9 @@ import { randomSeed } from '../game/rng';
 import { ClickResult, GameState, MechJob, OfflineReport, PilotState, SortieReport, TickEvents } from '../game/types';
 import * as T from '../game/threat-rules';
 import * as A from '../game/anomaly-rules';
+import * as F from '../game/fold-rules';
+import { ARRIVAL } from '../game/fold-data';
+import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
 import { clanDef } from '../game/trade-data';
 import { Approach } from '../game/anomaly-data';
@@ -18,7 +21,7 @@ import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
 
-export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board';
+export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board' | 'fold';
 
 export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT' | 'JACKAL' | 'TRADER' | 'CORP';
 
@@ -53,10 +56,21 @@ export interface CutIn {
   color: string;
 }
 
+/** The Fold Jump cinematic, phase by phase. */
+export interface JumpSequence {
+  phase: 'arm' | 'farewell' | 'countdown' | 'tunnel' | 'flash';
+  count: number;
+  from: string;
+  to: string;
+  gained: number;
+}
+
 export interface EpisodeCard {
   number: number;
   title: string;
   subtitle: string;
+  /** Lines to say when the card closes (after a jump). */
+  arrival?: [Speaker, string][];
 }
 
 const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560, JACKAL: 330, TRADER: 500, CORP: 380 };
@@ -78,6 +92,7 @@ export class GameService {
   readonly comms = signal<CommMessage[]>([]);
   readonly lastSaved = signal<number | null>(null);
   readonly cutIn = signal<CutIn | null>(null);
+  readonly jump = signal<JumpSequence | null>(null);
   readonly sortie = signal<SortieView | null>(null);
 
   // Derived values used across the HUD.
@@ -180,7 +195,12 @@ export class GameService {
 
   /** Called when the episode card closes: opening transmissions. */
   startEpisodeOne(): void {
+    const ep = this.episode();
     this.episode.set(null);
+    if (ep?.arrival) {
+      ep.arrival.forEach(([who, line], i) => this.say(who, line, i * 1800));
+      return;
+    }
     const s = this._state();
     if (!s || s.flags['ep1Intro']) return;
     s.flags['ep1Intro'] = true;
@@ -837,6 +857,101 @@ export class GameService {
 
   rerollBoard(): void {
     this.act(TR.rerollBoard, () => this.audio.blip());
+  }
+
+  // ------------------------------------------------------------ fold drive
+
+  feedDrive(): void {
+    this.act((s) => F.feedDrive(s) > 0, () => this.audio.buy());
+  }
+
+  toggleAutoFeed(): void {
+    const s = this._state();
+    if (!s) return;
+    s.fold.autoFeed = !s.fold.autoFeed;
+    this.audio.blip();
+    this.publish();
+  }
+
+  useFoldCell(): void {
+    this.act(F.useFoldCell, () => this.audio.buy());
+  }
+
+  buyCore(id: string): void {
+    this.act((s) => F.buyCore(s, id), () => this.audio.select());
+  }
+
+  toggleArchive(id: string): void {
+    this.act((s) => F.toggleArchive(s, id), () => this.audio.blip());
+  }
+
+  setDestination(i: number): void {
+    const s = this._state();
+    if (!s) return;
+    s.fold.destination = i;
+    this.audio.blip();
+    this.publish();
+  }
+
+  /** Arm the drive and play the jump; the sector changes at the white flash. */
+  startJump(): void {
+    const s = this._state();
+    if (!s || this.jump() || F.canJump(s) !== null) {
+      this.audio.denied();
+      return;
+    }
+    const dest = S.destinationPreview(s, F.destinationCount(s))[s.fold.destination] ?? S.destinationPreview(s)[0];
+    const seq: JumpSequence = { phase: 'arm', count: 3, from: `${s.sector.code} · ${s.sector.name}`, to: `${dest.def.code} · ${dest.def.name}`, gained: F.resonanceGain(s) };
+    const quick = this.settings.reducedMotion();
+    const t = (ms: number) => (quick ? Math.min(ms, 400) : ms);
+    this.save();
+    this.audio.klaxon();
+    this.jump.set(seq);
+    const steps: [number, () => void][] = [
+      [t(2400), () => this.jump.set({ ...seq, phase: 'farewell' })],
+      [t(2600), () => this.jump.set({ ...seq, phase: 'countdown', count: 3 })],
+      [t(1000), () => this.jump.set({ ...seq, phase: 'countdown', count: 2 })],
+      [t(1000), () => this.jump.set({ ...seq, phase: 'countdown', count: 1 })],
+      [t(1000), () => {
+        this.audio.overdrive();
+        this.jump.set({ ...seq, phase: 'tunnel' });
+      }],
+      [t(2600), () => {
+        this.audio.crack();
+        this.jump.set({ ...seq, phase: 'flash' });
+        this.completeJump();
+      }],
+      [t(700), () => this.jump.set(null)],
+    ];
+    let delay = 0;
+    for (const [ms, fn] of steps) {
+      delay += ms;
+      setTimeout(fn, delay);
+    }
+  }
+
+  private completeJump(): void {
+    const s = this._state();
+    if (!s) return;
+    const r = F.foldJump(s);
+    if (!r) return;
+    this.comms.set([]);
+    this._state.set(r.state);
+    this.tab.set('ops');
+    this.offlineReport.set(null);
+    this.save();
+    const lines = r.first ? ARRIVAL.first : [ARRIVAL.later[r.state.fold.jumps % ARRIVAL.later.length]];
+    const def = S.sectorOf(r.state);
+    this.episode.set({
+      number: r.state.fold.jumps + 1,
+      title: def.name,
+      subtitle: `Sector ${def.code} · ${S.starLabel(def)} · +${r.gained} Fold Resonance`,
+      arrival: [
+        ['VESPER', lines[0]],
+        ...(lines[1] ? ([['JUNO', lines[1]]] as [Speaker, string][]) : []),
+        ['VESPER', `Fold Resonance +${r.gained}. Production is now ×${F.resonanceMult(r.state).toFixed(2)} from Resonance. Spend it in the FOLD tab's Jump Core.`],
+      ],
+    });
   }
 
   rebuildWrecks(type: DT): void {

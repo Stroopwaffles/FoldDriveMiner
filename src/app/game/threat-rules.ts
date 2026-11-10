@@ -23,6 +23,7 @@ import { ActiveEvent, GameState, MechState, SortieReport, SortieRound, ThreatSta
 // Engine helpers (cyclic import, only used at call time).
 import { addToCargo, baseDrillPower, cargoUsed, drillPower, orePrice } from './engine';
 import { deterrentActive, escortStrength, onEscortResult, raidMult, squadBondEffects } from './trade-rules';
+import { depthRaidMult } from './fold-rules';
 
 /** Limits on losses while the player is away. */
 export interface LossContext {
@@ -109,7 +110,7 @@ export function raidStrength(state: GameState): number {
   const heat = 1 + state.threats.heat / r.heatScale;
   const zone = 1 + zoneIndex(state) * r.zoneScale;
   const wealth = 1 + Math.log10(1 + state.stats.creditsEarned / r.wealthUnit);
-  return r.baseStrength * heat * zone * wealth * raidMult(state);
+  return r.baseStrength * heat * zone * wealth * raidMult(state) * depthRaidMult(state);
 }
 
 export function jackalStrengthMult(state: GameState): number {

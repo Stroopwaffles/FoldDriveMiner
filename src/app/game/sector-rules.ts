@@ -232,11 +232,11 @@ export function destinationSeeds(state: GameState, count = 3): number[] {
   return Array.from({ length: count }, () => (rng.next() * 4294967296) >>> 0);
 }
 
-export function destinationPreview(state: GameState, count = 3): { def: SectorDef; revealed: number }[] {
+export function destinationPreview(state: GameState, count = 3, revealed = 1): { def: SectorDef; revealed: number }[] {
   return destinationSeeds(state, count).map((seed) => ({
     def: generateSector(seed, state.sector.depth + 1),
-    // Long-range sensors only see the first trait; the rest are '???'.
-    revealed: 1,
+    // Long-range sensors only see the first trait(s); the rest are '???'.
+    revealed,
   }));
 }
 

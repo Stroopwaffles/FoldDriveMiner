@@ -19,6 +19,7 @@ import {
 } from './fleet-data';
 import { GameState, MechJob, MechState, OreAmounts, PilotState, TickEvents } from './types';
 import { droneCostMult } from './trade-rules';
+import { FOLD } from './fold-data';
 
 // ---------------------------------------------------------------- drones
 
@@ -110,7 +111,7 @@ export function setDispatch(state: GameState, zone: ZoneId, weight: number): boo
 
 export function hangarBays(state: GameState): number {
   if (!hasResearch(state, 'hangar')) return 0;
-  return 1 + researchLevel(state, 'hangar_bays');
+  return 1 + researchLevel(state, 'hangar_bays') + (state.fold?.core['core_bays'] ?? 0);
 }
 
 export interface MechStats {
@@ -246,10 +247,17 @@ export function passiveSdRate(state: GameState): number {
 
 const MECH_NAMES = ['Kestrel', 'Anvil', 'Mule', 'Lantern', 'Sparrow', 'Bastion', 'Gravel', 'Ironclad', 'Marigold', 'Hammerhead', 'Wayfarer', 'Rook'];
 
+/** Frames you've built before (blueprints survive a Fold Jump) are much cheaper. */
+export function mechBuildCost(state: GameState, frame: FrameId): number {
+  const known = state.fold?.blueprints.includes(frame);
+  return frameDef(frame).cost * (known ? FOLD.blueprintCost : 1);
+}
+
 export function buildMech(state: GameState, frame: FrameId): MechState | null {
-  const def = frameDef(frame);
-  if (state.mechs.length >= hangarBays(state) || state.credits < def.cost) return null;
-  state.credits -= def.cost;
+  const cost = mechBuildCost(state, frame);
+  if (state.mechs.length >= hangarBays(state) || state.credits < cost) return null;
+  state.credits -= cost;
+  if (state.fold && !state.fold.blueprints.includes(frame)) state.fold.blueprints.push(frame);
   const id = nextId(state);
   const name = MECH_NAMES[id % MECH_NAMES.length];
   const mech: MechState = {

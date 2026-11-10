@@ -24,6 +24,9 @@ import { AsteroidViewport } from './asteroid-viewport';
 import { CrewPanel } from './crew-panel';
 import { DefensePanel } from './defense-panel';
 import { BoardPanel } from './board-panel';
+import { FoldPanel } from './fold-panel';
+import { JumpOverlay } from '../ui/jump-overlay';
+import * as F from '../game/fold-rules';
 import { SortieModal } from './sortie-modal';
 import { ThreatBanner } from './threat-banner';
 import * as T from '../game/threat-rules';
@@ -54,6 +57,8 @@ interface NavItem {
     CrewPanel,
     DefensePanel,
     BoardPanel,
+    FoldPanel,
+    JumpOverlay,
     ThreatBanner,
     SortieModal,
     SettingsPanel,
@@ -94,6 +99,16 @@ export class GameShell {
     const s = this.s();
     return s.contracts.board.length > 0 || s.contracts.active.length > 0 || !!s.trade.fleet || s.contracts.completed > 0;
   });
+  private readonly foldOpen = computed(() => F.driveOnline(this.s()) || this.s().fold.jumps > 0);
+  /** Fold badge: the drive is fully charged. */
+  protected readonly foldReady = computed(() => F.driveOnline(this.s()) && this.s().fold.charge >= 1);
+  /** Status-bar gauge: 10 segments of charge. */
+  protected readonly foldGauge = computed(() => {
+    const s = this.s();
+    const online = F.driveOnline(s);
+    const c = s.fold.charge;
+    return { online, pct: Math.round(c * 100), segs: Array.from({ length: 10 }, (_, i) => c >= (i + 1) / 10 - 1e-9) };
+  });
   /** Board badge: a merchant convoy is in the sector. */
   protected readonly boardReady = computed(() => !!this.s().trade.fleet);
   /** Map badge: an unscanned signal is waiting. */
@@ -112,6 +127,7 @@ export class GameShell {
     { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: !this.labOpen(), hint: 'Research lab offline. Crack an asteroid to recover Survey Data.' },
     { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
     { id: 'defense', label: 'DEFENSE', kana: 'ぼうえい', icon: '⚔', locked: !this.defenseOpen(), hint: 'Sector is quiet. Defense command opens when trouble starts.' },
+    { id: 'fold', label: 'FOLD', kana: 'フォールド', icon: '⟐', locked: !this.foldOpen(), hint: 'Fold Drive offline. Research it in the LAB (Fold Science).' },
     { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: !this.boardOpen(), hint: 'No contracts or traders yet. Earn a little first.' },
   ]);
 

@@ -7,7 +7,7 @@ import { ensureAnomalies } from './anomaly-rules';
 import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
 
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -42,6 +42,13 @@ export function migrate(raw: unknown): GameState {
   if (data['version'] === 5) {
     // v6 adds merchant convoys, contracts and pilot bonds; all start empty.
     data['version'] = 6;
+  }
+  if (data['version'] === 6) {
+    // v7 adds the Fold Drive state (charge, Resonance, Jump Core). Mech frames
+    // already built count as known blueprints; this run started at zero.
+    const mechs = (data['mechs'] ?? []) as { frame: string }[];
+    data['fold'] = { blueprints: [...new Set(mechs.map((m) => m.frame))], runStartCredits: 0 };
+    data['version'] = 7;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);

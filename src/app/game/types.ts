@@ -326,8 +326,31 @@ export interface Bond {
   type: BondType;
 }
 
+export interface FoldState {
+  /** Drive charge: 1 = 100% (can go higher with over-charge capacitors). */
+  charge: number;
+  /** Pull Helium-3 and Voidglass from the hold into the drive automatically. */
+  autoFeed: boolean;
+  /** Unspent Fold Resonance, and everything ever earned (drives the passive bonus). */
+  resonance: number;
+  lifetimeResonance: number;
+  jumps: number;
+  /** Jump Core upgrade levels. */
+  core: Record<string, number>;
+  /** How many runs each permanent-eligible research node has been owned in. */
+  qolCounts: Record<string, number>;
+  /** Mech frames built at least once (cheap to rebuild after a jump). */
+  blueprints: FrameId[];
+  /** Lifetime credits at the start of this run. */
+  runStartCredits: number;
+  /** Research nodes chosen for the Research Archive. */
+  archive: string[];
+  /** Destination picked for the next jump (index into the long-range scan). */
+  destination: number;
+}
+
 export interface GameState {
-  version: 6;
+  version: 7;
   commander: string;
   ship: string;
   createdAt: number;
@@ -363,6 +386,7 @@ export interface GameState {
   trade: TradeState;
   contracts: ContractsState;
   bonds: Bond[];
+  fold: FoldState;
   asteroid: AsteroidState;
   sector: SectorInfo;
   zone: ZoneId;

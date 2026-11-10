@@ -599,3 +599,18 @@
 .from-corp .msg-from {
   color: var(--amber);
 }
+
+/* Fold Drive gauge once the drive is online */
+.fold.online {
+  opacity: 1;
+
+  .seg.on {
+    background: linear-gradient(180deg, #e0b8ff, #8a3dff);
+    border-color: #c77dff;
+    box-shadow: 0 0 6px rgba(199, 125, 255, 0.7);
+  }
+
+  .fold-state {
+    color: #c77dff;
+  }
+}

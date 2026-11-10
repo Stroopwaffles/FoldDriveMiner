@@ -148,6 +148,10 @@ export class HangarPanel {
     this.game.equipPart(mechId, slot, v === '' ? null : v);
   }
 
+  protected buildCost(frame: FrameId): number {
+    return E.mechBuildCost(this.s(), frame);
+  }
+
   protected build(frame: FrameId): void {
     this.game.buildMech(frame);
     const s = this.s();

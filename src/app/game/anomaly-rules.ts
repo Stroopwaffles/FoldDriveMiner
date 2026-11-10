@@ -226,7 +226,7 @@ export function deployRig(state: GameState, id: number): boolean {
 
 export function decodeSpeed(state: GameState): number {
   const scholars = state.pilots.filter((p) => p.background === 'scholar' && Object.values(state.posts).includes(p.id)).length;
-  return 1 + postBonus(state, 'science') + 0.5 * scholars + researchLevel(state, 'deep_scan') * 0.25;
+  return 1 + postBonus(state, 'science') + 0.5 * scholars + researchLevel(state, 'deep_scan') * 0.25 + researchLevel(state, 'beacon_decoding') * 0.5;
 }
 
 // ---------------------------------------------------------------- golden asteroid
