@@ -13,7 +13,7 @@ import { SettingsService } from '../services/settings.service';
       [class.on]="on()"
       [attr.aria-pressed]="on()"
       [attr.aria-label]="on() ? 'Turn music off' : 'Turn music on'"
-      [title]="on() ? 'Music on (M)' : 'Music off (M)'"
+      [title]="on() ? 'Music on (M) — ' + music.nowPlaying().name : 'Music off (M)'"
       (click)="toggle()"
     >
       <span class="eq" aria-hidden="true">
@@ -21,8 +21,33 @@ import { SettingsService } from '../services/settings.service';
       </span>
       <span class="label">♪ {{ on() ? 'ON' : 'OFF' }}</span>
     </button>
+    @if (on()) {
+      <button type="button" class="skip-btn" (click)="skip()" [title]="'Next track (now: ' + music.nowPlaying().name + ')'" aria-label="Next track">⏭</button>
+    }
   `,
   styles: `
+    :host {
+      display: inline-flex;
+      gap: 4px;
+    }
+    .skip-btn {
+      appearance: none;
+      padding: 0.4rem 0.5rem;
+      background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+      border: 2px solid var(--bezel-hi);
+      border-radius: 3px;
+      color: var(--magenta);
+      font-size: 0.72rem;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #070917;
+      &:hover {
+        border-color: var(--cyan);
+      }
+      &:active {
+        transform: translateY(3px);
+        box-shadow: none;
+      }
+    }
     .music-btn {
       appearance: none;
       display: inline-flex;
@@ -96,11 +121,16 @@ import { SettingsService } from '../services/settings.service';
   `,
 })
 export class MusicToggle {
-  private readonly music = inject(MusicService);
+  protected readonly music = inject(MusicService);
   private readonly audio = inject(AudioService);
   private readonly settings = inject(SettingsService);
 
   protected readonly on = computed(() => this.settings.settings().music);
+
+  protected skip(): void {
+    this.music.next();
+    this.audio.blip();
+  }
 
   protected toggle(): void {
     this.audio.unlock();

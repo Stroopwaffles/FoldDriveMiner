@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { NumberFormat } from '../game/format';
 import { AudioService } from '../services/audio.service';
+import { MusicService } from '../services/music.service';
 import { Settings, SettingsService } from '../services/settings.service';
 
 @Component({
@@ -41,6 +42,20 @@ import { Settings, SettingsService } from '../services/settings.service';
         />
         <span class="val">{{ (s.musicVolume * 100).toFixed(0) }}%</span>
       </label>
+
+      <label class="row">
+        <span>Track</span>
+        <select [value]="s.musicTrack" [disabled]="!s.music" (change)="setTrack($event)">
+          <option value="auto" [selected]="s.musicTrack === 'auto'">Playlist — all tracks</option>
+          @for (t of music.tracks; track t.id) {
+            <option [value]="t.id" [selected]="s.musicTrack === t.id">{{ t.name }}</option>
+          }
+        </select>
+        <button type="button" class="btn skip" [disabled]="!s.music" (click)="music.next(); audio.blip()" title="Next track">⏭</button>
+      </label>
+      @if (s.music) {
+        <div class="now">♪ NOW PLAYING: <b>{{ music.nowPlaying().name }}</b><span>&nbsp;— {{ music.nowPlaying().mood }}</span></div>
+      }
 
       <label class="row">
         <span>CRT scanlines</span>
@@ -115,6 +130,29 @@ import { Settings, SettingsService } from '../services/settings.service';
     input[type='range'] {
       accent-color: var(--magenta);
     }
+    select {
+      font-family: var(--font-mono);
+      background: #060818;
+      color: var(--text);
+      border: 1px solid var(--bezel-hi);
+      padding: 0.25rem 0.35rem;
+    }
+    .skip {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+    }
+    .now {
+      margin-top: -0.4rem;
+      font-size: 0.75rem;
+      color: var(--magenta);
+      b {
+        font-weight: normal;
+        color: var(--text);
+      }
+      span {
+        color: var(--text-dim);
+      }
+    }
     input[type='checkbox'] {
       accent-color: var(--magenta);
       width: 18px;
@@ -125,6 +163,7 @@ import { Settings, SettingsService } from '../services/settings.service';
 export class SettingsPanel {
   protected readonly settings = inject(SettingsService);
   protected readonly audio = inject(AudioService);
+  protected readonly music = inject(MusicService);
 
   protected readonly motionOpts: Settings['reducedMotion'][] = ['system', 'on', 'off'];
   protected readonly formatOpts: { id: NumberFormat; label: string }[] = [
@@ -135,6 +174,11 @@ export class SettingsPanel {
 
   protected patch(p: Partial<Settings>): void {
     this.settings.update(p);
+    this.audio.blip();
+  }
+
+  protected setTrack(e: Event): void {
+    this.settings.update({ musicTrack: (e.target as HTMLSelectElement).value });
     this.audio.blip();
   }
 

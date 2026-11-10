@@ -1,55 +1,42 @@
-import { DestroyRef, Injectable, effect, inject } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AudioService } from './audio.service';
 import { SettingsService } from './settings.service';
+import { TRACKS, Track, trackById } from './music-tracks';
 
 /*
  * Background music, synthesized live with the Web Audio API.
  *
- * An original 16-bar synthwave loop in A minor (Am – F – C – G), 100 BPM:
- * drums, a pumping octave bass, detuned pads, a delayed arpeggio and a lead
- * melody that plays on the first 8 bars and rests on the second 8.
- * Notes are scheduled slightly ahead on the audio clock (the usual
- * "lookahead scheduler" pattern) so timing stays tight.
+ * Tracks are data (see music-tracks.ts). This service is the "band": it reads
+ * a track and plays drums, bass, pads, arpeggio and lead with a lookahead
+ * scheduler on the audio clock. In playlist mode each track loops twice and
+ * then hands over to the next one at a bar line.
  */
 
-const BPM = 100;
-const STEP = 60 / BPM / 4; // one 16th note, in seconds
 const STEPS_PER_BAR = 16;
 const BARS = 16;
+const LOOP_STEPS = STEPS_PER_BAR * BARS;
+const LOOPS_PER_TRACK = 2;
 const LOOKAHEAD = 0.15;
 const TICK_MS = 25;
 
 const midi = (n: number) => 440 * 2 ** ((n - 69) / 12);
-
-// Chords as MIDI notes (pad voicing around middle C) and bass roots.
-const CHORDS = [
-  { pad: [57, 60, 64], root: 33 }, // Am
-  { pad: [53, 57, 60], root: 29 }, // F
-  { pad: [55, 60, 64], root: 36 }, // C
-  { pad: [55, 59, 62], root: 31 }, // G
-];
-
-// Lead melody: per bar, [step, midi note, length in steps]. Bars 1–8 only.
-const MELODY: [number, number, number][][] = [
-  [[0, 76, 4], [4, 74, 2], [6, 72, 2], [8, 74, 4], [12, 76, 4]],
-  [[0, 77, 6], [6, 76, 2], [8, 72, 8]],
-  [[0, 79, 4], [4, 76, 4], [8, 72, 2], [10, 74, 2], [12, 76, 4]],
-  [[0, 74, 8], [8, 71, 4], [12, 74, 4]],
-  [[0, 81, 4], [4, 79, 2], [6, 76, 2], [8, 72, 4], [12, 76, 4]],
-  [[0, 77, 4], [4, 81, 4], [8, 79, 4], [12, 77, 4]],
-  [[0, 76, 4], [4, 79, 4], [8, 84, 8]],
-  [[0, 83, 4], [4, 81, 2], [6, 79, 2], [8, 74, 8]],
-];
 
 @Injectable({ providedIn: 'root' })
 export class MusicService {
   private readonly audio = inject(AudioService);
   private readonly settings = inject(SettingsService);
 
+  readonly tracks = TRACKS;
+  private readonly trackIndex = signal(0);
+  readonly nowPlaying = computed(() => TRACKS[this.trackIndex()]);
+
   private master: GainNode | null = null;
+  private trackGain: GainNode | null = null;
+  private delay: DelayNode | null = null;
   private delaySend: GainNode | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private step = 0;
+  private loops = 0;
   private nextTime = 0;
   private hidden = false;
 
@@ -62,6 +49,13 @@ export class MusicService {
       this.setVolume(music ? musicVolume : 0);
       if (music && !this.hidden) this.start();
       else this.stop();
+    });
+
+    // Picking a specific track in Settings switches to it right away.
+    effect(() => {
+      const pick = this.settings.settings().musicTrack;
+      const i = TRACKS.findIndex((t) => t.id === pick);
+      if (i >= 0 && i !== this.trackIndex()) this.switchTo(i);
     });
 
     // Pause while the tab is hidden: background tabs throttle timers, which would make the music stutter.
@@ -81,6 +75,34 @@ export class MusicService {
 
   toggle(): void {
     this.settings.update({ music: !this.settings.settings().music });
+  }
+
+  /** Skip to the next track. In single-track mode this also changes the chosen track. */
+  next(): void {
+    const i = (this.trackIndex() + 1) % TRACKS.length;
+    if (this.settings.settings().musicTrack !== 'auto') this.settings.update({ musicTrack: TRACKS[i].id });
+    else this.switchTo(i);
+  }
+
+  private switchTo(i: number): void {
+    this.trackIndex.set(i);
+    this.step = 0;
+    this.loops = 0;
+    const ctx = this.audio.context;
+    if (ctx && this.delay) {
+      this.delay.delayTime.setTargetAtTime(this.stepLen() * 3, ctx.currentTime, 0.05);
+      this.trackGain!.gain.setTargetAtTime(this.track.gain, ctx.currentTime, 0.2);
+      // Small gap so the new track starts cleanly on a fresh bar.
+      this.nextTime = Math.max(this.nextTime, ctx.currentTime + 0.25);
+    }
+  }
+
+  private get track(): Track {
+    return TRACKS[this.trackIndex()];
+  }
+
+  private stepLen(): number {
+    return 60 / this.track.bpm / 4;
   }
 
   // ------------------------------------------------------------ transport
@@ -111,10 +133,13 @@ export class MusicService {
     this.master = ctx.createGain();
     this.master.gain.value = 0;
     this.master.connect(ctx.destination);
+    this.trackGain = ctx.createGain();
+    this.trackGain.gain.value = this.track.gain;
+    this.trackGain.connect(this.master);
 
-    // Dotted-eighth feedback delay for the arp and lead.
-    const delay = ctx.createDelay(1);
-    delay.delayTime.value = STEP * 3;
+    // Dotted-eighth feedback delay for the arp and lead, timed to the track.
+    this.delay = ctx.createDelay(2);
+    this.delay.delayTime.value = this.stepLen() * 3;
     const feedback = ctx.createGain();
     feedback.gain.value = 0.35;
     const tone = ctx.createBiquadFilter();
@@ -122,9 +147,9 @@ export class MusicService {
     tone.frequency.value = 2400;
     this.delaySend = ctx.createGain();
     this.delaySend.gain.value = 0.4;
-    this.delaySend.connect(delay);
-    delay.connect(tone).connect(feedback).connect(delay);
-    tone.connect(this.master);
+    this.delaySend.connect(this.delay);
+    this.delay.connect(tone).connect(feedback).connect(this.delay);
+    tone.connect(this.trackGain);
   }
 
   private schedule(): void {
@@ -134,39 +159,84 @@ export class MusicService {
     if (this.nextTime < ctx.currentTime - 0.2) this.nextTime = ctx.currentTime + 0.05;
     while (this.nextTime < ctx.currentTime + LOOKAHEAD) {
       this.playStep(this.step, this.nextTime);
-      this.nextTime += STEP;
-      this.step = (this.step + 1) % (BARS * STEPS_PER_BAR);
+      this.nextTime += this.stepLen();
+      this.step++;
+      if (this.step >= LOOP_STEPS) {
+        this.step = 0;
+        this.loops++;
+        if (this.settings.settings().musicTrack === 'auto' && this.loops >= LOOPS_PER_TRACK) {
+          this.switchTo((this.trackIndex() + 1) % TRACKS.length);
+        }
+      }
     }
   }
 
   // ------------------------------------------------------------ arrangement
 
   private playStep(step: number, t: number): void {
+    const tr = this.track;
+    const STEP = this.stepLen();
     const bar = Math.floor(step / STEPS_PER_BAR);
     const s = step % STEPS_PER_BAR;
-    const chord = CHORDS[bar % 4];
+    const chord = tr.chords[bar % tr.chords.length];
 
-    // Drums: four-on-the-floor kick, snare on 2 and 4, eighth hats.
-    if (s % 4 === 0) this.kick(t);
-    if (s === 4 || s === 12) this.snare(t);
-    if (s % 2 === 0) this.hat(t, s % 4 === 2 ? 0.05 : 0.025);
+    // Drums
+    switch (tr.drums) {
+      case 'four':
+        if (s % 4 === 0) this.kick(t);
+        if (s === 4 || s === 12) this.snare(t);
+        if (s % 2 === 0) this.hat(t, s % 4 === 2 ? 0.05 : 0.025);
+        break;
+      case 'drive':
+        if (s % 4 === 0 || s === 14) this.kick(t);
+        if (s === 4 || s === 12) this.snare(t);
+        this.hat(t, s % 2 === 1 ? 0.045 : 0.02);
+        break;
+      case 'half':
+        if (s === 0 || s === 10) this.kick(t);
+        if (s === 8) this.snare(t);
+        if (s % 4 === 2) this.hat(t, 0.03);
+        break;
+    }
 
-    // Driving octave bass on every eighth.
-    if (s % 2 === 0) this.bass(midi(chord.root + (s % 4 === 2 ? 12 : 0)), t);
+    // Bass
+    switch (tr.bass) {
+      case 'octave':
+        if (s % 2 === 0) this.bass(midi(chord.root + (s % 4 === 2 ? 12 : 0)), t, STEP * 1.8);
+        break;
+      case 'sustain':
+        if (s === 0) this.bass(midi(chord.root), t, STEP * 14);
+        if (s === 14) this.bass(midi(chord.root + 12), t, STEP * 1.8);
+        break;
+      case 'syncopated':
+        if ([0, 3, 6, 8, 11, 14].includes(s)) this.bass(midi(chord.root + (s === 6 || s === 14 ? 12 : 0)), t, STEP * 1.6);
+        break;
+    }
 
     // Pads: one long chord per bar.
     if (s === 0) for (const n of chord.pad) this.pad(midi(n), t, STEP * STEPS_PER_BAR);
 
-    // Arpeggio: chord tones up two octaves, 16ths, in the second half of the loop
-    // and quietly under the melody in the first half.
-    const arpNotes = [...chord.pad, chord.pad[0] + 12];
-    const arpNote = arpNotes[s % 4] + 12;
-    this.arp(midi(arpNote), t, bar >= 8 ? 0.07 : 0.035);
+    // Arpeggio, quieter under the melody (bars 1–8), featured on bars 9–16.
+    const notes = [...chord.pad, chord.pad[0] + 12];
+    const level = bar >= 8 ? 0.07 : 0.035;
+    switch (tr.arp) {
+      case 'up':
+        this.arp(midi(notes[s % 4] + 12), t, level, STEP);
+        break;
+      case 'updown': {
+        const seq = [0, 1, 2, 3, 2, 1];
+        this.arp(midi(notes[seq[s % seq.length]] + 12), t, level, STEP);
+        break;
+      }
+      case 'sparse':
+        if (s % 4 === 0) this.arp(midi(notes[(s / 4) % 4] + 24), t, level * 1.3, STEP * 3);
+        break;
+    }
 
     // Lead melody on bars 1–8.
     if (bar < 8) {
-      for (const [at, note, len] of MELODY[bar]) {
-        if (at === s) this.lead(midi(note), t, len * STEP);
+      for (const [at, note, len] of tr.melody[bar] ?? []) {
+        if (at === s) this.lead(midi(note), t, len * STEP, tr.lead);
       }
     }
   }
@@ -178,7 +248,7 @@ export class MusicService {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(peak, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
-    g.connect(dest ?? this.master!);
+    g.connect(dest ?? this.trackGain!);
     return g;
   }
 
@@ -225,7 +295,7 @@ export class MusicService {
     src.stop(t + 0.06);
   }
 
-  private bass(freq: number, t: number): void {
+  private bass(freq: number, t: number, dur: number): void {
     const ctx = this.audio.context!;
     const osc = ctx.createOscillator();
     osc.type = 'sawtooth';
@@ -234,10 +304,10 @@ export class MusicService {
     lp.type = 'lowpass';
     lp.Q.value = 6;
     lp.frequency.setValueAtTime(900, t);
-    lp.frequency.exponentialRampToValueAtTime(180, t + STEP * 1.6);
-    osc.connect(lp).connect(this.env(ctx, t, 0.32, 0.005, STEP * 1.8));
+    lp.frequency.exponentialRampToValueAtTime(180, t + Math.min(dur, 0.3));
+    osc.connect(lp).connect(this.env(ctx, t, 0.32, 0.005, dur));
     osc.start(t);
-    osc.stop(t + STEP * 2);
+    osc.stop(t + dur + 0.05);
   }
 
   private pad(freq: number, t: number, dur: number): void {
@@ -250,7 +320,7 @@ export class MusicService {
     g.gain.exponentialRampToValueAtTime(0.06, t + 0.6);
     g.gain.setValueAtTime(0.06, t + dur - 0.3);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.2);
-    lp.connect(g).connect(this.master!);
+    lp.connect(g).connect(this.trackGain!);
     for (const detune of [-9, 9]) {
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
@@ -262,7 +332,7 @@ export class MusicService {
     }
   }
 
-  private arp(freq: number, t: number, level: number): void {
+  private arp(freq: number, t: number, level: number, dur: number): void {
     const ctx = this.audio.context!;
     const osc = ctx.createOscillator();
     osc.type = 'square';
@@ -270,26 +340,28 @@ export class MusicService {
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 3200;
-    const g = this.env(ctx, t, level, 0.003, STEP * 0.9);
+    const g = this.env(ctx, t, level, 0.003, dur * 0.9);
     g.connect(this.delaySend!);
     osc.connect(lp).connect(g);
     osc.start(t);
-    osc.stop(t + STEP);
+    osc.stop(t + dur);
   }
 
-  private lead(freq: number, t: number, dur: number): void {
+  private lead(freq: number, t: number, dur: number, voice: Track['lead']): void {
     const ctx = this.audio.context!;
+    const peak = voice === 'triangle' ? 0.16 : 0.11;
+    const attack = voice === 'triangle' ? 0.08 : voice === 'brass' ? 0.04 : 0.02;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.11, t + 0.02);
-    g.gain.setValueAtTime(0.11, t + Math.max(0.03, dur - 0.08));
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.setValueAtTime(peak, t + Math.max(attack + 0.01, dur - 0.08));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
-    g.connect(this.master!);
+    g.connect(this.trackGain!);
     g.connect(this.delaySend!);
 
     // Gentle vibrato that fades in on held notes.
     const lfo = ctx.createOscillator();
-    lfo.frequency.value = 5.5;
+    lfo.frequency.value = voice === 'triangle' ? 4.5 : 5.5;
     const lfoGain = ctx.createGain();
     lfoGain.gain.setValueAtTime(0, t);
     lfoGain.gain.linearRampToValueAtTime(freq * 0.008, t + Math.min(dur, 0.4));
@@ -297,9 +369,18 @@ export class MusicService {
 
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 2800;
+    if (voice === 'brass') {
+      // Filter "swell" gives the saw a brassy bite.
+      lp.frequency.setValueAtTime(700, t);
+      lp.frequency.exponentialRampToValueAtTime(3200, t + 0.12);
+    } else {
+      lp.frequency.value = voice === 'triangle' ? 2000 : 2800;
+    }
     lp.connect(g);
-    for (const [type, detune] of [['sawtooth', -5], ['square', 5]] as [OscillatorType, number][]) {
+
+    const oscs: [OscillatorType, number][] =
+      voice === 'triangle' ? [['triangle', 0], ['sine', 1200]] : voice === 'brass' ? [['sawtooth', -7], ['sawtooth', 7]] : [['sawtooth', -5], ['square', 5]];
+    for (const [type, detune] of oscs) {
       const osc = ctx.createOscillator();
       osc.type = type;
       osc.frequency.value = freq;
@@ -319,5 +400,10 @@ export class MusicService {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     return src;
+  }
+
+  /** For the settings screen. */
+  trackName(id: string): string {
+    return trackById(id)?.name ?? 'Playlist';
   }
 }

@@ -6,6 +6,8 @@ export interface Settings {
   sfxVolume: number;
   music: boolean;
   musicVolume: number;
+  /** 'auto' cycles through every track; otherwise a track id to loop. */
+  musicTrack: string;
   crt: boolean;
   /** 'system' follows the OS reduced-motion setting. */
   reducedMotion: 'system' | 'on' | 'off';
@@ -17,6 +19,7 @@ const DEFAULTS: Settings = {
   sfxVolume: 0.6,
   music: true,
   musicVolume: 0.5,
+  musicTrack: 'auto',
   crt: true,
   reducedMotion: 'system',
   numberFormat: 'suffix',
