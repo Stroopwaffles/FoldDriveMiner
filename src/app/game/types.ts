@@ -326,6 +326,55 @@ export interface Bond {
   type: BondType;
 }
 
+export interface LogSnap {
+  credits: number;
+  ore: number;
+  raids: number;
+  anomalies: number;
+  contracts: number;
+}
+
+/** One sector in the Sector Logbook. */
+export interface LogEntry {
+  code: string;
+  name: string;
+  star: string;
+  depth: number;
+  profile: string;
+  traits: string[];
+  /** Playtime seconds on arrival / departure (null while still here). */
+  arrived: number;
+  left: number | null;
+  start: LogSnap;
+  end: LogSnap | null;
+  /** Fold Resonance earned by the jump out of this sector. */
+  resonance: number;
+}
+
+/** A pilot who left the roster, kept in the Archive. */
+export interface DossierEntry {
+  name: string;
+  callsign: string;
+  background: string;
+  level: number;
+  portraitSeed: number;
+  left: number;
+}
+
+export interface StoryState {
+  /** Highest episode that has arrived, and the highest one watched. */
+  unlocked: number;
+  watched: number;
+  choice: 'break' | 'master' | null;
+  /** Side stories unlocked (one per jump after the finale) and watched. */
+  side: number;
+  sideWatched: number;
+  /** Commendations earned: id → playtime second. */
+  medals: Record<string, number>;
+  logbook: LogEntry[];
+  dismissed: DossierEntry[];
+}
+
 export interface FoldState {
   /** Drive charge: 1 = 100% (can go higher with over-charge capacitors). */
   charge: number;
@@ -350,7 +399,7 @@ export interface FoldState {
 }
 
 export interface GameState {
-  version: 7;
+  version: 8;
   commander: string;
   ship: string;
   createdAt: number;
@@ -387,6 +436,8 @@ export interface GameState {
   contracts: ContractsState;
   bonds: Bond[];
   fold: FoldState;
+  /** Episodes, commendations, the Sector Logbook and dossiers (all persist across jumps). */
+  story: StoryState;
   asteroid: AsteroidState;
   sector: SectorInfo;
   zone: ZoneId;
@@ -437,6 +488,8 @@ export interface TickEvents {
   autoRepairs: number[];
   ingots: OreAmounts;
   autoSoldCredits: number;
+  /** Episodes that arrived and commendations earned. */
+  story: { kind: 'episode' | 'medal'; id: string; text: string }[];
 }
 
 export interface OfflineReport {

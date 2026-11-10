@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { GameService } from '../services/game.service';
 
 /**
@@ -9,7 +9,7 @@ import { GameService } from '../services/game.service';
   selector: 'fdm-jump-overlay',
   template: `
     @if (game.jump(); as j) {
-      <div class="jump" [class]="'jump ' + j.phase" role="alert">
+      <div class="jump" [class]="'jump ' + j.phase + ' ' + ending()" role="alert">
         @switch (j.phase) {
           @case ('arm') {
             <div class="stripes"></div>
@@ -191,6 +191,12 @@ import { GameService } from '../services/game.service';
         transform: rotate(var(--a)) scaleY(1.2);
       }
     }
+    .break .tunnel {
+      background: radial-gradient(circle, #fff 0%, #ffe08a 8%, #ff9a5a 30%, #1d2a5a 75%);
+    }
+    .master .tunnel {
+      background: radial-gradient(circle, #fff 0%, #ff3b3b 6%, #3a0010 32%, #000 70%);
+    }
     .folding {
       position: relative;
       font-family: var(--font-logo);
@@ -213,6 +219,7 @@ import { GameService } from '../services/game.service';
 })
 export class JumpOverlay {
   protected readonly game = inject(GameService);
+  protected readonly ending = computed(() => this.game.state()?.story.choice ?? '');
   protected readonly formation = Array.from({ length: 9 }, (_, i) => i);
   protected readonly streaks = Array.from({ length: 24 }, (_, i) => i);
 }

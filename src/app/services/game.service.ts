@@ -9,6 +9,9 @@ import * as T from '../game/threat-rules';
 import * as A from '../game/anomaly-rules';
 import * as F from '../game/fold-rules';
 import { ARRIVAL } from '../game/fold-data';
+import * as ST from '../game/story-rules';
+import { ACTS, FINALE, FINAL_EPISODE, FinaleChoice, StoryVoice, episodeDef } from '../game/story-data';
+import { BONUS_LABEL, medalDef } from '../game/medal-data';
 import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
 import { clanDef } from '../game/trade-data';
@@ -21,9 +24,18 @@ import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
 
-export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board' | 'fold';
+export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board' | 'fold' | 'archive';
 
-export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT' | 'JACKAL' | 'TRADER' | 'CORP';
+export type Speaker = StoryVoice | 'PILOT' | 'TRADER' | 'CORP';
+
+export const SPEAKER_NAMES: Partial<Record<Speaker, string>> = {
+  JUNO: 'JUNO HART',
+  KIT: 'KIT OKAFOR',
+  SAFFI: 'SAFFI LIN',
+  ANSEL: 'BROTHER ANSEL',
+  HALE: 'DIRECTOR HALE',
+  CORP: 'CORPORATE LIAISON',
+};
 
 export interface CommMessage {
   id: number;
@@ -71,9 +83,39 @@ export interface EpisodeCard {
   subtitle: string;
   /** Lines to say when the card closes (after a jump). */
   arrival?: [Speaker, string][];
+  /** Replaces "EPISODE nn" (e.g. "FOLD JUMP 02"). */
+  label?: string;
+  /** "Next episode..." teaser line. */
+  teaser?: string;
 }
 
-const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560, JACKAL: 330, TRADER: 500, CORP: 380 };
+/** A story scene playing full screen: title card (index -1), dialogue, then the finale choice. */
+export interface Scene {
+  kind: 'episode' | 'side';
+  n: number;
+  label: string;
+  title: string;
+  act: string;
+  lines: [Speaker, string][];
+  index: number;
+  replay: boolean;
+  /** Ends on the permanent finale choice. */
+  finale: boolean;
+}
+
+const SPEAKER_PITCH: Record<Speaker, number> = {
+  VESPER: 420,
+  JUNO: 760,
+  KIT: 640,
+  SAFFI: 690,
+  ANSEL: 360,
+  HALE: 400,
+  SYSTEM: 300,
+  PILOT: 560,
+  JACKAL: 330,
+  TRADER: 500,
+  CORP: 380,
+};
 
 /** Owns the live game state, the tick loop, saving and player actions. */
 @Injectable({ providedIn: 'root' })
@@ -94,6 +136,7 @@ export class GameService {
   readonly cutIn = signal<CutIn | null>(null);
   readonly jump = signal<JumpSequence | null>(null);
   readonly sortie = signal<SortieView | null>(null);
+  readonly scene = signal<Scene | null>(null);
 
   // Derived values used across the HUD.
   readonly power = computed(() => this.withState(E.drillPower, 0));
@@ -199,6 +242,9 @@ export class GameService {
     this.episode.set(null);
     if (ep?.arrival) {
       ep.arrival.forEach(([who, line], i) => this.say(who, line, i * 1800));
+      // An episode that arrived with the jump plays right after the card.
+      const st = this._state();
+      if (st && ST.pendingEpisode(st)) setTimeout(() => this.playEpisode(), 600);
       return;
     }
     const s = this._state();
@@ -408,6 +454,7 @@ export class GameService {
   private handleEvents(ev: TickEvents): void {
     const s = this._state()!;
     for (const t of ev.threatStarted) this.announceThreat(t);
+    if (ev.story.length) this.storySay(ev.story);
     for (const t of ev.trade) this.tradeSay(t);
     for (const a of ev.anomaly) {
       this.say('VESPER', a.text);
@@ -940,15 +987,23 @@ export class GameService {
     this.tab.set('ops');
     this.offlineReport.set(null);
     this.save();
+    // Episodes the jump itself unlocks (the first jump is Episode 8) queue up quietly.
+    ST.advanceStory(r.state, this.blankEvents());
     const lines = r.first ? ARRIVAL.first : [ARRIVAL.later[r.state.fold.jumps % ARRIVAL.later.length]];
     const def = S.sectorOf(r.state);
+    const next = episodeDef(r.state.story.unlocked + 1);
+    const pending = ST.pendingEpisode(r.state);
+    // Episode 8 tells the first jump's story itself.
+    const quiet = pending !== null && r.first;
     this.episode.set({
       number: r.state.fold.jumps + 1,
+      label: `FOLD JUMP ${String(r.state.fold.jumps).padStart(2, '0')}`,
+      teaser: pending ? `NOW PLAYING · EPISODE ${pending}: ${episodeDef(pending)!.title}` : next ? `NEXT EPISODE · ${next.title}` : undefined,
       title: def.name,
       subtitle: `Sector ${def.code} · ${S.starLabel(def)} · +${r.gained} Fold Resonance`,
       arrival: [
-        ['VESPER', lines[0]],
-        ...(lines[1] ? ([['JUNO', lines[1]]] as [Speaker, string][]) : []),
+        ...(quiet ? [] : ([['VESPER', lines[0]]] as [Speaker, string][])),
+        ...(lines[1] && !quiet ? ([['JUNO', lines[1]]] as [Speaker, string][]) : []),
         ['VESPER', `Fold Resonance +${r.gained}. Production is now ×${F.resonanceMult(r.state).toFixed(2)} from Resonance. Spend it in the FOLD tab's Jump Core.`],
       ],
     });
@@ -970,7 +1025,121 @@ export class GameService {
       trade: [],
       ingots: E.emptyOre(),
       autoSoldCredits: 0,
+      story: [],
     };
+  }
+
+  // ------------------------------------------------------------ story
+
+  private fill(text: string): string {
+    const s = this._state();
+    return text.replaceAll('{ship}', s?.ship ?? 'ship').replaceAll('{cmdr}', s?.commander ?? 'Commander');
+  }
+
+  /** Plays an episode: the next pending one, or a replay of one already watched. */
+  playEpisode(n?: number): void {
+    const s = this._state();
+    if (!s) return;
+    const num = n ?? ST.pendingEpisode(s);
+    // Replays anything watched; new episodes only in order.
+    if (!num || num > s.story.unlocked || num > s.story.watched + 1) return;
+    const def = episodeDef(num)!;
+    this.audio.select();
+    this.scene.set({
+      kind: 'episode',
+      n: num,
+      label: `EPISODE ${String(num).padStart(2, '0')}`,
+      title: def.title,
+      act: ACTS[def.act],
+      lines: def.lines.map(([w, t]) => [w, this.fill(t)] as [Speaker, string]),
+      index: -1,
+      replay: num <= s.story.watched,
+      finale: num === FINAL_EPISODE && !s.story.choice,
+    });
+  }
+
+  playSide(n?: number): void {
+    const s = this._state();
+    if (!s) return;
+    const num = n ?? ST.pendingSide(s);
+    if (!num || num > s.story.side || num > s.story.sideWatched + 1) return;
+    const def = ST.sideStory(num);
+    this.audio.select();
+    this.scene.set({
+      kind: 'side',
+      n: num,
+      label: `SIDE STORY ${String(num).padStart(2, '0')}`,
+      title: def.title,
+      act: 'Between the folds',
+      lines: def.lines.map(([w, t]) => [w, this.fill(t)] as [Speaker, string]),
+      index: -1,
+      replay: num <= s.story.sideWatched,
+      finale: false,
+    });
+  }
+
+  advanceScene(): void {
+    const sc = this.scene();
+    if (!sc) return;
+    const last = sc.lines.length - 1;
+    if (sc.index < last) {
+      this.audio.comm(SPEAKER_PITCH[sc.lines[sc.index + 1][0]]);
+      this.scene.set({ ...sc, index: sc.index + 1 });
+    } else if (sc.finale) {
+      // Wait on the choice screen.
+      if (sc.index === last) this.scene.set({ ...sc, index: last + 1 });
+    } else {
+      this.endScene();
+    }
+  }
+
+  /** Skips to the end (or to the finale choice, which can't be skipped). */
+  skipScene(): void {
+    const sc = this.scene();
+    if (!sc) return;
+    if (sc.finale) this.scene.set({ ...sc, index: sc.lines.length });
+    else this.endScene();
+  }
+
+  private endScene(): void {
+    const sc = this.scene();
+    const s = this._state();
+    this.scene.set(null);
+    if (!sc || !s || sc.replay) return;
+    if (sc.kind === 'episode') ST.watchEpisode(s, sc.n);
+    else ST.watchSide(s, sc.n);
+    this.publish();
+    this.save();
+  }
+
+  chooseFinale(c: FinaleChoice): void {
+    const s = this._state();
+    if (!s || !ST.chooseFinale(s, c)) return;
+    this.scene.set(null);
+    this.audio.overdrive();
+    FINALE[c].aftermath.forEach(([w, t], i) => this.say(w, this.fill(t), 400 + i * 2000));
+    this.publish();
+    this.save();
+  }
+
+  private storySay(items: { kind: 'episode' | 'medal'; id: string; text: string }[]): void {
+    const eps = items.filter((x) => x.kind === 'episode');
+    const medals = items.filter((x) => x.kind === 'medal');
+    if (eps.length === 1) {
+      this.say('VESPER', `Incoming transmission: Episode ${eps[0].id}, "${eps[0].text}". Press PLAY in the comm log when you're ready.`);
+    } else if (eps.length > 1) {
+      this.say('VESPER', `${eps.length} episodes are waiting. Press PLAY in the comm log, or browse them in the ARCHIVE.`);
+    }
+    if (eps.length) this.audio.select();
+    if (medals.length > 3) {
+      this.say('SYSTEM', `★ ${medals.length} commendations awarded. Review them in the ARCHIVE.`);
+    } else {
+      for (const m of medals) {
+        const def = medalDef(m.id)!;
+        this.say('SYSTEM', `★ COMMENDATION · ${def.name}: ${def.desc} (+${Math.round(def.bonus.amount * 100)}% ${BONUS_LABEL[def.bonus.kind]})`);
+      }
+    }
+    if (medals.length) this.audio.dataCore();
   }
 
   // ------------------------------------------------------------ comms

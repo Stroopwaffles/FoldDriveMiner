@@ -472,3 +472,19 @@ $horizon: 64%;
     width: auto;
   }
 }
+
+/* ---------------- finale themes ---------------- */
+.scene.dawn {
+  --sun-1: #fff6c8;
+  --sun-2: #ffd23f;
+  --sun-3: #ff9a5a;
+  background: linear-gradient(180deg, #1d2a5a 0%, #6a3a6a 55%, #ff9a5a 100%);
+}
+
+.scene.dusk {
+  --sun-1: #ff3b3b;
+  --sun-2: #8a1030;
+  --sun-3: #2a0010;
+  background: radial-gradient(ellipse at 70% 60%, #200008 0%, #070008 60%, #000 100%);
+  filter: saturate(0.85);
+}

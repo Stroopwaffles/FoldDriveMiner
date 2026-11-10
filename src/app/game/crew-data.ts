@@ -157,6 +157,8 @@ export interface StoryPilot {
   background: BackgroundId;
   traits: string[];
   portraitSeed: number;
+  /** Level when joining (story pilots who arrive mid-game). */
+  joinLevel?: number;
   /** Signature technique names per frame. */
   moves?: Partial<Record<FrameId, string>>;
 }
@@ -179,5 +181,25 @@ export const STORY_PILOTS: Record<string, StoryPilot> = {
     traits: ['grease_monkey', 'quick_learner'],
     portraitSeed: 2,
     moves: { pickaxe: 'Full-Torque Overhaul', kestrel: 'Sparkplug Sprint', bulwark: 'Bolt-Down Bastion' },
+  },
+  saffi: {
+    story: 'saffi',
+    name: 'Saffi Lin',
+    callsign: 'Zero',
+    background: 'ace',
+    traits: ['steady_hands', 'lucky'],
+    portraitSeed: 3,
+    joinLevel: 12,
+    moves: { pickaxe: 'Clean Line Excision', kestrel: 'Test Vector Zero', bulwark: 'Last Program Standing' },
+  },
+  ansel: {
+    story: 'ansel',
+    name: 'Brother Ansel',
+    callsign: 'Psalm',
+    background: 'scholar',
+    traits: ['bookworm', 'night_owl'],
+    portraitSeed: 4,
+    joinLevel: 8,
+    moves: { pickaxe: 'Litany of the Seam', kestrel: 'Quiet Psalm Lance', bulwark: 'Tithe of Iron' },
   },
 };

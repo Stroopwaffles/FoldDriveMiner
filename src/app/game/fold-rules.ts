@@ -2,6 +2,8 @@
  * The Fold Jump: charging the drive, Fold Resonance, the Jump Core and the
  * prestige reset that carries the core hull (and its crew) to a new sector.
  */
+import { carryStory, choice } from './story-rules';
+import { DRONE_IDS } from './fleet-data';
 import { OreId } from './config';
 import { hasResearch, researchLevel } from './common';
 import { FOLD, PERMANENT_NODES, coreDef } from './fold-data';
@@ -123,7 +125,8 @@ export function runCredits(state: GameState): number {
 /** Resonance a jump right now would pay. */
 export function resonanceGain(state: GameState): number {
   const over = Math.max(0, state.fold.charge - 1);
-  const raw = Math.sqrt(runCredits(state) / FOLD.resonanceUnit) * FOLD.resonanceMult * (1 + FOLD.overchargeBonus * over * 4);
+  const finale = choice(state) === 'break' ? 0.75 : choice(state) === 'master' ? 1.5 : 1;
+  const raw = Math.sqrt(runCredits(state) / FOLD.resonanceUnit) * FOLD.resonanceMult * (1 + FOLD.overchargeBonus * over * 4) * finale;
   return Math.max(1, Math.floor(raw));
 }
 
@@ -143,7 +146,7 @@ export function buyCore(state: GameState, id: string): boolean {
 }
 
 export function archiveSlots(state: GameState): number {
-  return coreLevel(state, 'core_archive');
+  return coreLevel(state, 'core_archive') + (choice(state) === 'break' ? 2 : 0);
 }
 
 /** Research nodes that will come along automatically (permanent after enough runs, plus the drive itself). */
@@ -290,6 +293,8 @@ export function foldJump(old: GameState, now = Date.now()): JumpResult | null {
   s.credits += fundCredits(coreLevel(s, 'core_credits'));
   const drill = coreLevel(s, 'core_drill');
   if (drill) s.drill.tier = 1 + drill;
+  // Break the Cycle: gentler jumps keep a tenth of the drone fleet.
+  if (choice(old) === 'break') for (const t of DRONE_IDS) s.drones[t] += Math.floor(old.drones[t] * 0.1);
 
   // Build the new sector: labels, zones, anomalies, local outfits, first asteroid.
   syncSector(s);
@@ -297,6 +302,7 @@ export function foldJump(old: GameState, now = Date.now()): JumpResult | null {
   ensureAnomalies(s);
   ensureTradeSector(s);
   syncRefinerySlots(s);
+  carryStory(old, s, gained);
   s.asteroid = spawnAsteroid(s);
 
   return {

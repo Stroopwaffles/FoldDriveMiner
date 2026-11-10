@@ -6,8 +6,9 @@ import { ensureCrew, newGame, syncRefinerySlots, syncSector } from './engine';
 import { ensureAnomalies } from './anomaly-rules';
 import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
+import { ensureStory } from './story-rules';
 
-export const CURRENT_VERSION = 7;
+export const CURRENT_VERSION = 8;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -50,6 +51,12 @@ export function migrate(raw: unknown): GameState {
     data['fold'] = { blueprints: [...new Set(mechs.map((m) => m.frame))], runStartCredits: 0 };
     data['version'] = 7;
   }
+  if (data['version'] === 7) {
+    // v8 adds the story: Episode 1 has been seen; commendations are awarded on
+    // the first tick; the logbook opens with the current sector (from zero).
+    data['story'] = { logbook: [], dismissed: [] };
+    data['version'] = 8;
+  }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);
   }
@@ -72,6 +79,7 @@ function fillDefaults(saved: Partial<GameState>): GameState {
   ensureAnomalies(merged);
   ensureTradeSector(merged);
   ensureStoryBonds(merged);
+  ensureStory(merged);
   return merged;
 }
 

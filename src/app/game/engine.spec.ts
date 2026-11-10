@@ -150,11 +150,12 @@ describe('engine', () => {
     s.drones.prospector = 1;
     s.cargoLevel = 30; // huge hold
     s.threats.nextIn = Infinity; // no events, to measure production alone
+    s.story.medals['ore_1'] = 0; // earned along the way anyway: +1% production throughout
     const r = E.simulateOffline(s, 24 * 3600);
     const cap = CONFIG.offline.capHours * 3600;
     expect(r.cappedSeconds).toBe(cap);
     expect(r.gained.ferrite).toBeCloseTo(
-      CONFIG.drones.prospector.orePerSec * cap * CONFIG.offline.efficiency * ZONES[0].composition.ferrite!,
+      CONFIG.drones.prospector.orePerSec * cap * CONFIG.offline.efficiency * ZONES[0].composition.ferrite! * 1.01,
       4,
     );
   });

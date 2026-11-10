@@ -45,6 +45,7 @@ import {
   tradeSellMult,
 } from './trade-rules';
 import { advanceFold, coreLevel, depthMult, emptyFold, resonanceMult } from './fold-rules';
+import { advanceStory, emptyStory, medalMult, openLog } from './story-rules';
 import {
   LossContext,
   ONLINE,
@@ -89,6 +90,7 @@ export function emptyEvents(): TickEvents {
     trade: [],
     ingots: emptyOre(),
     autoSoldCredits: 0,
+    story: [],
   };
 }
 
@@ -96,7 +98,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 7,
+    version: 8,
     commander,
     ship,
     createdAt: now,
@@ -127,6 +129,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     contracts: emptyContracts(),
     bonds: [],
     fold: emptyFold(),
+    story: emptyStory(),
     asteroid: null as unknown as AsteroidState,
     sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
@@ -151,6 +154,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
   syncSector(state);
   ensureAnomalies(state);
   ensureTradeSector(state);
+  openLog(state);
   state.asteroid = spawnAsteroid(state);
   return state;
 }
@@ -225,7 +229,7 @@ export function baseDrillPower(state: GameState): number {
 
 /** Power per click right now: upgrades × sector effects × Gravity Lens × comet. */
 export function drillPower(state: GameState): number {
-  return baseDrillPower(state) * sectorMods(state).clickPower * lensMult(state) * zoneBoost(state, state.zone) * depthMult(state);
+  return baseDrillPower(state) * sectorMods(state).clickPower * lensMult(state) * zoneBoost(state, state.zone) * depthMult(state) * medalMult(state, 'drill');
 }
 
 export function overdriveMult(state: GameState): number {
@@ -281,7 +285,7 @@ export function perDroneRate(state: GameState): number {
 export function droneRates(state: GameState): OreAmounts {
   return miningDroneRates(
     state,
-    sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state),
+    sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production'),
   );
 }
 
@@ -339,7 +343,8 @@ export function orePrice(state: GameState, ore: OreId): number {
     eventPriceMult(state, ore) *
     mods(state).sellPrice *
     tradeSellMult(state, ore) *
-    (1 + postBonus(state, 'quartermaster'))
+    (1 + postBonus(state, 'quartermaster')) *
+    medalMult(state, 'sell')
   );
 }
 
@@ -660,7 +665,7 @@ export function cancelResearch(state: GameState, index: number): boolean {
 
 function advanceResearch(state: GameState, dt: number): ResearchDone[] {
   const done: ResearchDone[] = [];
-  const speed = 1 + postBonus(state, 'science');
+  const speed = (1 + postBonus(state, 'science')) * medalMult(state, 'research');
   for (const job of state.research.active) job.remaining -= dt * speed;
   const finished = state.research.active.filter((j) => j.remaining <= 0);
   if (!finished.length) return done;
@@ -831,7 +836,7 @@ function advance(
   // Hazards: sheltering from a flare stops drones; a reactor fault slows everything.
   const hazard = productionMult(state);
   const m = sectorMods(state);
-  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * hazard.all;
+  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production') * hazard.all;
   const amounts = miningDroneRates(state, efficiency * hazard.drones * m.droneOutput * boost);
   for (const id of ORE_IDS) amounts[id] *= dt;
   addOre(amounts, advanceFleet(state, dt, efficiency * boost, events));
@@ -846,6 +851,7 @@ function advance(
   events.autoSoldCredits = runAutoSell(state);
   advanceThreats(state, dt, events, ctx);
   advanceAnomalies(state, dt, events, ctx.offline);
+  advanceStory(state, events);
   return { ...events, added, lost };
 }
 

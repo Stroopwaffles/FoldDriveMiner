@@ -18,6 +18,7 @@ function ev(): TickEvents {
     anomaly: [], trade: [],
     ingots: E.emptyOre(),
     autoSoldCredits: 0,
+    story: [],
   };
 }
 
@@ -150,6 +151,7 @@ describe('milestone 5a: anomalies', () => {
   it('a tracked comet doubles its zone', () => {
     const s = rich();
     s.drones.prospector = 10;
+    s.story.medals['drones_1'] = 0; // 10 drones earns this on the first tick; count it from the start
     const before = E.droneRateTotal(s);
     const c = A.spawnAnomaly(s, 'comet', ev());
     A.startScan(s, c.id);

@@ -2,6 +2,7 @@
  * Threats: hazard and market events, Pirate Heat, raids resolved as automatic
  * sorties, rogue asteroids, drone wrecks and the Vermilion Jackal.
  */
+import { choice, medalMult } from './story-rules';
 import { CONFIG, ORE_IDS, OreId, oreDef } from './config';
 import { sectorMods, sectorZones } from './sector-rules';
 import { emptyOre, hasResearch, oreReachable, researchLevel, splitByZone, currentZone } from './common';
@@ -97,7 +98,7 @@ export function marketBlocked(state: GameState): boolean {
 export function heatPerSec(state: GameState): number {
   const h = THREAT.heat;
   const wealth = Math.min(1, Math.log10(1 + state.stats.creditsEarned) / 8);
-  return (h.basePerMin + h.wealthPerMin * wealth) / 60;
+  return ((h.basePerMin + h.wealthPerMin * wealth) / 60) * (choice(state) === 'break' ? 0.5 : 1);
 }
 
 function zoneIndex(state: GameState): number {
@@ -114,7 +115,8 @@ export function raidStrength(state: GameState): number {
 }
 
 export function jackalStrengthMult(state: GameState): number {
-  return THREAT.jackal.strengthMult + THREAT.jackal.perEncounter * state.threats.jackalEncounters;
+  const base = THREAT.jackal.strengthMult + THREAT.jackal.perEncounter * state.threats.jackalEncounters;
+  return base * (choice(state) === 'master' ? 1.5 : 1);
 }
 
 // ---------------------------------------------------------------- combat power
@@ -422,7 +424,7 @@ function runSortie(
     const p = pilotById(state, f.mech.pilotId);
     if (p && !f.disabled) {
       const bonus = squadBondEffects(state, opts.mechs.map((m) => m.pilotId).filter((x): x is number => x !== null)).xpMult.get(p.id) ?? 1;
-      p.xp += (THREAT.raid.xpBase + THREAT.raid.xpPerRound * res.rounds.length) * bonus;
+      p.xp += (THREAT.raid.xpBase + THREAT.raid.xpPerRound * res.rounds.length) * bonus * medalMult(state, 'xp');
       p.sync[f.mech.frame] += THREAT.raid.syncSec;
     }
   }
@@ -736,8 +738,9 @@ export function startEvent(state: GameState, kind: EventKind, events: TickEvents
   if (kind === 'raid') {
     const j = THREAT.jackal;
     const jackal =
-      t.raids + 1 === j.firstRaid ||
-      (t.jackalEncounters > 0 && t.heat >= j.minHeat && t.raidsSinceJackal >= j.everyRaids && rng.next() < j.chance);
+      choice(state) !== 'break' &&
+      (t.raids + 1 === j.firstRaid ||
+      (t.jackalEncounters > 0 && t.heat >= j.minHeat && t.raidsSinceJackal >= j.everyRaids && rng.next() < j.chance));
     ev.jackal = jackal;
     ev.strength = raidStrength(state) * (jackal ? jackalStrengthMult(state) : 1);
   }

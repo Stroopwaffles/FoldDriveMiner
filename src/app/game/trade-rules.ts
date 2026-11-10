@@ -3,6 +3,7 @@
  * escorts), the contract board (megacorps and sector-local outfits) and
  * pilot bonds.
  */
+import { choice } from './story-rules';
 import { ORES, ORE_IDS, OreId, oreDef } from './config';
 import { hasResearch, oreReachable, zoneUnlocked } from './common';
 import { generatePilot, pilotById, rosterCap } from './crew-rules';
@@ -140,7 +141,7 @@ export function repTier(rep: number) {
 
 function pickClan(state: GameState, rng: Rng): ClanId {
   const haven = sectorOf(state).traits.includes('pirate_haven');
-  const options = CLANS.filter((c) => !c.blackMarket || haven);
+  const options = CLANS.filter((c) => !c.blackMarket || haven || choice(state) === 'break');
   return options[Math.floor(rng.next() * options.length)].id;
 }
 
@@ -598,10 +599,15 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
     progress: 0,
     deadline,
     duration: deadline,
-    reward: { credits: Math.max(CONTRACT.minReward, Math.round(reward)), surveyData: sd, dataCores: rng.next() < 0.15 ? 1 : 0 },
+    reward: { credits: Math.max(CONTRACT.minReward, Math.round(reward * meridianBonus(state, issuer))), surveyData: sd, dataCores: rng.next() < 0.15 ? 1 : 0 },
     baseline: 0,
     held: 0,
   };
+}
+
+/** After Master the Cycle, Meridian pays 50% more. */
+function meridianBonus(state: GameState, issuer: Contract['issuer']): number {
+  return issuer.kind === 'corp' && issuer.id === 'meridian' && choice(state) === 'master' ? 1.5 : 1;
 }
 
 export function refreshBoard(state: GameState): void {
@@ -615,7 +621,8 @@ export function refreshBoard(state: GameState): void {
       const types = OUTFITS[o.archetype].types;
       C.board.push(makeContract(state, { kind: 'local', id: o.id }, types[Math.floor(rng.next() * types.length)], rng));
     } else {
-      const corp = CORPS[Math.floor(rng.next() * CORPS.length)];
+      const corps = choice(state) === 'break' ? CORPS.filter((c) => c.id !== 'meridian') : CORPS;
+      const corp = corps[Math.floor(rng.next() * corps.length)];
       C.board.push(makeContract(state, { kind: 'corp', id: corp.id }, corp.types[Math.floor(rng.next() * corp.types.length)], rng));
     }
   }

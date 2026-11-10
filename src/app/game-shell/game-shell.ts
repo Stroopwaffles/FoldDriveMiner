@@ -15,7 +15,7 @@ import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
 import { researchNode } from '../game/research';
 import { AudioService } from '../services/audio.service';
-import { GameService, Tab } from '../services/game.service';
+import { CommMessage, GameService, SPEAKER_NAMES, Tab } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
 import { MusicToggle } from '../ui/music-toggle';
 import { SettingsPanel } from '../ui/settings-panel';
@@ -25,6 +25,10 @@ import { CrewPanel } from './crew-panel';
 import { DefensePanel } from './defense-panel';
 import { BoardPanel } from './board-panel';
 import { FoldPanel } from './fold-panel';
+import { ArchivePanel } from './archive-panel';
+import { StoryScene } from '../ui/story-scene';
+import * as ST from '../game/story-rules';
+import { episodeDef } from '../game/story-data';
 import { JumpOverlay } from '../ui/jump-overlay';
 import * as F from '../game/fold-rules';
 import { SortieModal } from './sortie-modal';
@@ -58,6 +62,8 @@ interface NavItem {
     DefensePanel,
     BoardPanel,
     FoldPanel,
+    ArchivePanel,
+    StoryScene,
     JumpOverlay,
     ThreatBanner,
     SortieModal,
@@ -109,6 +115,15 @@ export class GameShell {
     const c = s.fold.charge;
     return { online, pct: Math.round(c * 100), segs: Array.from({ length: 10 }, (_, i) => c >= (i + 1) / 10 - 1e-9) };
   });
+  /** An episode (or side story) waiting in the comm log. */
+  protected readonly pendingStory = computed(() => {
+    const s = this.s();
+    const ep = ST.pendingEpisode(s);
+    if (ep) return { side: false, label: `EPISODE ${String(ep).padStart(2, '0')}`, title: episodeDef(ep)!.title };
+    const side = ST.pendingSide(s);
+    if (side) return { side: true, label: `SIDE STORY ${String(side).padStart(2, '0')}`, title: ST.sideStory(side).title };
+    return null;
+  });
   /** Board badge: a merchant convoy is in the sector. */
   protected readonly boardReady = computed(() => !!this.s().trade.fleet);
   /** Map badge: an unscanned signal is waiting. */
@@ -128,6 +143,7 @@ export class GameShell {
     { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
     { id: 'defense', label: 'DEFENSE', kana: 'ぼうえい', icon: '⚔', locked: !this.defenseOpen(), hint: 'Sector is quiet. Defense command opens when trouble starts.' },
     { id: 'fold', label: 'FOLD', kana: 'フォールド', icon: '⟐', locked: !this.foldOpen(), hint: 'Fold Drive offline. Research it in the LAB (Fold Science).' },
+    { id: 'archive', label: 'ARCHIVE', kana: 'きろく', icon: '❖', locked: false, hint: '' },
     { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: !this.boardOpen(), hint: 'No contracts or traders yet. Earn a little first.' },
   ]);
 
@@ -234,6 +250,20 @@ export class GameShell {
     }
   }
 
+  protected playStory(): void {
+    const p = this.pendingStory();
+    if (!p) return;
+    if (p.side) this.game.playSide();
+    else this.game.playEpisode();
+  }
+
+  protected speakerName(m: CommMessage): string {
+    if (m.from === 'JACKAL') return '??? — UNKNOWN FRAME';
+    if (m.from === 'TRADER') return m.name ?? 'TRADER';
+    if (m.from === 'PILOT') return m.name ?? 'PILOT';
+    return SPEAKER_NAMES[m.from] ?? m.from;
+  }
+
   protected closeEpisode(): void {
     if (!this.game.episode()) return;
     this.audio.select();
@@ -262,6 +292,8 @@ export class GameShell {
   }
 
   protected onKey(e: KeyboardEvent): void {
+    // The story scene handles its own keys.
+    if (this.game.scene()) return;
     const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
     if ((e.key === 'm' || e.key === 'M') && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
       this.music.toggle();

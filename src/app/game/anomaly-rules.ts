@@ -2,6 +2,7 @@
  * Anomalies: detection, scanning, responses (missions, decoding, harvest
  * rigs), rewards, the Codex and the Silent Beacon lore.
  */
+import { medalMult } from './story-rules';
 import { CONFIG, ORE_IDS, zoneDef } from './config';
 import { emptyOre, researchLevel, zoneUnlocked } from './common';
 import { ANOMALIES, ANOMALY, AnomalyKind, Approach, CODEX_SETS, anomalyDef } from './anomaly-data';
@@ -300,7 +301,7 @@ function resolveMission(state: GameState, m: MissionState, events: TickEvents): 
     mech.returnJob = null;
     const p = pilotById(state, mech.pilotId);
     if (p) {
-      p.xp += 150 + 50 * (ok ? 2 : 1);
+      p.xp += (150 + 50 * (ok ? 2 : 1)) * medalMult(state, 'xp');
       p.sync[mech.frame] += 120;
     }
   }

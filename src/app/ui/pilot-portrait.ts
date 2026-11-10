@@ -20,6 +20,9 @@ const STORY_LOOKS: Record<string, Look> = {
   juno: { skin: '#ffd8b8', hair: '#ff5a2b', eyes: '#1a3a8f', suit: '#ff7a3d', style: 0, accessory: 0 },
   kit: { skin: '#5e3b27', hair: '#1a1a2e', eyes: '#7a3b12', suit: '#6dff9b', style: 3, accessory: 2 },
   jackal: { skin: '#d9a07a', hair: '#c0c8d8', eyes: '#8a1f4a', suit: '#ff3b3b', style: 4, accessory: 4 },
+  saffi: { skin: '#f2c29b', hair: '#1a1a2e', eyes: '#2a2a2a', suit: '#e8ecff', style: 1, accessory: 1 },
+  ansel: { skin: '#8a5a3c', hair: '#c0c8d8', eyes: '#00a5b8', suit: '#9aa3c7', style: 2, accessory: 3 },
+  hale: { skin: '#ffd8b8', hair: '#5a3420', eyes: '#1a3a8f', suit: '#ffb547', style: 3, accessory: 0 },
 };
 
 /** Cel-shaded 80s anime-style head-and-shoulders, generated from a seed. */
@@ -152,6 +155,9 @@ export class PilotPortrait {
     if (story === 'juno') return '#2a0f3d';
     if (story === 'kit') return '#0f2a24';
     if (story === 'jackal') return '#3a0510';
+    if (story === 'saffi') return '#10203a';
+    if (story === 'ansel') return '#24242e';
+    if (story === 'hale') return '#2e2210';
     return '#141a3d';
   });
 }

@@ -22,6 +22,7 @@ import { FRAMES, FrameId } from './fleet-data';
 import { Rng } from './rng';
 import { GameState, MechState, PilotState, TickEvents } from './types';
 import { ensureStoryBonds, rollBond } from './trade-rules';
+import { medalMult, recordDismissal } from './story-rules';
 
 // ---------------------------------------------------------------- lookups
 
@@ -150,6 +151,16 @@ function makeStoryPilot(state: GameState, key: string): PilotState {
   };
 }
 
+/** Story pilots who join through an episode (Saffi, Ansel), already seasoned. */
+export function addStoryPilot(state: GameState, key: string): PilotState | null {
+  if (state.pilots.some((p) => p.story === key)) return null;
+  const p = makeStoryPilot(state, key);
+  p.level = STORY_PILOTS[key].joinLevel ?? 1;
+  state.pilots.push(p);
+  ensureStoryBonds(state);
+  return p;
+}
+
 /** Story pilots join when their research completes; recruits appear with the hangar. Returns who joined. */
 export function ensureCrew(state: GameState): string[] {
   const joined: string[] = [];
@@ -202,6 +213,7 @@ export function dismissPilot(state: GameState, id: number): boolean {
   const p = pilotById(state, id);
   if (!p || p.story) return false;
   unassign(state, p);
+  recordDismissal(state, p);
   state.pilots = state.pilots.filter((x) => x.id !== id);
   return true;
 }
@@ -258,7 +270,7 @@ export function advanceCrew(state: GameState, dt: number, events: TickEvents): v
       if (mm) rate *= 1.5;
     }
     if (p.id !== instructorId) rate *= 1 + instructor;
-    p.xp += rate * dt;
+    p.xp += rate * dt * medalMult(state, 'xp');
 
     while (p.level < CREW.levelCap && p.xp >= xpForLevel(p.level)) {
       p.xp -= xpForLevel(p.level);

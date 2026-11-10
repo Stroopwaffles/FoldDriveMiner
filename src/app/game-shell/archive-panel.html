@@ -1,0 +1,170 @@
+@let st = s();
+<section class="panel archive">
+  <div class="panel-title">
+    <span class="led"></span>Archive <span class="kana">アーカイブ</span>
+    <span class="head-info">EPISODES {{ st.story.watched }}/{{ 26 }} · COMMENDATIONS {{ medalCount() }}/{{ medalTotal }} · SECTORS {{ st.story.logbook.length }}</span>
+  </div>
+
+  <div class="tabs" role="tablist">
+    @for (t of tabs; track t.id) {
+      <button type="button" class="tab" role="tab" [class.on]="tab() === t.id" [attr.aria-selected]="tab() === t.id" (click)="setTab(t.id)">{{ t.label }}</button>
+    }
+  </div>
+
+  @switch (tab()) {
+    @case ('episodes') {
+      <div class="section episodes">
+        @if (finale(); as f) {
+          <div class="finale" [class]="'finale ' + f.id">
+            <b>FINALE CHOSEN · {{ f.name.toUpperCase() }}</b>
+            <span>{{ f.pitch }}</span>
+          </div>
+        }
+        @for (act of acts(); track act.name) {
+          <div class="act">{{ act.name }}</div>
+          <div class="ep-list">
+            @for (e of act.episodes; track e.def.n) {
+              <div class="ep" [class]="'ep ' + e.state">
+                <span class="ep-n">{{ e.def.n.toString().padStart(2, '0') }}</span>
+                @if (e.state === 'locked' || e.state === 'next') {
+                  <span class="ep-title">{{ e.state === 'next' ? e.def.title : '? ? ?' }}</span>
+                  <span class="ep-hint">{{ e.state === 'next' ? 'NEXT · ' + e.def.hint : 'Locked' }}</span>
+                } @else if (e.state === 'queued') {
+                  <span class="ep-title">{{ e.def.title }}</span>
+                  <span class="queued">QUEUED</span>
+                } @else {
+                  <span class="ep-title">{{ e.def.title }}</span>
+                  <button type="button" class="btn small" [class.btn-primary]="e.state === 'ready'" (click)="play(e.def.n)">
+                    {{ e.state === 'ready' ? '▶ PLAY' : '↺ REPLAY' }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (sides().length) {
+          <div class="act">Side Stories · Between the folds</div>
+          <div class="ep-list">
+            @for (x of sides(); track x.n) {
+              <div class="ep" [class.ready]="x.n > st.story.sideWatched" [class.watched]="x.n <= st.story.sideWatched">
+                <span class="ep-n">S{{ x.n }}</span>
+                <span class="ep-title">{{ x.title }}</span>
+                <button type="button" class="btn small" [class.btn-primary]="x.n > st.story.sideWatched" (click)="playSide(x.n)">
+                  {{ x.n > st.story.sideWatched ? '▶ PLAY' : '↺ REPLAY' }}
+                </button>
+              </div>
+            }
+          </div>
+        } @else if (st.story.choice) {
+          <p class="dim small">A side story arrives with every Fold Jump from now on.</p>
+        }
+      </div>
+    }
+
+    @case ('medals') {
+      <div class="section">
+        <div class="bonus-bar">
+          <span class="sub">PERMANENT BONUSES</span>
+          @for (b of bonuses(); track b.label) {
+            <span class="bonus" [class.zero]="b.pct === 0">+{{ b.pct }}% {{ b.label }}</span>
+          }
+        </div>
+        @for (c of categories(); track c.id) {
+          <div class="cat" [style.--cc]="c.color">
+            <div class="cat-head">
+              <span class="cat-name">{{ c.name }}</span>
+              <span class="kana">{{ c.kana }}</span>
+              <span class="cat-count">{{ c.got }}/{{ c.list.length }}</span>
+            </div>
+            <div class="ribbons">
+              @for (m of c.list; track m.def.id) {
+                <div class="ribbon" [class.earned]="m.earned" [title]="m.earned || !m.def.secret ? m.def.desc : 'Secret commendation'">
+                  <span class="stripe" aria-hidden="true"></span>
+                  <span class="r-name">{{ m.earned || !m.def.secret ? m.def.name : '? ? ?' }}</span>
+                  <span class="r-desc">{{ m.earned || !m.def.secret ? m.def.desc : 'Secret commendation.' }}</span>
+                  <span class="r-bonus">+{{ pct(m.def.bonus.amount) }}% {{ bonusLabel(m.def.bonus.kind) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @case ('logbook') {
+      <div class="section">
+        <table class="log">
+          <thead>
+            <tr>
+              <th>Sector</th>
+              <th>Depth</th>
+              <th>Star · profile</th>
+              <th>Time</th>
+              <th>Credits</th>
+              <th>Ore</th>
+              <th>Raids won</th>
+              <th>Anomalies</th>
+              <th>Resonance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (x of logbook(); track x.e.arrived) {
+              <tr [class.here]="x.here">
+                <td>
+                  <b>{{ x.e.code }}</b> · {{ x.e.name }}
+                  @if (x.here) {
+                    <span class="here-tag">HERE</span>
+                  }
+                  @if (x.traits.length) {
+                    <div class="dim small">{{ x.traits.join(' · ') }}</div>
+                  }
+                </td>
+                <td>{{ x.e.depth }}</td>
+                <td>{{ x.e.star }}<div class="dim small">{{ x.profile }}</div></td>
+                <td>{{ duration(x.t.seconds) }}</td>
+                <td>{{ game.fmt(x.t.credits) }}</td>
+                <td>{{ game.fmt(x.t.ore) }} t</td>
+                <td>{{ x.t.raids }}</td>
+                <td>{{ x.t.anomalies }}</td>
+                <td>{{ x.here ? '—' : '+' + x.e.resonance }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @case ('dossiers') {
+      <div class="section dossiers">
+        @for (p of crew(); track p.id) {
+          <div class="dossier">
+            <fdm-pilot-portrait [seed]="p.portraitSeed" [story]="p.story" [size]="56" />
+            <div>
+              <div class="d-name">{{ p.name }} <span class="dim">"{{ p.callsign }}"</span></div>
+              <div class="dim small">{{ bg(p.background) }} · Level {{ p.level }}{{ p.story ? ' · story pilot' : '' }}</div>
+              <div class="stamp ok">ON THE ROSTER</div>
+            </div>
+          </div>
+        }
+        @for (d of dismissed(); track $index) {
+          <div class="dossier gone">
+            <fdm-pilot-portrait [seed]="d.portraitSeed" [size]="56" />
+            <div>
+              <div class="d-name">{{ d.name }} <span class="dim">"{{ d.callsign }}"</span></div>
+              <div class="dim small">{{ bg(d.background) }} · Level {{ d.level }} · left after {{ duration(d.left) }} of service</div>
+              <div class="stamp">DISCHARGED</div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @case ('records') {
+      <div class="section records">
+        @for (r of records(); track r[0]) {
+          <div class="rec"><span class="dim">{{ r[0] }}</span><b>{{ r[1] }}</b></div>
+        }
+      </div>
+    }
+  }
+</section>

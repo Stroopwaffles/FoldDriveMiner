@@ -61,7 +61,7 @@
         type="button"
         class="nav-btn"
         [class.active]="item.id === game.tab()"
-        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady()) || (item.id === 'board' && boardReady()) || (item.id === 'fold' && foldReady())"
+        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady()) || (item.id === 'board' && boardReady()) || (item.id === 'fold' && foldReady()) || (item.id === 'archive' && !!pendingStory())"
         [class.locked]="item.locked"
         [attr.aria-disabled]="item.locked"
         [title]="item.locked ? item.hint : item.label"
@@ -109,6 +109,9 @@
         @case ('fold') {
           <fdm-fold-panel />
         }
+        @case ('archive') {
+          <fdm-archive-panel />
+        }
         @default {
           <fdm-ops-panel />
         }
@@ -119,6 +122,13 @@
   <!-- COMM LOG -->
   <aside class="comms panel">
     <div class="panel-title"><span class="led"></span>Comm Log <span class="kana">つうしん</span></div>
+    @if (pendingStory(); as p) {
+      <button type="button" class="story-ready" (click)="playStory()">
+        <span class="sr-label">▶ {{ p.label }}</span>
+        <span class="sr-title">{{ p.title }}</span>
+        <span class="sr-play">PLAY</span>
+      </button>
+    }
     <div class="comm-list" #commBox aria-live="polite">
       @for (m of game.comms(); track m.id) {
         <div class="msg" [class]="'msg from-' + m.from.toLowerCase()">
@@ -129,6 +139,15 @@
               }
               @case ('KIT') {
                 <fdm-pilot-portrait story="kit" [size]="40" />
+              }
+              @case ('SAFFI') {
+                <fdm-pilot-portrait story="saffi" [size]="40" />
+              }
+              @case ('ANSEL') {
+                <fdm-pilot-portrait story="ansel" [size]="40" />
+              }
+              @case ('HALE') {
+                <fdm-pilot-portrait story="hale" [size]="40" />
               }
               @case ('PILOT') {
                 <fdm-pilot-portrait [seed]="m.seed ?? 0" [size]="40" />
@@ -164,7 +183,7 @@
             }
           </div>
           <div class="msg-body">
-            <div class="msg-from">{{ m.from === 'JUNO' ? 'JUNO HART' : m.from === 'KIT' ? 'KIT OKAFOR' : m.from === 'JACKAL' ? '??? — UNKNOWN FRAME' : m.from === 'TRADER' ? (m.name ?? 'TRADER') : m.from === 'CORP' ? 'CORPORATE LIAISON' : m.from === 'PILOT' ? m.name : m.from }}</div>
+            <div class="msg-from">{{ speakerName(m) }}</div>
             <div class="msg-text">{{ m.text }}</div>
           </div>
         </div>
@@ -238,9 +257,12 @@
 @if (game.episode(); as ep) {
   <div class="episode" (click)="closeEpisode()">
     <div class="ep-stripe"></div>
-    <div class="ep-num">EPISODE {{ ep.number.toString().padStart(2, '0') }}</div>
+    <div class="ep-num">{{ ep.label ?? 'EPISODE ' + ep.number.toString().padStart(2, '0') }}</div>
     <div class="ep-title">{{ ep.title }}</div>
     <div class="ep-sub">{{ ep.subtitle }}</div>
+    @if (ep.teaser) {
+      <div class="ep-teaser">{{ ep.teaser }}</div>
+    }
     <div class="ep-skip">CLICK TO CONTINUE</div>
   </div>
 }
@@ -248,3 +270,4 @@
 <fdm-cut-in />
 <fdm-sortie-modal />
 <fdm-jump-overlay />
+<fdm-story-scene />

@@ -45,6 +45,8 @@ export class TitleScreen implements OnInit {
 
   protected readonly save = signal<GameState | null>(null);
   protected readonly hasSave = computed(() => this.save() !== null);
+  /** The finale's choice tints the title screen: dawn or dark. */
+  protected readonly ending = computed(() => this.save()?.story?.choice ?? null);
 
   // New game form
   protected commander = 'Rook';

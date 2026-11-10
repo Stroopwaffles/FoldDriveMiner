@@ -1,0 +1,364 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.head-info {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+}
+
+.dim {
+  color: var(--text-dim);
+}
+
+.small {
+  font-size: 0.7rem;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.section {
+  padding: 0.8rem 0.9rem 0.9rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 0.9rem 0;
+  flex-wrap: wrap;
+}
+
+.tab {
+  appearance: none;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.8rem;
+  background: #0a0d22;
+  border: 1px solid #2a3168;
+  color: var(--text-dim);
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(255, 181, 71, 0.06);
+  }
+}
+
+.btn.small {
+  font-size: 0.62rem;
+  padding: 0.2rem 0.55rem;
+}
+
+/* ---------------------------------------------------------------- episodes */
+.act {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+  margin: 0.8rem 0 0.35rem;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.ep-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px;
+}
+
+.ep {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #232a5c;
+  background: rgba(10, 13, 34, 0.6);
+  font-size: 0.76rem;
+  min-height: 2.2rem;
+
+  &.ready {
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px rgba(79, 227, 255, 0.25);
+  }
+
+  &.locked,
+  &.next {
+    opacity: 0.55;
+  }
+
+  &.next {
+    opacity: 0.8;
+    border-style: dashed;
+  }
+}
+
+.ep-n {
+  font-family: var(--font-display);
+  color: #c77dff;
+}
+
+.ep-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queued {
+  font-family: var(--font-display);
+  font-size: 0.56rem;
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+}
+
+.ep-hint {
+  grid-column: 2 / -1;
+  font-size: 0.64rem;
+  color: var(--text-dim);
+}
+
+.finale {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid;
+  font-size: 0.76rem;
+
+  b {
+    font-family: var(--font-display);
+    font-weight: normal;
+    letter-spacing: 0.12em;
+  }
+
+  &.break {
+    border-color: #ffd23f;
+    color: #ffd23f;
+  }
+
+  &.master {
+    border-color: #ff3b3b;
+    color: #ff7a7a;
+  }
+}
+
+/* ---------------------------------------------------------------- commendations */
+.bonus-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  align-items: center;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dashed #2a3168;
+  margin-bottom: 0.6rem;
+}
+
+.sub {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+}
+
+.bonus {
+  font-size: 0.74rem;
+  color: var(--ok);
+
+  &.zero {
+    color: var(--text-dim);
+  }
+}
+
+.cat {
+  margin-bottom: 0.8rem;
+}
+
+.cat-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+
+  .kana {
+    font-family: var(--font-kana);
+    font-size: 0.66rem;
+    color: var(--text-dim);
+  }
+}
+
+.cat-name {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  color: var(--cc);
+}
+
+.cat-count {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.ribbons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px;
+}
+
+.ribbon {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #1d2350;
+  background: rgba(10, 13, 34, 0.5);
+  opacity: 0.5;
+  font-size: 0.66rem;
+
+  &.earned {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--cc) 55%, transparent);
+
+    .stripe {
+      background: repeating-linear-gradient(90deg, var(--cc) 0 5px, #05060f 5px 7px, #fff 7px 9px, #05060f 9px 11px);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--cc) 60%, transparent);
+    }
+  }
+}
+
+.stripe {
+  grid-row: 1 / -1;
+  align-self: start;
+  width: 26px;
+  height: 14px;
+  margin-top: 2px;
+  background: #22284f;
+  border: 1px solid #05060f;
+}
+
+.r-name {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+}
+
+.r-desc {
+  color: var(--text-dim);
+}
+
+.r-bonus {
+  color: var(--ok);
+}
+
+/* ---------------------------------------------------------------- logbook */
+.log {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+
+  th {
+    text-align: left;
+    font-family: var(--font-display);
+    font-weight: normal;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--amber);
+    padding: 0.3rem 0.4rem;
+    border-bottom: 1px solid #2a3168;
+  }
+
+  td {
+    padding: 0.35rem 0.4rem;
+    border-bottom: 1px dashed #1d2350;
+    vertical-align: top;
+  }
+
+  tr.here td {
+    background: rgba(79, 227, 255, 0.05);
+  }
+}
+
+.here-tag {
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  font-size: 0.58rem;
+  background: var(--cyan);
+  color: #05060f;
+}
+
+/* ---------------------------------------------------------------- dossiers */
+.dossiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px;
+}
+
+.dossier {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid #232a5c;
+  background: rgba(10, 13, 34, 0.6);
+
+  &.gone {
+    filter: grayscale(0.8);
+    opacity: 0.75;
+  }
+}
+
+.d-name {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+}
+
+.stamp {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: var(--font-display);
+  font-size: 0.56rem;
+  letter-spacing: 0.15em;
+  transform: rotate(-3deg);
+
+  &.ok {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+}
+
+/* ---------------------------------------------------------------- records */
+.records {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2px 1.2rem;
+}
+
+.rec {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.74rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed #1d2350;
+
+  b {
+    font-weight: normal;
+    color: var(--cyan);
+  }
+}
