@@ -327,6 +327,8 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.credits += fundCredits(coreLevel(s, 'core_credits'));
   const drill = coreLevel(s, 'core_drill');
   if (drill) s.drill.tier = 1 + drill;
+  // The Trigger Clamp is part of the mech, not the sector: it comes along.
+  s.drill.clamp = !!old.drill.clamp;
   // Break the Cycle: gentler jumps keep a tenth of the drone fleet.
   if (choice(old) === 'break') for (const t of DRONE_IDS) s.drones[t] += Math.floor(old.drones[t] * 0.1);
 

@@ -112,7 +112,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     cargo: emptyOre(),
     ingots: emptyOre(),
     cargoLevel: 0,
-    drill: { powerLevel: 0, tier: 1, heat: 0, lockRemaining: 0, heatSinkLevel: 0 },
+    drill: { powerLevel: 0, tier: 1, heat: 0, lockRemaining: 0, heatSinkLevel: 0, clamp: false },
     drones: emptyDrones(),
     dispatch: {},
     mechs: [],
@@ -260,7 +260,8 @@ export function isHot(state: GameState): boolean {
 export function cargoCapacity(state: GameState, level = state.cargoLevel): number {
   const c = CONFIG.cargo;
   const bonus = 1 + researchLevel(state, 'cargo_compression') * CONFIG.bonuses.cargoPerLevel;
-  return Math.floor(c.baseCapacity * c.capacityGrowth ** level * bonus * haulerCargoMult(state));
+  const lv = Math.min(level, c.maxLevel);
+  return Math.min(c.maxCapacity, Math.floor(c.baseCapacity * c.capacityGrowth ** lv * bonus * haulerCargoMult(state)));
 }
 
 /**
@@ -398,8 +399,10 @@ export function heatSinkCost(state: GameState): number | null {
   return Math.ceil(h.sinkCostBase * h.sinkCostGrowth ** state.drill.heatSinkLevel);
 }
 
-export function cargoUpgradeCost(state: GameState): number {
+/** Price of the next Expand Hold level, or null once the hold is at its cap. */
+export function cargoUpgradeCost(state: GameState): number | null {
   const c = CONFIG.cargo;
+  if (state.cargoLevel >= c.maxLevel || cargoCapacity(state) >= c.maxCapacity) return null;
   return Math.ceil(c.costBase * c.costGrowth ** state.cargoLevel);
 }
 
@@ -582,9 +585,34 @@ export function buyHeatSink(state: GameState): boolean {
   return true;
 }
 
+// ---------------------------------------------------------------- Trigger Clamp (hold to drill)
+
+export function buyClamp(state: GameState): boolean {
+  if (state.drill.clamp || state.credits < CONFIG.hold.cost) return false;
+  state.credits -= CONFIG.hold.cost;
+  state.drill.clamp = true;
+  return true;
+}
+
+/** Seconds between hits while the mouse button is held on the asteroid. */
+export function holdInterval(state: GameState): number {
+  const h = CONFIG.hold;
+  return h.baseIntervalSec * h.servoFactor ** researchLevel(state, 'servo_actuators');
+}
+
+/**
+ * With the Thermal Governor, a held drill skips a hit that would push it out
+ * of Overdrive, so holding stays in the cool zone by itself.
+ */
+export function holdShouldWait(state: GameState): boolean {
+  if (!hasResearch(state, 'thermal_governor') || overdriveCellActive(state)) return false;
+  const next = state.drill.heat + CONFIG.heat.perClick * sectorMods(state).heatPerClick;
+  return next > CONFIG.heat.overdriveMax;
+}
+
 export function buyCargo(state: GameState): boolean {
   const cost = cargoUpgradeCost(state);
-  if (state.credits < cost) return false;
+  if (cost === null || state.credits < cost) return false;
   state.credits -= cost;
   state.cargoLevel++;
   return true;
@@ -733,19 +761,21 @@ export function oreRatio(state: GameState): number {
 export function batchCapacity(state: GameState, level = state.refinery.capacityLevel): number {
   const r = CONFIG.refinery;
   const ratio = oreRatio(state);
-  const raw = r.baseBatch * r.batchGrowth ** level;
+  const raw = r.baseBatch * r.batchGrowth ** Math.min(level, r.maxBatchLevel);
   return Math.max(ratio, Math.floor(raw / ratio) * ratio);
 }
 
-export function furnaceCapacityCost(state: GameState): number {
+/** Price of the next Furnace Capacity level, or null at the cap. */
+export function furnaceCapacityCost(state: GameState): number | null {
   const r = CONFIG.refinery;
+  if (state.refinery.capacityLevel >= r.maxBatchLevel) return null;
   return Math.ceil(r.batchCostBase * r.batchCostGrowth ** state.refinery.capacityLevel);
 }
 
 export function buyFurnaceCapacity(state: GameState): boolean {
   if (!hasResearch(state, 'refinery')) return false;
   const cost = furnaceCapacityCost(state);
-  if (state.credits < cost) return false;
+  if (cost === null || state.credits < cost) return false;
   state.credits -= cost;
   state.refinery.capacityLevel++;
   return true;

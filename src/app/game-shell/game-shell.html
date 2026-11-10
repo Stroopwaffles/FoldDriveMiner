@@ -223,12 +223,14 @@
   <div class="modal-backdrop" (click)="toggleMenu()">
     <div class="panel menu-modal" (click)="$event.stopPropagation()" role="dialog" aria-label="Menu">
       <div class="panel-title">Ship Menu <span class="kana">メニュー</span></div>
+      <div class="menu-body">
       <fdm-settings-panel />
       <div class="hotkeys">
         <div class="hk-title">HOTKEYS</div>
         @for (h of hotkeys; track h[0]) {
           <div class="hk"><kbd>{{ h[0] }}</kbd><span>{{ h[1] }}</span></div>
         }
+      </div>
       </div>
       <div class="menu-actions">
         <button type="button" class="btn" (click)="saveNow()">Save now</button>

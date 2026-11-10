@@ -58,6 +58,18 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Pilot Hart requests "more red." Interpreting as a power curve adjustment.',
   }),
   N({
+    id: 'servo_actuators', name: 'Servo Actuators', branch: 'extraction', maxLevel: 5,
+    sd: 5, cr: 2000, sec: 60, growth: 2,
+    effect: 'Trigger Clamp: held drilling repeats 15% faster',
+    flavor: 'Faster servos on the trigger linkage. Hold steady, Commander; the drill keeps time.',
+  }),
+  N({
+    id: 'thermal_governor', name: 'Thermal Governor', branch: 'extraction', maxLevel: 1,
+    sd: 20, cr: 40000, sec: 240, requires: ['servo_actuators'],
+    effect: 'Held drilling pauses instead of leaving Overdrive',
+    flavor: 'A governor on the trigger. It will not let the drill run hot while you hold it.',
+  }),
+  N({
     id: 'drill_mk3', name: 'Drill Mk.III', branch: 'extraction', maxLevel: 1,
     sd: 12, cr: 12000, sec: 180, requires: ['survey_trojan'], requiresTier: 2,
     effect: 'Drill can cut Iridium (60 cr base)',

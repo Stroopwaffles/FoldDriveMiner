@@ -412,6 +412,27 @@
   width: min(560px, 100%);
 }
 
+/* The menu keeps its title and buttons in view and scrolls the settings in between,
+   so it fits short windows and high desktop scaling. Heights are in the shell's zoomed units. */
+.menu-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh / var(--ui-scale, 1) - 32px);
+}
+
+.menu-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.menu-modal .menu-actions {
+  flex: none;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--bezel);
+}
+
 .menu-actions {
   display: flex;
   justify-content: flex-end;

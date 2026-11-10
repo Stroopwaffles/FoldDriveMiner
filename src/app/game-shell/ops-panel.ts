@@ -95,6 +95,10 @@ export class OpsPanel {
   protected readonly tierUp = computed(() => E.nextTierUpgrade(this.s()));
   protected readonly sinkCost = computed(() => E.heatSinkCost(this.s()));
   protected readonly sinkMax = CONFIG.heat.sinkMaxLevel;
+  protected readonly clampCost = CONFIG.hold.cost;
+  protected readonly holdRate = computed(() => (1 / E.holdInterval(this.s())).toFixed(1));
+  protected readonly cargoMax = CONFIG.cargo.maxLevel;
+  protected readonly furnaceMax = CONFIG.refinery.maxBatchLevel;
   protected readonly odMult = computed(() => E.overdriveMult(this.s()));
   /** The next drill tier that comes from research, if any. */
   protected readonly researchTier = computed(() => {

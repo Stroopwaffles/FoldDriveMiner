@@ -374,3 +374,9 @@ These were proposed and are used by later sections, but not yet explicitly confi
 3. Keep **market price drift**?
 4. Keep placeholder **ore names**?
 5. Offline **50% efficiency / 8 h cap** as a starting point?
+
+## Caps and hold-to-drill
+
+- **Hard caps.** Expand Hold stops at level 24, and the hold never exceeds 250M t, whatever the research or hauler bonuses. Furnace Capacity stops at level 18. Older saves past these caps are clamped when the numbers are calculated.
+- **Trigger Clamp** (2,500 cr, one-time, kept through Fold Jumps): hold the mouse button on the asteroid to keep drilling, at 2 hits/s. Held hits still build heat, so Heat Sinks still matter.
+- **Extraction research:** Servo Actuators (5 levels, each makes held hits 15% faster, reaching about 4.5/s). Thermal Governor (requires Servo Actuators) skips any held hit that would take the drill out of Overdrive.

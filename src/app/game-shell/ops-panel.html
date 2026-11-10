@@ -84,12 +84,18 @@
 
       <div class="upgrade">
         <div>
-          <div class="up-name">Expand Hold <span class="lvl">LV {{ st.cargoLevel }}</span></div>
-          <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} → {{ game.fmt(nextCapacity()) }} t</div>
+          <div class="up-name">Expand Hold <span class="lvl">LV {{ st.cargoLevel }}/{{ cargoMax }}</span></div>
+          @if (cargoCost() !== null) {
+            <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} → {{ game.fmt(nextCapacity()) }} t</div>
+          } @else {
+            <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} t · the hold is at full size</div>
+          }
         </div>
-        <button type="button" class="btn" [disabled]="st.credits < cargoCost()" (click)="game.buyCargo()">
-          {{ game.fmt(cargoCost()) }} cr
-        </button>
+        @if (cargoCost(); as c) {
+          <button type="button" class="btn" [disabled]="st.credits < c" (click)="game.buyCargo()">{{ game.fmt(c) }} cr</button>
+        } @else {
+          <span class="maxed">MAX</span>
+        }
       </div>
     </div>
   </section>
@@ -136,12 +142,18 @@
         }
         <div class="upgrade">
           <div>
-            <div class="up-name">Furnace Capacity <span class="lvl">LV {{ st.refinery.capacityLevel }}</span></div>
-            <div class="up-desc">{{ game.fmt(batchCap()) }} → {{ game.fmt(nextBatchCap()) }} t of ore per batch</div>
+            <div class="up-name">Furnace Capacity <span class="lvl">LV {{ st.refinery.capacityLevel }}/{{ furnaceMax }}</span></div>
+            @if (furnaceCost() !== null) {
+              <div class="up-desc">{{ game.fmt(batchCap()) }} → {{ game.fmt(nextBatchCap()) }} t of ore per batch</div>
+            } @else {
+              <div class="up-desc">{{ game.fmt(batchCap()) }} t of ore per batch · furnaces at full size</div>
+            }
           </div>
-          <button type="button" class="btn" [disabled]="st.credits < furnaceCost()" (click)="game.buyFurnaceCapacity()">
-            {{ game.fmt(furnaceCost()) }} cr
-          </button>
+          @if (furnaceCost(); as c) {
+            <button type="button" class="btn" [disabled]="st.credits < c" (click)="game.buyFurnaceCapacity()">{{ game.fmt(c) }} cr</button>
+          } @else {
+            <span class="maxed">MAX</span>
+          }
         </div>
         @if (!hasAutoRefine()) {
           <div class="hint">Research Auto-Refine to keep furnaces running by themselves.</div>
@@ -182,6 +194,20 @@
           <button type="button" class="btn" [disabled]="st.credits < c" (click)="game.buyHeatSink()">{{ game.fmt(c) }} cr</button>
         } @else {
           <span class="maxed">MAX</span>
+        }
+      </div>
+
+      <div class="upgrade">
+        <div>
+          <div class="up-name">Trigger Clamp @if (st.drill.clamp) {<span class="lvl">FITTED</span>}</div>
+          @if (st.drill.clamp) {
+            <div class="up-desc">Hold the mouse button on the asteroid to keep drilling · {{ holdRate() }} hits/s</div>
+          } @else {
+            <div class="up-desc">Hold the mouse button on the asteroid to keep drilling. Stays with the mech through Fold Jumps.</div>
+          }
+        </div>
+        @if (!st.drill.clamp) {
+          <button type="button" class="btn" [disabled]="st.credits < clampCost" (click)="game.buyClamp()">{{ game.fmt(clampCost) }} cr</button>
         }
       </div>
 

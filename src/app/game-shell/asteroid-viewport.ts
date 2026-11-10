@@ -1,6 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
-import { isHot, mechOperable, overdriveMult } from '../game/engine';
+import { holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult } from '../game/engine';
 import { MechPortrait } from '../ui/mech-portrait';
 import { DroneSprite } from '../ui/drone-sprite';
 import { DRONE_IDS, DroneType } from '../game/fleet-data';
@@ -226,14 +226,66 @@ export class AsteroidViewport {
   protected readonly flash = signal(false);
 
   protected onDrill(e: MouseEvent): void {
-    const r = this.game.drill();
-    if (!r) return;
-
     // Effect origin: the click point, or the center for keyboard activation (no coordinates).
     const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const keyboard = e.detail === 0;
     const x = keyboard ? box.width / 2 : e.clientX - box.left;
     const y = keyboard ? box.height / 2 : e.clientY - box.top;
+    this.hit(x, y);
+  }
+
+  // ---------------------------------------------------------------- Trigger Clamp: hold to drill
+
+  protected readonly holding = signal(false);
+  private holdTimer: ReturnType<typeof setTimeout> | null = null;
+  private pointer = { x: 0, y: 0 };
+  private readonly onMove = (e: PointerEvent) => (this.pointer = { x: e.clientX, y: e.clientY });
+  private readonly onRelease = () => this.stopHold();
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.stopHold());
+  }
+
+  protected onHoldStart(e: PointerEvent): void {
+    const s = this.game.state();
+    if (!s?.drill.clamp || e.button !== 0 || this.holdTimer) return;
+    this.pointer = { x: e.clientX, y: e.clientY };
+    this.holding.set(true);
+    window.addEventListener('pointermove', this.onMove);
+    window.addEventListener('pointerup', this.onRelease);
+    window.addEventListener('pointercancel', this.onRelease);
+    window.addEventListener('blur', this.onRelease);
+    // The press itself drills on release (the normal click); held hits start one interval in.
+    this.holdTimer = setTimeout(() => this.holdTick(), holdInterval(s) * 1000);
+  }
+
+  private holdTick(): void {
+    const s = this.game.state();
+    // The asteroid button is replaced when a rock cracks, so find whatever is under the pointer now.
+    const el = (document.elementFromPoint(this.pointer.x, this.pointer.y) as HTMLElement | null)?.closest<HTMLElement>('.asteroid-btn');
+    if (!s || !el) return this.stopHold();
+    // Held hits wait out a lockout quietly (and the Thermal Governor keeps them in Overdrive).
+    if (s.drill.lockRemaining <= 0 && !holdShouldWait(s)) {
+      const box = el.getBoundingClientRect();
+      this.hit(this.pointer.x - box.left, this.pointer.y - box.top);
+    }
+    this.holdTimer = setTimeout(() => this.holdTick(), holdInterval(s) * 1000);
+  }
+
+  private stopHold(): void {
+    if (this.holdTimer) clearTimeout(this.holdTimer);
+    this.holdTimer = null;
+    this.holding.set(false);
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onRelease);
+    window.removeEventListener('pointercancel', this.onRelease);
+    window.removeEventListener('blur', this.onRelease);
+  }
+
+  /** One drill hit, with its effects at (x, y) inside the asteroid button. */
+  private hit(x: number, y: number): void {
+    const r = this.game.drill();
+    if (!r) return;
 
     if (r.locked) return;
     if (r.overheated) {

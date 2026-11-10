@@ -26,6 +26,8 @@ export interface DrillState {
   /** Seconds left in an overheat lockout. */
   lockRemaining: number;
   heatSinkLevel: number;
+  /** Trigger Clamp owned: holding the mouse button keeps drilling. Kept across Fold Jumps. */
+  clamp: boolean;
 }
 
 export interface GameStats {

@@ -170,6 +170,18 @@ export const CONFIG = {
     capacityGrowth: 1.75,
     costBase: 40,
     costGrowth: 2.1,
+    /** Expand Hold stops here, and no mix of bonuses lifts the hold past maxCapacity tonnes. */
+    maxLevel: 24,
+    maxCapacity: 250_000_000,
+  },
+
+  /** Trigger Clamp: hold the mouse button to keep drilling. */
+  hold: {
+    cost: 2500,
+    /** Seconds between held hits before Servo Actuators research. */
+    baseIntervalSec: 0.5,
+    /** Each Servo Actuators level multiplies the interval by this. */
+    servoFactor: 0.85,
   },
 
   asteroid: {
@@ -191,6 +203,8 @@ export const CONFIG = {
     batchGrowth: 1.6,
     batchCostBase: 500,
     batchCostGrowth: 2.2,
+    /** Furnace Capacity stops at this level. */
+    maxBatchLevel: 18,
     baseDurationSec: 30,
     /** Each Refinery Speed level multiplies batch time by this. */
     speedFactor: 0.85,

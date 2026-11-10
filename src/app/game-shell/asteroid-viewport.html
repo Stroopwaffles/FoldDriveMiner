@@ -45,6 +45,8 @@
       type="button"
       class="asteroid-btn"
       (click)="onDrill($event)"
+      (pointerdown)="onHoldStart($event)"
+      [class.held]="holding()"
       [attr.aria-label]="'Drill asteroid. Integrity ' + (integrity() * 100).toFixed(0) + ' percent.'"
     >
       <!-- Shake lives on this inner wrapper so it never restarts the button's drift-in animation. -->

@@ -385,6 +385,13 @@ export class GameService {
     this.act(E.buyCargo, () => this.audio.buy());
   }
 
+  buyClamp(): void {
+    this.act(E.buyClamp, () => {
+      this.audio.buy();
+      this.say('JUNO', 'Trigger Clamp fitted! Just hold the button down on the rock and the drill keeps biting.');
+    });
+  }
+
   sellIngots(ore: OreId): void {
     this.act((s) => E.sellIngots(s, ore) > 0, () => this.audio.sell());
   }
