@@ -101,7 +101,7 @@
       <div class="card-body">
         <div class="stat-line">
           <span>{{ ratio() }} ORE → 1 INGOT (×{{ ingotMult }} VALUE)</span>
-          <span class="cyan">{{ game.fmt(batchCap()) }} t · {{ batchTime() }}</span>
+          <span class="cyan">{{ game.fmt(batchCap()) }} t / batch · {{ batchTime() }}</span>
         </div>
         @for (x of slots(); track x.i) {
           <div class="furnace" [class.running]="x.running" [style.--c]="x.ore?.color ?? '#4a54a0'">
@@ -134,6 +134,15 @@
             }
           </div>
         }
+        <div class="upgrade">
+          <div>
+            <div class="up-name">Furnace Capacity <span class="lvl">LV {{ st.refinery.capacityLevel }}</span></div>
+            <div class="up-desc">{{ game.fmt(batchCap()) }} → {{ game.fmt(nextBatchCap()) }} t of ore per batch</div>
+          </div>
+          <button type="button" class="btn" [disabled]="st.credits < furnaceCost()" (click)="game.buyFurnaceCapacity()">
+            {{ game.fmt(furnaceCost()) }} cr
+          </button>
+        </div>
         @if (!hasAutoRefine()) {
           <div class="hint">Research Auto-Refine to keep furnaces running by themselves.</div>
         }

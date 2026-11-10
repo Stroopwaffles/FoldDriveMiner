@@ -89,7 +89,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     sector: { code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
     research: { levels: {}, active: [] },
-    refinery: { slots: [] },
+    refinery: { slots: [], capacityLevel: 0 },
     autoSell: { ore: emptyFlags(), ingot: emptyFlags(), smart: false },
     stats: {
       clicks: 0,
@@ -629,10 +629,26 @@ export function oreRatio(state: GameState): number {
   return Math.max(r.minRatio, r.baseRatio - researchLevel(state, 'refinery_yield'));
 }
 
-export function batchCapacity(state: GameState): number {
+/** Most ore a furnace takes in one batch (rounded down to whole ingots). */
+export function batchCapacity(state: GameState, level = state.refinery.capacityLevel): number {
+  const r = CONFIG.refinery;
   const ratio = oreRatio(state);
-  const raw = cargoCapacity(state) * CONFIG.refinery.batchCapacityFrac;
+  const raw = r.baseBatch * r.batchGrowth ** level;
   return Math.max(ratio, Math.floor(raw / ratio) * ratio);
+}
+
+export function furnaceCapacityCost(state: GameState): number {
+  const r = CONFIG.refinery;
+  return Math.ceil(r.batchCostBase * r.batchCostGrowth ** state.refinery.capacityLevel);
+}
+
+export function buyFurnaceCapacity(state: GameState): boolean {
+  if (!hasResearch(state, 'refinery')) return false;
+  const cost = furnaceCapacityCost(state);
+  if (state.credits < cost) return false;
+  state.credits -= cost;
+  state.refinery.capacityLevel++;
+  return true;
 }
 
 export function batchDuration(state: GameState): number {

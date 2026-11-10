@@ -65,6 +65,8 @@ export class OpsPanel {
   protected readonly hasAutoRefine = computed(() => E.hasResearch(this.s(), 'auto_refine'));
   protected readonly ratio = computed(() => E.oreRatio(this.s()));
   protected readonly batchCap = computed(() => E.batchCapacity(this.s()));
+  protected readonly nextBatchCap = computed(() => E.batchCapacity(this.s(), this.s().refinery.capacityLevel + 1));
+  protected readonly furnaceCost = computed(() => E.furnaceCapacityCost(this.s()));
   protected readonly batchTime = computed(() => formatDuration(E.batchDuration(this.s())));
   protected readonly ingotMult = CONFIG.refinery.ingotValueMult;
   protected readonly anyRunning = computed(() => this.s().refinery.slots.some((x) => x.batch > 0));

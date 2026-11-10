@@ -166,10 +166,12 @@ export const CONFIG = {
     richChance: 0.1,
   },
 
-  /** Average ore mix of the home sector field (drones mine this). */
   refinery: {
-    /** One batch holds this fraction of cargo capacity, so batches scale with the hold. */
-    batchCapacityFrac: 0.25,
+    /** Ore one furnace can take per batch, and the Furnace Capacity upgrade (credits). */
+    baseBatch: 50,
+    batchGrowth: 1.6,
+    batchCostBase: 500,
+    batchCostGrowth: 2.2,
     baseDurationSec: 30,
     /** Each Refinery Speed level multiplies batch time by this. */
     speedFactor: 0.85,

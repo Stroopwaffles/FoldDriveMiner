@@ -146,7 +146,8 @@ export interface GameState {
     levels: Record<string, number>;
     active: ResearchJob[];
   };
-  refinery: { slots: RefinerySlot[] };
+  /** capacityLevel: Furnace Capacity upgrades bought (bigger batches). */
+  refinery: { slots: RefinerySlot[]; capacityLevel: number };
   autoSell: { ore: OreFlags; ingot: OreFlags; smart: boolean };
 
   stats: GameStats;

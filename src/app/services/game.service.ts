@@ -346,6 +346,10 @@ export class GameService {
     this.act((s) => E.startBatch(s, index, ore), () => this.audio.buy());
   }
 
+  buyFurnaceCapacity(): void {
+    this.act(E.buyFurnaceCapacity, () => this.audio.buy());
+  }
+
   setSlotRepeat(index: number, repeat: boolean): void {
     this.act(
       (s) => {

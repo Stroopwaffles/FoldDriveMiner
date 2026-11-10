@@ -277,6 +277,27 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     expect(E.ingotPrice(s, 'ferrite') / E.oreRatio(s)).toBeGreaterThan(E.orePrice(s, 'ferrite'));
   });
 
+  it('a furnace only takes its capacity per batch, and the upgrade raises it', () => {
+    const s = rich();
+    s.research.levels['refinery'] = 1;
+    E.syncRefinerySlots(s);
+    s.cargoLevel = 10;
+    s.cargo.ferrite = 500;
+    const cap = E.batchCapacity(s);
+    expect(cap).toBe(CONFIG.refinery.baseBatch);
+    E.startBatch(s, 0, 'ferrite');
+    expect(s.refinery.slots[0].batch).toBe(cap);
+    expect(s.cargo.ferrite).toBe(500 - cap);
+    // The hold size no longer changes the batch.
+    s.cargoLevel = 20;
+    expect(E.batchCapacity(s)).toBe(cap);
+    const credits = s.credits;
+    expect(E.buyFurnaceCapacity(s)).toBe(true);
+    expect(s.credits).toBe(credits - CONFIG.refinery.batchCostBase);
+    expect(E.batchCapacity(s)).toBe(80); // 50 × 1.6
+    expect(E.batchCapacity(s) % E.oreRatio(s)).toBe(0);
+  });
+
   it('ingots take hold space, and furnaces reserve space for their output', () => {
     const s = rich();
     s.research.levels['refinery'] = 1;
