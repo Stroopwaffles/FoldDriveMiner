@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ZONES, ZoneId } from '../game/config';
+import { ZoneId, zoneDef } from '../game/config';
 import { CREW } from '../game/crew-data';
 import * as E from '../game/engine';
 import { FRAMES, FrameId, MECH, MECH_STATS, PARTS, SLOTS, SlotId, frameDef, partDef } from '../game/fleet-data';
@@ -70,7 +70,8 @@ export class HangarPanel {
       technique: E.techniqueName(s, m),
       techniqueReady: E.techniqueReady(s, m),
       boosting: m.boostRemaining > 0,
-      zoneName: ZONES.find((z) => z.id === m.zone)!.name,
+      // zoneDef covers generated sectors too (ZONES is only the home sector's).
+      zoneName: zoneDef(m.zone).name,
       parts: SLOTS.map((slot) => ({
         slot,
         part: m.parts[slot.id] ? partDef(m.parts[slot.id]!) : null,
