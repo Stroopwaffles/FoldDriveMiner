@@ -78,6 +78,9 @@ interface NavItem {
   styleUrl: './game-shell.scss',
   host: {
     '(document:keydown)': 'onKey($event)',
+    // UI scale: zoom the game screen, then shrink its height to match so it still fits the window.
+    '[style.zoom]': 'settings.settings().uiScale',
+    '[style.--ui-scale]': 'settings.settings().uiScale',
   },
 })
 export class GameShell {

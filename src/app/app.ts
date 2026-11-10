@@ -23,7 +23,6 @@ import { TitleScreen } from './title/title-screen';
   `,
   host: {
     '[class.reduced-motion]': 'settings.reducedMotion()',
-    '[style.zoom]': 'settings.settings().uiScale',
   },
 })
 export class App {

@@ -1,6 +1,6 @@
 :host {
   display: block;
-  height: 100vh;
+  height: calc(100vh / var(--ui-scale, 1));
   background:
     radial-gradient(ellipse at 50% -20%, #1b1440 0%, transparent 60%),
     var(--space-0);
@@ -127,6 +127,10 @@
   gap: 6px;
   padding: 18px 6px 8px;
   position: relative;
+  /* Never let the buttons spill out of the frame on short screens. */
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
 .nav-btn {
@@ -182,6 +186,14 @@
   }
 }
 
+.nav-btn {
+  /* Shrink before overflowing; the compact rules below take over on short screens. */
+  flex: 0 1 auto;
+  min-height: 32px;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .nav-icon {
   font-size: 1.1rem;
 }
@@ -207,8 +219,9 @@
 }
 
 .nav-hint {
-  position: absolute;
-  left: calc(100% + 8px);
+  /* Fixed, so the nav's own scrolling can't clip it. */
+  position: fixed;
+  left: 116px;
   top: 50%;
   width: 200px;
   padding: 0.5rem 0.7rem;
@@ -521,6 +534,36 @@
 }
 
 /* ---------------- narrow screens (works, not polished) ---------------- */
+/* ---------------- short screens (e.g. Windows display scaling 125%+) ---------------- */
+@media (max-height: 860px) and (min-width: 901px) {
+  .nav {
+    gap: 4px;
+    padding-top: 12px;
+  }
+
+  .nav-btn {
+    padding: 0.3rem 0.2rem;
+  }
+
+  .nav-kana {
+    display: none;
+  }
+}
+
+@media (max-height: 640px) and (min-width: 901px) {
+  .nav-icon {
+    font-size: 0.9rem;
+  }
+
+  .nav-label {
+    font-size: 0.58rem;
+  }
+
+  .nav-lock {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   :host {
     height: auto;
