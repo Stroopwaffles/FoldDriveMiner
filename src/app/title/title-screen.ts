@@ -8,6 +8,7 @@ import { GameService } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
 import { readStorage, writeStorage } from '../services/storage';
 import { SettingsPanel } from '../ui/settings-panel';
+import { MusicToggle } from '../ui/music-toggle';
 import { Starfield } from '../ui/starfield';
 
 type Stage = 'boot' | 'press' | 'menu' | 'new' | 'saves' | 'settings' | 'credits';
@@ -26,7 +27,7 @@ const BOOT_LINES = [
 
 @Component({
   selector: 'fdm-title-screen',
-  imports: [FormsModule, SettingsPanel, Starfield],
+  imports: [FormsModule, SettingsPanel, Starfield, MusicToggle],
   templateUrl: './title-screen.html',
   styleUrl: './title-screen.scss',
   host: {

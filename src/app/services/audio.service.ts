@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { SettingsService } from './settings.service';
 
 /**
@@ -12,6 +12,18 @@ export class AudioService {
   private noiseBuffer: AudioBuffer | null = null;
   private lastDrill = 0;
 
+  /** True once a user gesture has started the audio context. */
+  readonly ready = signal(false);
+
+  /** Shared with the music engine so everything runs on one clock. */
+  get context(): AudioContext | null {
+    return this.ctx;
+  }
+
+  get sharedNoise(): AudioBuffer | null {
+    return this.noiseBuffer;
+  }
+
   unlock(): void {
     if (typeof AudioContext === 'undefined') return;
     if (!this.ctx) {
@@ -22,6 +34,7 @@ export class AudioService {
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
+    this.ready.set(true);
   }
 
   // ------------------------------------------------------------ effects

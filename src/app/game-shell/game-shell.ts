@@ -17,7 +17,9 @@ import { researchNode } from '../game/research';
 import { AudioService } from '../services/audio.service';
 import { GameService, Tab } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
+import { MusicToggle } from '../ui/music-toggle';
 import { SettingsPanel } from '../ui/settings-panel';
+import { MusicService } from '../services/music.service';
 import { AsteroidViewport } from './asteroid-viewport';
 import { LabPanel } from './lab-panel';
 import { MapPanel } from './map-panel';
@@ -34,7 +36,7 @@ interface NavItem {
 
 @Component({
   selector: 'fdm-game-shell',
-  imports: [AsteroidViewport, OpsPanel, LabPanel, MapPanel, SettingsPanel],
+  imports: [AsteroidViewport, OpsPanel, LabPanel, MapPanel, SettingsPanel, MusicToggle],
   templateUrl: './game-shell.html',
   styleUrl: './game-shell.scss',
   host: {
@@ -45,6 +47,7 @@ export class GameShell {
   protected readonly game = inject(GameService);
   protected readonly audio = inject(AudioService);
   protected readonly settings = inject(SettingsService);
+  private readonly music = inject(MusicService);
 
   protected readonly s = computed(() => this.game.state()!);
   protected readonly menuOpen = signal(false);
@@ -200,6 +203,12 @@ export class GameShell {
   }
 
   protected onKey(e: KeyboardEvent): void {
+    const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+    if ((e.key === 'm' || e.key === 'M') && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      this.music.toggle();
+      this.audio.blip();
+      return;
+    }
     if (e.key === 'Escape') {
       if (this.game.episode()) this.closeEpisode();
       else if (this.game.offlineReport()) this.closeReport();

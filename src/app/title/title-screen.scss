@@ -429,6 +429,13 @@ $horizon: 64%;
   margin: 0;
 }
 
+.corner {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 7;
+}
+
 .footer {
   position: absolute;
   bottom: 12px;

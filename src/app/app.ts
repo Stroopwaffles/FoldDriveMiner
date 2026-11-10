@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { GameShell } from './game-shell/game-shell';
 import { GameService } from './services/game.service';
+import { MusicService } from './services/music.service';
 import { SettingsService } from './services/settings.service';
 import { TitleScreen } from './title/title-screen';
 
@@ -24,4 +25,6 @@ import { TitleScreen } from './title/title-screen';
 export class App {
   protected readonly game = inject(GameService);
   protected readonly settings = inject(SettingsService);
+  // Created here so music follows the settings from the first PRESS START.
+  private readonly music = inject(MusicService);
 }

@@ -4,6 +4,7 @@ import { readStorage, writeStorage } from './storage';
 
 export interface Settings {
   sfxVolume: number;
+  music: boolean;
   musicVolume: number;
   crt: boolean;
   /** 'system' follows the OS reduced-motion setting. */
@@ -14,6 +15,7 @@ export interface Settings {
 const KEY = 'fdm.settings';
 const DEFAULTS: Settings = {
   sfxVolume: 0.6,
+  music: true,
   musicVolume: 0.5,
   crt: true,
   reducedMotion: 'system',

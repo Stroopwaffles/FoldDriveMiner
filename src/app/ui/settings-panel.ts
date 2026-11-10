@@ -23,6 +23,26 @@ import { Settings, SettingsService } from '../services/settings.service';
       </label>
 
       <label class="row">
+        <span>Music</span>
+        <input type="checkbox" [checked]="s.music" (change)="patch({ music: !s.music })" />
+        <span class="val">{{ s.music ? 'ON' : 'OFF' }}</span>
+      </label>
+
+      <label class="row">
+        <span>Music volume</span>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="s.musicVolume"
+          [disabled]="!s.music"
+          (input)="setMusicVolume($event)"
+        />
+        <span class="val">{{ (s.musicVolume * 100).toFixed(0) }}%</span>
+      </label>
+
+      <label class="row">
         <span>CRT scanlines</span>
         <input type="checkbox" [checked]="s.crt" (change)="patch({ crt: !s.crt })" />
         <span class="val">{{ s.crt ? 'ON' : 'OFF' }}</span>
@@ -116,6 +136,10 @@ export class SettingsPanel {
   protected patch(p: Partial<Settings>): void {
     this.settings.update(p);
     this.audio.blip();
+  }
+
+  protected setMusicVolume(e: Event): void {
+    this.settings.update({ musicVolume: Number((e.target as HTMLInputElement).value) });
   }
 
   protected setVolume(e: Event): void {
