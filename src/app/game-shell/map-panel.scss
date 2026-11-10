@@ -1,0 +1,171 @@
+:host {
+  display: block;
+}
+
+.sector {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+}
+
+.map-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.8rem 0.9rem 0.9rem;
+}
+
+@media (max-width: 1100px) {
+  .map-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.orbits {
+  width: 100%;
+  height: auto;
+  background: radial-gradient(ellipse at center, #1a1430 0%, #05060f 75%);
+  border: 1px solid var(--bezel);
+}
+
+.band {
+  fill: none;
+  stroke-width: 2;
+  opacity: 0.55;
+
+  &.current {
+    opacity: 1;
+    stroke-width: 3.5;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+
+  &.locked {
+    stroke: #2a3168 !important;
+    stroke-dasharray: 4 5;
+    opacity: 0.8;
+  }
+}
+
+.band-label {
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-anchor: start;
+}
+
+.ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ping 1.6s ease-out infinite;
+}
+
+@keyframes ping {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.zone-list {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
+.zone {
+  border: 1px solid #232a5c;
+  border-left: 3px solid var(--zc);
+  padding: 0.5rem 0.7rem;
+  display: grid;
+  gap: 0.3rem;
+  background: rgba(10, 13, 34, 0.6);
+  font-size: 0.8rem;
+
+  &.current {
+    border-color: var(--zc);
+    box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.05);
+  }
+
+  &.locked {
+    opacity: 0.55;
+    border-left-color: #2a3168;
+  }
+
+  .btn {
+    justify-self: start;
+  }
+}
+
+.zone-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.zone-name {
+  font-family: var(--font-display);
+  color: var(--zc);
+  letter-spacing: 0.06em;
+}
+
+.locked .zone-name {
+  color: var(--text-dim);
+}
+
+.kana {
+  font-family: var(--font-kana);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
+.here {
+  margin-left: auto;
+  color: var(--amber);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+}
+
+.zone-desc {
+  color: var(--text);
+
+  &.dim {
+    color: var(--text-dim);
+  }
+}
+
+.chips {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  border: 1px solid var(--c);
+  color: var(--c);
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+
+  &.slag {
+    opacity: 0.55;
+    border-style: dashed;
+  }
+}
+
+.zone-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}

@@ -29,6 +29,74 @@ export function oreDef(id: OreId): OreDef {
   return ORES.find((o) => o.id === id)!;
 }
 
+export type ZoneId = 'inner' | 'trojan' | 'ring' | 'ice';
+
+export interface ZoneDef {
+  id: ZoneId;
+  name: string;
+  kana: string;
+  desc: string;
+  /** Ore mix for asteroids and drones in this zone; sums to 1. */
+  composition: Partial<Record<OreId, number>>;
+  massMult: number;
+  /** Survey Data per cracked asteroid, before bonuses. */
+  surveyData: number;
+  /** Research that unlocks the zone (none = open from the start). */
+  research?: string;
+  color: string;
+}
+
+/** Survey zones of the home sector (procedural zones arrive with sector generation). */
+export const ZONES: readonly ZoneDef[] = [
+  {
+    id: 'inner',
+    name: 'Inner Belt',
+    kana: 'ないそくたい',
+    desc: 'Close, safe and Ferrite-heavy. Where every prospector starts.',
+    composition: { ferrite: 0.85, titanite: 0.15 },
+    massMult: 1,
+    surveyData: 1,
+    color: '#ffd23f',
+  },
+  {
+    id: 'trojan',
+    name: 'Trojan Cluster',
+    kana: 'トロヤぐん',
+    desc: 'Rocks trapped in a gravity well. Rich in Titanite, traces of Iridium.',
+    composition: { ferrite: 0.55, titanite: 0.35, iridium: 0.1 },
+    massMult: 2.5,
+    surveyData: 2,
+    research: 'survey_trojan',
+    color: '#4fe3ff',
+  },
+  {
+    id: 'ring',
+    name: 'Ring Debris',
+    kana: 'リングのはへん',
+    desc: 'Shattered moonlets in a wide ring. Dense Iridium veins.',
+    composition: { ferrite: 0.3, titanite: 0.4, iridium: 0.3 },
+    massMult: 5,
+    surveyData: 4,
+    research: 'survey_ring',
+    color: '#c77dff',
+  },
+  {
+    id: 'ice',
+    name: 'Ice Halo',
+    kana: 'こおりのわ',
+    desc: 'Frozen bodies at the edge of the system. Helium-3 locked in the ice.',
+    composition: { titanite: 0.25, iridium: 0.35, helium3: 0.4 },
+    massMult: 10,
+    surveyData: 8,
+    research: 'survey_ice',
+    color: '#9dff8a',
+  },
+];
+
+export function zoneDef(id: ZoneId): ZoneDef {
+  return ZONES.find((z) => z.id === id)!;
+}
+
 export const CONFIG = {
   /** Logic tick length in milliseconds (10 Hz). */
   tickMs: 100,
@@ -44,7 +112,7 @@ export const CONFIG = {
     powerCostBase: 12,
     powerCostGrowth: 1.45,
     /** Highest drill tier reachable in this build (Mk.III+ arrives with research). */
-    maxTier: 2,
+    /** Mk.II is bought with credits; Mk.III and Mk.IV come from research. */
     tierUpgrades: [{ tier: 2, name: 'Drill Mk.II', cost: 1500 }],
   },
 
@@ -92,7 +160,34 @@ export const CONFIG = {
   },
 
   /** Average ore mix of the home sector field (drones mine this). */
-  homeField: { ferrite: 0.85, titanite: 0.15 } as Partial<Record<OreId, number>>,
+  refinery: {
+    /** One batch holds this fraction of cargo capacity, so batches scale with the hold. */
+    batchCapacityFrac: 0.25,
+    baseDurationSec: 30,
+    /** Each Refinery Speed level multiplies batch time by this. */
+    speedFactor: 0.85,
+    /** Ore per ingot; each Yield level removes one, down to the minimum. */
+    baseRatio: 10,
+    minRatio: 7,
+    /** An ingot is worth this many times the ore's base value. */
+    ingotValueMult: 14,
+  },
+
+  research: {
+    baseLabSlots: 1,
+    /** Chance a finished project refunds its full cost. */
+    eurekaChance: 0.05,
+  },
+
+  bonuses: {
+    overdrivePerLevel: 0.5,
+    depletionPerLevel: 0.25,
+    surveyDataPerLevel: 0.5,
+    cargoPerLevel: 0.25,
+    dronePerLevel: 0.25,
+    offlineEfficiencyPerLevel: 0.1,
+    offlineCapHoursPerLevel: 2,
+  },
 
   market: {
     /** Slow and fast price waves, in seconds. Combined swing is about ±20%. */

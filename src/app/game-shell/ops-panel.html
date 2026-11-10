@@ -1,7 +1,7 @@
 @let st = s();
 <div class="ops">
   <!-- CARGO & MARKET -->
-  <section class="panel card">
+  <section class="panel card cargo-card">
     <div class="panel-title"><span class="led" [class.red]="game.cargoFull()"></span>Cargo Hold <span class="kana">カーゴ</span></div>
     <div class="card-body">
       <div class="cap-row">
@@ -15,6 +15,14 @@
       </div>
 
       <table class="ore-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="num">HELD</th>
+            <th class="num">PRICE</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
           @for (r of cargoRows(); track r.ore.id) {
             <tr [class.locked]="r.locked">
@@ -22,21 +30,45 @@
               <td class="num">{{ r.locked ? '—' : game.fmt(r.amount) }}</td>
               <td class="num price">
                 {{ game.fmt(r.price) }}<span class="cr">cr</span>
-                <span class="trend" [class.up]="r.trend > 0" [class.down]="r.trend < 0">{{ r.trend > 0 ? '▲' : r.trend < 0 ? '▼' : '■' }}</span>
+                <span class="trend" [class.up]="r.trend > 0" [class.down]="r.trend < 0">{{ trendGlyph(r.trend) }}</span>
+                @if (r.forecast; as f) {
+                  <div class="forecast" [title]="'Best price in the next 90 s'">peak ×{{ f.peak.toFixed(2) }} in {{ f.inSec }}s</div>
+                }
               </td>
-              <td>
+              <td class="actions">
                 @if (r.locked) {
-                  <span class="dim small">NEEDS MK.{{ r.ore.tier === 2 ? 'II' : r.ore.tier }}</span>
+                  <span class="dim small">NEEDS MK.{{ roman[r.ore.tier - 1] }}</span>
                 } @else {
+                  @if (hasAutoSell()) {
+                    <button type="button" class="auto" [class.on]="r.autoOre" (click)="game.toggleAutoSell('ore', r.ore.id)" title="Auto-sell this ore">AUTO</button>
+                  }
                   <button type="button" class="btn small" [disabled]="r.amount < 1" (click)="game.sell(r.ore.id)">Sell</button>
                 }
               </td>
             </tr>
+            @if (hasRefinery() && (r.ingots >= 1 || r.autoIngot) && !r.locked) {
+              <tr class="ingot-row">
+                <td><span class="ingot" [style.background]="r.ore.color"></span>{{ r.ore.name }} ingot</td>
+                <td class="num">{{ game.fmt(r.ingots) }}</td>
+                <td class="num price">{{ game.fmt(r.ingotPrice) }}<span class="cr">cr</span></td>
+                <td class="actions">
+                  @if (hasAutoSell()) {
+                    <button type="button" class="auto" [class.on]="r.autoIngot" (click)="game.toggleAutoSell('ingot', r.ore.id)" title="Auto-sell these ingots">AUTO</button>
+                  }
+                  <button type="button" class="btn small" [disabled]="r.ingots < 1" (click)="game.sellIngots(r.ore.id)">Sell</button>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
 
       <div class="row-actions">
+        @if (hasAnalysis()) {
+          <button type="button" class="auto smart" [class.on]="st.autoSell.smart" (click)="game.toggleSmartSell()" title="Auto-sell only when the price is above average">
+            SMART SELL {{ st.autoSell.smart ? 'ON' : 'OFF' }}
+          </button>
+        }
         <button type="button" class="btn btn-amber" [disabled]="cargoValue() < 1" (click)="game.sellAll()">
           Sell all · {{ game.fmt(cargoValue()) }} cr
         </button>
@@ -54,13 +86,64 @@
     </div>
   </section>
 
+  <!-- REFINERY -->
+  @if (hasRefinery()) {
+    <section class="panel card">
+      <div class="panel-title"><span class="led" [class.amber]="anyRunning()"></span>Refinery <span class="kana">せいれんじょ</span></div>
+      <div class="card-body">
+        <div class="stat-line">
+          <span>{{ ratio() }} ORE → 1 INGOT (×{{ ingotMult }} VALUE)</span>
+          <span class="cyan">{{ game.fmt(batchCap()) }} t · {{ batchTime() }}</span>
+        </div>
+        @for (x of slots(); track x.i) {
+          <div class="furnace" [class.running]="x.running" [style.--c]="x.ore?.color ?? '#4a54a0'">
+            <div class="furnace-head">
+              <span class="furnace-label">FURNACE {{ x.i + 1 }}</span>
+              @if (x.ore) {
+                <span class="furnace-ore">{{ x.ore.name }}</span>
+              }
+              @if (hasAutoRefine() && x.ore) {
+                <button type="button" class="auto" [class.on]="x.slot.repeat" (click)="game.setSlotRepeat(x.i, !x.slot.repeat)" title="Repeat batches automatically">REPEAT</button>
+              }
+            </div>
+            @if (x.running) {
+              <div class="furnace-bar"><div class="furnace-fill" [style.width.%]="x.progress * 100"></div></div>
+              <div class="furnace-foot">{{ game.fmt(x.slot.batch) }} t → {{ game.fmt(x.ingots) }} ingots · {{ x.eta }}</div>
+            } @else {
+              @if (x.waiting) {
+                <div class="furnace-foot warn">Waiting for {{ ratio() }}+ {{ x.ore?.name }}…</div>
+              }
+              <div class="furnace-pick">
+                @for (o of refinableOres(); track o.id) {
+                  <button type="button" class="btn small" [style.borderColor]="o.color" [disabled]="!canBatch(o.id)" (click)="game.startBatch(x.i, o.id)">
+                    {{ o.code }}
+                  </button>
+                }
+                @if (x.ore && !x.slot.repeat) {
+                  <button type="button" class="btn small" (click)="game.clearSlot(x.i)" title="Clear assignment">✕</button>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (!hasAutoRefine()) {
+          <div class="hint">Research Auto-Refine to keep furnaces running by themselves.</div>
+        }
+      </div>
+    </section>
+  }
+
   <!-- DRILL -->
   <section class="panel card">
     <div class="panel-title"><span class="led amber"></span>Drill Rig <span class="kana">ドリル</span></div>
     <div class="card-body">
       <div class="stat-line">
-        <span>DRILL MK.{{ st.drill.tier === 1 ? 'I' : 'II' }}</span>
+        <span>DRILL MK.{{ roman[st.drill.tier - 1] }}</span>
         <span class="cyan">{{ game.fmt(game.power()) }} ore / click</span>
+      </div>
+      <div class="stat-line sub">
+        <span>OVERDRIVE</span>
+        <span>×{{ odMult() }}</span>
       </div>
 
       <div class="upgrade">
@@ -95,13 +178,13 @@
             {{ game.fmt(t.cost) }} cr
           </button>
         </div>
-      } @else {
+      } @else if (researchTier(); as rt) {
         <div class="upgrade locked-up">
           <div>
-            <div class="up-name">Drill Mk.III</div>
-            <div class="up-desc">Requires research — LAB systems offline</div>
+            <div class="up-name">{{ rt.name }}</div>
+            <div class="up-desc">Unlocks {{ rt.ore }} — research it in the LAB</div>
           </div>
-          <span class="maxed">🔒</span>
+          <button type="button" class="btn small" (click)="openLab()">LAB ▸</button>
         </div>
       }
     </div>
@@ -119,7 +202,7 @@
         </svg>
         <div>
           <div class="up-name">{{ droneName }}</div>
-          <div class="up-desc">{{ game.fmt(perDrone()) }} ore/s each · mines the sector field</div>
+          <div class="up-desc">{{ game.fmt(perDrone()) }} ore/s each · mines the current zone</div>
         </div>
         <div class="count">×{{ droneCount() }}</div>
       </div>

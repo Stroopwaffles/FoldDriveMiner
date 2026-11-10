@@ -154,8 +154,28 @@
     cursor: not-allowed;
   }
 
+  /* Lab has a free bench and an affordable project */
+  &.ready::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 6px var(--ok);
+    animation: ready-pulse 1s ease-in-out infinite alternate;
+  }
+
   &:hover:not(.locked):not(.active) {
     border-color: var(--cyan);
+  }
+}
+
+@keyframes ready-pulse {
+  to {
+    opacity: 0.35;
   }
 }
 
@@ -200,6 +220,8 @@
 .main {
   grid-area: main;
   display: grid;
+  /* minmax(0, …) stops wide content (the research tree) from stretching the column */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(320px, 1fr) auto;
   gap: 8px;
   min-height: 0;

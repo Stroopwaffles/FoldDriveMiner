@@ -1,9 +1,12 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
-import { CONFIG, OreId } from '../game/config';
+import { CONFIG, OreId, ZoneId, zoneDef } from '../game/config';
 import * as E from '../game/engine';
 import { formatNumber } from '../game/format';
+import { researchNode } from '../game/research';
 import { randomSeed } from '../game/rng';
-import { ClickResult, GameState, OfflineReport } from '../game/types';
+import { ClickResult, GameState, OfflineReport, TickEvents } from '../game/types';
+
+export type Tab = 'ops' | 'lab' | 'map';
 import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
@@ -36,6 +39,7 @@ export class GameService {
   readonly state = this._state.asReadonly();
 
   readonly view = signal<'title' | 'game'>('title');
+  readonly tab = signal<Tab>('ops');
   readonly offlineReport = signal<OfflineReport | null>(null);
   readonly episode = signal<EpisodeCard | null>(null);
   readonly comms = signal<CommMessage[]>([]);
@@ -97,6 +101,7 @@ export class GameService {
       title: 'Frontier Contract',
       subtitle: `The ${ship} arrives at the edge of charted space.`,
     });
+    this.tab.set('ops');
     this.view.set('game');
     this.startLoop();
   }
@@ -119,6 +124,7 @@ export class GameService {
     this.offlineReport.set(report);
     this.say('VESPER', `Systems restored. Welcome back, Commander ${state.commander}.`);
     this.save();
+    this.tab.set('ops');
     this.view.set('game');
     this.startLoop();
   }
@@ -174,7 +180,7 @@ export class GameService {
     } else {
       while (dt > 0) {
         const step = Math.min(dt, 1);
-        E.tick(s, step);
+        this.handleEvents(E.tick(s, step));
         dt -= step;
       }
     }
@@ -272,6 +278,107 @@ export class GameService {
     this.act(E.buyCargo, () => this.audio.buy());
   }
 
+  sellIngots(ore: OreId): void {
+    this.act((s) => E.sellIngots(s, ore) > 0, () => this.audio.sell());
+  }
+
+  toggleAutoSell(kind: 'ore' | 'ingot', ore: OreId): void {
+    this.act((s) => E.toggleAutoSell(s, kind, ore), () => this.audio.blip());
+  }
+
+  toggleSmartSell(): void {
+    this.act(E.toggleSmartSell, () => this.audio.blip());
+  }
+
+  // ------------------------------------------------------------ zones
+
+  setZone(id: ZoneId): void {
+    this.act(
+      (s) => E.setZone(s, id),
+      () => {
+        this.audio.select();
+        const z = zoneDef(id);
+        this.say('VESPER', `Course set: ${z.name}. ${z.desc}`);
+      },
+    );
+  }
+
+  // ------------------------------------------------------------ research
+
+  startResearch(id: string): void {
+    this.act(
+      (s) => E.startResearch(s, id),
+      () => {
+        this.audio.select();
+        if (!this._state()!.flags['firstResearch']) {
+          this._state()!.flags['firstResearch'] = true;
+          this.say('VESPER', 'Research underway. Projects continue while you are away — the lab never sleeps. Neither do I.');
+        }
+      },
+    );
+  }
+
+  cancelResearch(index: number): void {
+    this.act((s) => E.cancelResearch(s, index), () => this.audio.blip());
+  }
+
+  // ------------------------------------------------------------ refinery
+
+  startBatch(index: number, ore: OreId): void {
+    this.act((s) => E.startBatch(s, index, ore), () => this.audio.buy());
+  }
+
+  setSlotRepeat(index: number, repeat: boolean): void {
+    this.act(
+      (s) => {
+        if (!E.setSlotRepeat(s, index, repeat)) return false;
+        // Turning repeat on for an idle, assigned slot starts it right away.
+        const slot = s.refinery.slots[index];
+        if (repeat && slot.ore && slot.batch === 0) E.startBatch(s, index, slot.ore);
+        return true;
+      },
+      () => this.audio.blip(),
+    );
+  }
+
+  clearSlot(index: number): void {
+    this.act((s) => E.clearSlot(s, index), () => this.audio.blip());
+  }
+
+  private handleEvents(ev: TickEvents): void {
+    for (const r of ev.research) {
+      const node = researchNode(r.id);
+      const lvl = node.maxLevel > 1 ? ` (level ${r.level})` : '';
+      this.audio.dataCore();
+      this.say('VESPER', `Research complete: ${node.name}${lvl}. ${node.effect}.`);
+      if (r.eureka) this.say('VESPER', 'EUREKA! A breakthrough — the project cost has been fully refunded.', 900);
+      this.researchAnnouncements(r.id);
+    }
+  }
+
+  private researchAnnouncements(id: string): void {
+    switch (id) {
+      case 'refinery':
+        this.say('JUNO', 'A refinery! Ten rocks in, one shiny bar out. Check the OPS panel, Commander.', 1500);
+        break;
+      case 'survey_trojan':
+        this.say('VESPER', 'New survey zone charted. Open the MAP to change course.', 1500);
+        break;
+      case 'drill_mk3':
+        this.say('JUNO', "Mk.III is in! That purple stuff is Iridium — and it's worth a fortune.", 1500);
+        break;
+      case 'auto_sell':
+        this.say('VESPER', 'Auto-Sell online. Toggle AUTO on any cargo row.', 1500);
+        break;
+      case 'auto_refine':
+        this.say('VESPER', 'Auto-Refine online. Set a slot to REPEAT and it will keep itself fed.', 1500);
+        break;
+      case 'drill_mk4':
+        this.say('JUNO', 'Mk.IV online! Helium-3, here we come. Fuel of the future, right?', 1500);
+        break;
+    }
+  }
+
   private act(fn: (s: GameState) => boolean, onSuccess: () => void): void {
     const s = this._state();
     if (!s) return;
@@ -306,6 +413,9 @@ export class GameService {
     const tier = E.nextTierUpgrade(s);
     if (tier && s.credits >= tier.cost * 0.5) {
       once('hintTier', 'JUNO', `Commander, with ${this.fmt(tier.cost)} credits we could refit to a ${tier.name}. Just saying!`);
+    }
+    if (s.surveyData > 0) {
+      once('hintLab', 'VESPER', 'Survey Data recovered from the cracked asteroid. The LAB is now online — spend it on research.');
     }
   }
 }

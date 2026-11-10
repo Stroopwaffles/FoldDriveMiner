@@ -1,4 +1,4 @@
-import { CONFIG } from './config';
+import { CONFIG, ZONES } from './config';
 import * as E from './engine';
 import { formatNumber } from './format';
 import { fromExportString, migrate, toExportString } from './save';
@@ -102,7 +102,7 @@ describe('engine', () => {
     const s = fresh();
     s.drones.prospector = 10;
     E.tick(s, 10);
-    expect(s.cargo.ferrite).toBeCloseTo(10 * CONFIG.drones.prospector.orePerSec * 10 * CONFIG.homeField.ferrite!, 6);
+    expect(s.cargo.ferrite).toBeCloseTo(10 * CONFIG.drones.prospector.orePerSec * 10 * ZONES[0].composition.ferrite!, 6);
     expect(E.droneMultiplier(24)).toBe(1);
     expect(E.droneMultiplier(25)).toBe(2);
     expect(E.droneMultiplier(50)).toBe(4);
@@ -124,7 +124,7 @@ describe('engine', () => {
     const cap = CONFIG.offline.capHours * 3600;
     expect(r.cappedSeconds).toBe(cap);
     expect(r.gained.ferrite).toBeCloseTo(
-      CONFIG.drones.prospector.orePerSec * cap * CONFIG.offline.efficiency * CONFIG.homeField.ferrite!,
+      CONFIG.drones.prospector.orePerSec * cap * CONFIG.offline.efficiency * ZONES[0].composition.ferrite!,
       4,
     );
   });
@@ -164,5 +164,169 @@ describe('formatNumber', () => {
   it('supports scientific and engineering', () => {
     expect(formatNumber(12345, 'scientific')).toBe('1.23e4');
     expect(formatNumber(12345, 'engineering')).toBe('12.35e3');
+  });
+});
+
+describe('milestone 2: zones, research, refinery, auto-sell', () => {
+  function rich(): GameState {
+    const s = fresh();
+    s.credits = 1e9;
+    s.surveyData = 1e6;
+    return s;
+  }
+
+  function finishAll(s: GameState) {
+    return E.tick(s, 1e6);
+  }
+
+  it('research costs Survey Data + credits, runs in a lab slot and applies on completion', () => {
+    const s = rich();
+    const sd = s.surveyData;
+    expect(E.startResearch(s, 'refinery')).toBe(true);
+    expect(s.surveyData).toBeLessThan(sd);
+    expect(s.research.active.length).toBe(1);
+    expect(E.researchBlocker(s, 'survey_trojan')).toBe('All lab benches busy');
+    const ev = finishAll(s);
+    expect(ev.research.map((r) => r.id)).toEqual(['refinery']);
+    expect(E.hasResearch(s, 'refinery')).toBe(true);
+    expect(s.refinery.slots.length).toBe(1);
+  });
+
+  it('enforces prerequisites and drill tier', () => {
+    const s = rich();
+    expect(E.researchStatus(s, 'drill_mk3')).toBe('locked');
+    E.startResearch(s, 'survey_trojan');
+    finishAll(s);
+    expect(E.researchBlocker(s, 'drill_mk3')).toMatch(/Mk\.II/);
+    E.buyDrillTier(s);
+    expect(E.startResearch(s, 'drill_mk3')).toBe(true);
+    finishAll(s);
+    expect(s.drill.tier).toBe(3);
+  });
+
+  it('teaser nodes cannot be researched', () => {
+    const s = rich();
+    expect(E.researchStatus(s, 'fold_drive')).toBe('teaser');
+    expect(E.startResearch(s, 'fold_drive')).toBe(false);
+  });
+
+  it('cancelling refunds the cost', () => {
+    const s = rich();
+    const before = { sd: s.surveyData, cr: s.credits };
+    E.startResearch(s, 'refinery');
+    E.cancelResearch(s, 0);
+    expect(s.surveyData).toBe(before.sd);
+    expect(s.credits).toBe(before.cr);
+  });
+
+  it('extra lab benches allow parallel research', () => {
+    const s = rich();
+    s.research.levels['lab_slot_2'] = 1;
+    expect(E.startResearch(s, 'refinery')).toBe(true);
+    expect(E.startResearch(s, 'survey_trojan')).toBe(true);
+    expect(E.startResearch(s, 'core_sampling')).toBe(false);
+  });
+
+  it('zones change the asteroid mix and need research', () => {
+    const s = rich();
+    expect(E.setZone(s, 'trojan')).toBe(false);
+    s.research.levels['survey_trojan'] = 1;
+    expect(E.setZone(s, 'trojan')).toBe(true);
+    expect(s.asteroid.zone).toBe('trojan');
+    expect(s.asteroid.composition.iridium).toBeGreaterThan(0);
+  });
+
+  it('refines ore into ingots worth more than the ore', () => {
+    const s = rich();
+    s.research.levels['refinery'] = 1;
+    E.syncRefinerySlots(s);
+    s.cargo.ferrite = 20;
+    expect(E.startBatch(s, 0, 'ferrite')).toBe(true);
+    expect(s.cargo.ferrite).toBe(0);
+    E.tick(s, E.batchDuration(s) + 0.01);
+    expect(s.ingots.ferrite).toBeCloseTo(2, 6);
+    expect(E.ingotPrice(s, 'ferrite') / E.oreRatio(s)).toBeGreaterThan(E.orePrice(s, 'ferrite'));
+  });
+
+  it('won\'t start a batch without enough ore', () => {
+    const s = rich();
+    s.research.levels['refinery'] = 1;
+    E.syncRefinerySlots(s);
+    s.cargo.ferrite = 5;
+    expect(E.startBatch(s, 0, 'ferrite')).toBe(false);
+  });
+
+  it('auto-refine repeats batches while ore lasts', () => {
+    const s = rich();
+    s.research.levels['refinery'] = 1;
+    s.research.levels['auto_refine'] = 1;
+    E.syncRefinerySlots(s);
+    s.cargo.ferrite = 25; // batch cap is 25% of 100 → 20 ore per batch
+    E.startBatch(s, 0, 'ferrite');
+    E.setSlotRepeat(s, 0, true);
+    s.cargo.ferrite += 20;
+    E.tick(s, E.batchDuration(s) * 2 + 0.1);
+    expect(s.ingots.ferrite).toBeCloseTo(4, 6);
+  });
+
+  it('auto-sell sells flagged items; smart sell waits for good prices', () => {
+    const s = rich();
+    s.research.levels['auto_sell'] = 1;
+    s.research.levels['market_analysis'] = 1;
+    E.toggleAutoSell(s, 'ore', 'ferrite');
+    s.cargo.ferrite = 50;
+    E.tick(s, 0.1);
+    expect(s.cargo.ferrite).toBeLessThan(1);
+
+    E.toggleSmartSell(s);
+    // Find a moment when Ferrite is below average.
+    while (E.marketMultiplier(s.marketClock + 0.1, 'ferrite') >= 1) s.marketClock += 1;
+    s.cargo.ferrite = 50;
+    E.tick(s, 0.1);
+    expect(s.cargo.ferrite).toBe(50);
+  });
+
+  it('research bonuses apply: cargo, drones, survey data, overdrive', () => {
+    const s = rich();
+    const cap = E.cargoCapacity(s);
+    s.research.levels['cargo_compression'] = 2;
+    expect(E.cargoCapacity(s)).toBe(Math.floor(cap * 1.5));
+    s.drones.prospector = 1;
+    const rate = E.perDroneRate(s);
+    s.research.levels['drone_efficiency'] = 1;
+    expect(E.perDroneRate(s)).toBeCloseTo(rate * 1.25, 6);
+    s.research.levels['core_sampling'] = 2;
+    expect(E.surveyDataPerCrack(s)).toBeCloseTo(2, 6);
+    s.research.levels['overdrive_tuning'] = 1;
+    expect(E.overdriveMult(s)).toBe(3.5);
+  });
+
+  it('offline time completes research and refines at full speed', () => {
+    const s = rich();
+    s.research.levels['refinery'] = 1;
+    s.research.levels['auto_refine'] = 1;
+    E.syncRefinerySlots(s);
+    s.cargo.ferrite = 25;
+    E.startBatch(s, 0, 'ferrite');
+    E.startResearch(s, 'survey_trojan');
+    const r = E.simulateOffline(s, 3600);
+    expect(r.research.map((d) => d.id)).toContain('survey_trojan');
+    expect(r.ingots.ferrite).toBeGreaterThan(0);
+    expect(r.efficiency).toBe(0.5);
+  });
+
+  it('migrates a version 1 save', () => {
+    const v1 = fresh() as unknown as Record<string, unknown>;
+    v1['version'] = 1;
+    delete v1['research'];
+    delete v1['refinery'];
+    delete v1['ingots'];
+    delete v1['autoSell'];
+    delete v1['zone'];
+    const m = migrate(v1);
+    expect(m.version).toBe(2);
+    expect(m.zone).toBe('inner');
+    expect(m.research.levels).toEqual({});
+    expect(m.ingots.ferrite).toBe(0);
   });
 });

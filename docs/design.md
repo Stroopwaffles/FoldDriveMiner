@@ -340,6 +340,8 @@ Events are threats; **anomalies are opportunities and mysteries**.
 
 ## 13. Milestones (proposed)
 
+> **Done:** M1 and M2. M2 implementation choices: ingots don't use cargo space; a refinery batch is 25% of cargo capacity; refinery upgrades come only from research; Drill Mk.II is bought with credits while Mk.III/IV are researched; research and the refinery run at full speed offline (only drones are reduced); home-sector zones are fixed (Inner Belt, Trojan Cluster, Ring Debris, Ice Halo) until sector generation in M5.
+
 1. **M1 — Playable core:** title screen, HUD shell, asteroid clicking + heat/Overdrive, Ferrite/Titanite, cargo, selling + market drift, drill upgrades, Mk.I drones, number formatting, save/autosave/offline report, basic code-generated SFX.
 2. **M2 — Economy depth:** refinery, research (Survey Data, lab slots), Iridium/Helium-3, Auto-Sell/Auto-Refine, survey zones.
 3. **M3 — Fleet & crew:** drone types, mechs, loadouts + power budget, repair bay, pilots, station posts.

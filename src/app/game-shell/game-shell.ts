@@ -13,15 +13,18 @@ import { ORES } from '../game/config';
 import { OfflineReport } from '../game/types';
 import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
+import { researchNode } from '../game/research';
 import { AudioService } from '../services/audio.service';
-import { GameService } from '../services/game.service';
+import { GameService, Tab } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
 import { SettingsPanel } from '../ui/settings-panel';
 import { AsteroidViewport } from './asteroid-viewport';
+import { LabPanel } from './lab-panel';
+import { MapPanel } from './map-panel';
 import { OpsPanel } from './ops-panel';
 
 interface NavItem {
-  id: string;
+  id: Tab | 'hangar' | 'crew' | 'board';
   label: string;
   kana: string;
   icon: string;
@@ -31,7 +34,7 @@ interface NavItem {
 
 @Component({
   selector: 'fdm-game-shell',
-  imports: [AsteroidViewport, OpsPanel, SettingsPanel],
+  imports: [AsteroidViewport, OpsPanel, LabPanel, MapPanel, SettingsPanel],
   templateUrl: './game-shell.html',
   styleUrl: './game-shell.scss',
   host: {
@@ -47,21 +50,33 @@ export class GameShell {
   protected readonly menuOpen = signal(false);
   protected readonly lockedHint = signal<string | null>(null);
 
-  protected readonly nav: NavItem[] = [
+  private readonly labOpen = computed(() => {
+    const s = this.s();
+    return s.surveyData > 0 || s.stats.asteroidsCracked > 0 || Object.keys(s.research.levels).length > 0;
+  });
+  private readonly mapOpen = computed(() => E.unlockedZones(this.s()).length > 1);
+  /** Lab badge: a bench is free and something can be started. */
+  protected readonly labReady = computed(() => {
+    const s = this.s();
+    if (s.research.active.length >= E.labSlots(s)) return false;
+    return E.RESEARCH.some((n) => E.researchBlocker(s, n.id) === null);
+  });
+
+  protected readonly nav = computed<NavItem[]>(() => [
     { id: 'ops', label: 'OPS', kana: 'さぎょう', icon: '◆', locked: false, hint: '' },
     { id: 'hangar', label: 'HANGAR', kana: 'かくのうこ', icon: '⬢', locked: true, hint: 'Mech hangar not yet installed.' },
     { id: 'crew', label: 'CREW', kana: 'クルー', icon: '☺', locked: true, hint: 'Crew quarters sealed. Pilots arrive later.' },
-    { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: true, hint: 'Research lab offline.' },
-    { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: true, hint: 'Survey sensors offline.' },
+    { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: !this.labOpen(), hint: 'Research lab offline. Crack an asteroid to recover Survey Data.' },
+    { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
     { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: true, hint: 'Contract board unavailable.' },
-  ];
+  ]);
 
   protected readonly ticker = computed(() => {
     const s = this.s();
     return ORES.map((o) => ({
       ore: o,
       // Same visibility as the cargo table: current tier plus the next one up.
-      known: o.tier <= Math.max(s.drill.tier, 2),
+      known: o.tier <= Math.max(s.drill.tier + 1, 2) && o.tier <= 4,
       price: E.orePrice(s, o.id),
       trend: E.priceTrend(s, o.id),
     }));
@@ -84,13 +99,24 @@ export class GameShell {
       `TIME AWAY ........ ${formatDuration(r.seconds)}`,
     ];
     if (r.seconds > r.cappedSeconds) lines.push(`LOG CAPPED AT .... ${formatDuration(r.cappedSeconds)}`);
-    lines.push('DRONE OUTPUT ..... 50% (UNSUPERVISED)');
+    lines.push(`DRONE OUTPUT ..... ${Math.round(r.efficiency * 100)}% (UNSUPERVISED)`);
     let any = false;
     for (const o of ORES) {
       if (r.gained[o.id] > 0.01) {
         any = true;
         lines.push(`+ ${this.game.fmt(r.gained[o.id])} ${o.name.toUpperCase()}`);
       }
+    }
+    for (const o of ORES) {
+      if (r.ingots[o.id] > 0.01) {
+        any = true;
+        lines.push(`+ ${this.game.fmt(r.ingots[o.id])} ${o.name.toUpperCase()} INGOTS REFINED`);
+      }
+    }
+    if (r.credits > 0) lines.push(`+ ${this.game.fmt(r.credits)} CR FROM AUTO-SELL`);
+    for (const done of r.research) {
+      const n = researchNode(done.id);
+      lines.push(`RESEARCH COMPLETE: ${n.name.toUpperCase()}${n.maxLevel > 1 ? ` LV ${done.level}` : ''}${done.eureka ? ' — EUREKA!' : ''}`);
     }
     if (!any) lines.push('NO ORE COLLECTED. DEPLOY DRONES FOR IDLE INCOME.');
     if (r.cargoFull) lines.push(`⚠ CARGO HOLD FILLED — ${this.game.fmt(r.lost)} t OF ORE LOST`);
@@ -142,6 +168,7 @@ export class GameShell {
       setTimeout(() => this.lockedHint.set(null), 2200);
     } else {
       this.audio.blip();
+      this.game.tab.set(item.id as Tab);
     }
   }
 

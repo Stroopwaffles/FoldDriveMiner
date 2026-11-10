@@ -2,25 +2,27 @@
  * Save format, migrations and export/import encoding.
  * Pure functions so they can be tested without a browser.
  */
-import { newGame } from './engine';
+import { newGame, syncRefinerySlots } from './engine';
 import { GameState } from './types';
 
-export const CURRENT_VERSION = 1;
+export const CURRENT_VERSION = 2;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
 
-/** Upgrades older save shapes to the current version. */
+/** Upgrades older save shapes to the current version, one step at a time. */
 export function migrate(raw: unknown): GameState {
   if (!raw || typeof raw !== 'object') throw new SaveError('Save data is not an object.');
-  const data = raw as { version?: unknown };
-  switch (data.version) {
-    case 1:
-      return fillDefaults(raw as Partial<GameState>);
-    // Future: case 2 → convert, fall through to the next version.
-    default:
-      throw new SaveError(`Unknown save version: ${String(data.version)}`);
+  const data = raw as Record<string, unknown>;
+  if (data['version'] === 1) {
+    // v2 adds zones, research, refinery, ingots and auto-sell. All of them
+    // start empty, so fillDefaults supplies them; only the version changes.
+    data['version'] = 2;
   }
+  if (data['version'] !== CURRENT_VERSION) {
+    throw new SaveError(`Unknown save version: ${String(data['version'])}`);
+  }
+  return fillDefaults(data as Partial<GameState>);
 }
 
 /** Fills any missing fields from a fresh game, so new fields never break old saves. */
@@ -33,6 +35,7 @@ function fillDefaults(saved: Partial<GameState>): GameState {
   if (!merged.asteroid || typeof merged.asteroid.mass !== 'number') {
     throw new SaveError('Save data is corrupt (asteroid).');
   }
+  syncRefinerySlots(merged);
   return merged;
 }
 

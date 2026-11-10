@@ -5,8 +5,8 @@
 
   <div class="sector-label">
     <span class="led"></span>
-    SECTOR {{ st?.sector?.code }} · {{ st?.sector?.name }}
-    <span class="dim">· {{ st?.sector?.star }}</span>
+    SECTOR {{ st?.sector?.code }} · {{ zoneName() }}
+    <span class="dim">· {{ st?.sector?.name }}</span>
   </div>
 
   <div class="asteroid-info">
@@ -109,7 +109,7 @@
       @if (locked()) {
         <span class="heat-status bad">⚠ OVERHEAT — VENTING</span>
       } @else if (game.overdrive()) {
-        <span class="heat-status od">OVERDRIVE ×{{ odMult }}</span>
+        <span class="heat-status od">OVERDRIVE ×{{ odMult() }}</span>
       } @else {
         <span class="heat-status">POWER {{ game.fmt(game.power()) }}/CLICK</span>
       }

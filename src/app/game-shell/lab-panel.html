@@ -1,0 +1,101 @@
+@let st = s();
+<section class="panel lab">
+  <div class="panel-title">
+    <span class="led" [class.amber]="st.research.active.length > 0"></span>Research Lab <span class="kana">けんきゅうじょ</span>
+    <span class="sd">SURVEY DATA <b>{{ game.fmt(st.surveyData) }}</b></span>
+  </div>
+
+  <!-- Lab benches -->
+  <div class="benches">
+    @for (b of benches(); track $index; let i = $index) {
+      <div class="bench" [class.busy]="b">
+        <div class="bench-label">BENCH {{ i + 1 }}</div>
+        @if (b) {
+          <div class="bench-name">{{ b.name }}</div>
+          <div class="bench-bar"><div class="bench-fill" [style.width.%]="b.progress * 100"></div></div>
+          <div class="bench-foot">
+            <span class="computing">COMPUTING… {{ b.remaining }}</span>
+            <button type="button" class="btn tiny" (click)="game.cancelResearch(i)" title="Cancel and refund">✕</button>
+          </div>
+        } @else {
+          <div class="bench-idle">— IDLE — select a project below</div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Detail of the selected node -->
+  @let sel = selected();
+  <div class="detail" [style.--bc]="branchColor(sel.node.branch)">
+    <div class="detail-main">
+      <div class="detail-name">
+        {{ sel.node.name }}
+        @if (sel.node.maxLevel > 1) {
+          <span class="lvl">LV {{ sel.level }}/{{ sel.node.maxLevel }}</span>
+        }
+      </div>
+      <div class="detail-effect">{{ sel.node.effect }}</div>
+      <div class="detail-flavor">“{{ sel.node.flavor }}” — VESPER</div>
+    </div>
+    <div class="detail-side">
+      @if (sel.status !== 'teaser' && sel.status !== 'maxed') {
+        <div class="costs">
+          <span [class.short]="st.surveyData < sel.cost.sd">◈ {{ game.fmt(sel.cost.sd) }} SD</span>
+          <span [class.short]="st.credits < sel.cost.cr">{{ game.fmt(sel.cost.cr) }} cr</span>
+          <span>⏱ {{ duration(sel.cost.sec) }}</span>
+        </div>
+      }
+      <button type="button" class="btn btn-primary" [disabled]="blocker() !== null" (click)="start()">
+        {{ sel.status === 'maxed' ? 'Complete' : sel.status === 'active' ? 'Researching' : 'Research' }}
+      </button>
+      @if (blocker(); as b) {
+        <div class="blocker">{{ b }}</div>
+      }
+    </div>
+  </div>
+
+  <!-- Tree -->
+  <div class="tree-scroll">
+    <div class="tree" [style.width.px]="width" [style.height.px]="height">
+      @for (b of branches; track b.id; let col = $index) {
+        <div class="branch-head" [style.left.px]="col * colW + 8" [style.width.px]="nodeW" [style.color]="b.color">
+          {{ b.name }} <span class="kana">{{ b.kana }}</span>
+        </div>
+      }
+
+      <svg class="traces" [attr.width]="width" [attr.height]="height" aria-hidden="true">
+        @for (t of traces(); track $index) {
+          <path [attr.d]="t.d" class="trace" [class.lit]="t.lit" />
+        }
+      </svg>
+
+      @for (n of nodes(); track n.node.id) {
+        <button
+          type="button"
+          class="node"
+          [class]="'node status-' + n.status"
+          [class.selected]="n.node.id === selectedId()"
+          [class.affordable]="n.status === 'available' && n.affordable"
+          [style.left.px]="n.x"
+          [style.top.px]="n.y"
+          [style.width.px]="nodeW"
+          [style.height.px]="nodeH"
+          [style.--bc]="branchColor(n.node.branch)"
+          (click)="select(n.node.id)"
+        >
+          <span class="pins" aria-hidden="true"></span>
+          <span class="node-name">{{ n.status === 'teaser' ? 'CLASSIFIED' : n.node.name }}</span>
+          @if (n.node.maxLevel > 1) {
+            <span class="node-lvl">LV {{ n.level }}/{{ n.node.maxLevel }}</span>
+          } @else if (n.status === 'maxed') {
+            <span class="node-lvl">✔ DONE</span>
+          }
+          <span class="node-effect">{{ n.status === 'teaser' ? n.node.teaser : n.node.effect }}</span>
+          @if (n.progress !== null) {
+            <span class="node-progress"><span [style.width.%]="n.progress * 100"></span></span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+</section>

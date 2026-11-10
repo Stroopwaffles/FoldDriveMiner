@@ -43,11 +43,12 @@
 
   <!-- NAV -->
   <nav class="nav panel" aria-label="Ship systems">
-    @for (item of nav; track item.id) {
+    @for (item of nav(); track item.id) {
       <button
         type="button"
         class="nav-btn"
-        [class.active]="item.id === 'ops'"
+        [class.active]="item.id === game.tab()"
+        [class.ready]="item.id === 'lab' && !item.locked && labReady()"
         [class.locked]="item.locked"
         [attr.aria-disabled]="item.locked"
         [title]="item.locked ? item.hint : item.label"
@@ -72,7 +73,17 @@
       <fdm-asteroid-viewport />
     </div>
     <div class="panel-wrap">
-      <fdm-ops-panel />
+      @switch (game.tab()) {
+        @case ('lab') {
+          <fdm-lab-panel />
+        }
+        @case ('map') {
+          <fdm-map-panel />
+        }
+        @default {
+          <fdm-ops-panel />
+        }
+      }
     </div>
   </main>
 

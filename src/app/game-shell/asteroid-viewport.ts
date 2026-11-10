@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { CONFIG, ORES, ORE_IDS, oreDef } from '../game/config';
+import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
+import { overdriveMult } from '../game/engine';
 import { Rng } from '../game/rng';
 import { AsteroidState } from '../game/types';
 import { GameService } from '../services/game.service';
@@ -113,14 +114,21 @@ export class AsteroidViewport {
     const a = this.game.state()?.asteroid;
     return a ? a.mass / a.maxMass : 1;
   });
-  protected readonly massLeft = computed(() => this.game.state()?.asteroid.mass ?? 0);
+  protected readonly zoneName = computed(() => {
+    const s = this.game.state();
+    return s ? zoneDef(s.zone).name : '';
+  });
+  protected readonly massLeft =computed(() => this.game.state()?.asteroid.mass ?? 0);
   protected readonly cracksShown = computed(() => Math.ceil((1 - this.integrity()) * 6));
 
   protected readonly heat = computed(() => this.game.state()?.drill.heat ?? 0);
   protected readonly locked = computed(() => (this.game.state()?.drill.lockRemaining ?? 0) > 0);
   protected readonly heatMax = CONFIG.heat.max;
   protected readonly odMin = CONFIG.heat.overdriveMin;
-  protected readonly odMult = CONFIG.heat.overdriveMult;
+  protected readonly odMult = computed(() => {
+    const s = this.game.state();
+    return s ? overdriveMult(s) : CONFIG.heat.overdriveMult;
+  });
   protected readonly Math = Math;
 
   private readonly droneCount = computed(() => Math.min(this.game.state()?.drones.prospector ?? 0, 18));
@@ -175,6 +183,7 @@ export class AsteroidViewport {
     }
     if (r.lost > 0.0001 && shown === 0) this.addFloat(x, y, 'CARGO FULL', '#ffd23f', false);
     if (r.dataCore) this.addFloat(x, y - 50, '+1 DATA CORE', '#ff3d9a', true);
+    if (r.surveyData > 0) this.addFloat(x - 20, y + 30, `+${this.game.fmt(r.surveyData)} SURVEY DATA`, '#4fe3ff', true);
 
     if (!this.settings.reducedMotion()) {
       this.burst(x, y, r.cracked ? 22 : r.overdrive ? 8 : 5);
