@@ -1,6 +1,7 @@
 /** Small helpers shared by every rules module. */
 import { ORE_IDS, OreId, ZoneDef, ZoneId, oreDef, zoneDef } from './config';
 import { GameState, OreAmounts, OreFlags } from './types';
+import { ANOMALY } from './anomaly-data';
 
 export function emptyOre(): OreAmounts {
   return { ferrite: 0, titanite: 0, iridium: 0, helium3: 0, voidglass: 0 };
@@ -60,4 +61,10 @@ export function splitByZone(state: GameState, zone: ZoneDef, total: number, into
 
 export function nextId(state: GameState): number {
   return state.nextId++;
+}
+
+/** Comet Pass: a tracked comet doubles production in its zone. */
+export function zoneBoost(state: GameState, zone: ZoneId): number {
+  const list = state.anomalies?.list ?? [];
+  return list.some((a) => a.kind === 'comet' && a.status === 'active' && a.zone === zone) ? ANOMALY.cometMult : 1;
 }

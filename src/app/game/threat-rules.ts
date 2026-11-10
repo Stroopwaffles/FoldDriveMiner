@@ -2,7 +2,8 @@
  * Threats: hazard and market events, Pirate Heat, raids resolved as automatic
  * sorties, rogue asteroids, drone wrecks and the Vermilion Jackal.
  */
-import { CONFIG, ORE_IDS, OreId, ZONES, oreDef } from './config';
+import { CONFIG, ORE_IDS, OreId, oreDef } from './config';
+import { sectorMods, sectorZones } from './sector-rules';
 import { emptyOre, hasResearch, oreReachable, researchLevel, splitByZone, currentZone } from './common';
 import { hasTrait, pilotById, pilotStats, postBonus, syncLevel } from './crew-rules';
 import { DRONE_IDS, DroneType, MECH, PARTS } from './fleet-data';
@@ -20,7 +21,7 @@ import {
 } from './threat-data';
 import { ActiveEvent, GameState, MechState, SortieReport, SortieRound, ThreatState, TickEvents } from './types';
 // Engine helpers (cyclic import, only used at call time).
-import { addToCargo, cargoUsed, drillPower, orePrice } from './engine';
+import { addToCargo, baseDrillPower, cargoUsed, drillPower, orePrice } from './engine';
 
 /** Limits on losses while the player is away. */
 export interface LossContext {
@@ -98,7 +99,7 @@ export function heatPerSec(state: GameState): number {
 }
 
 function zoneIndex(state: GameState): number {
-  return Math.max(0, ZONES.findIndex((z) => z.id === state.zone));
+  return Math.max(0, sectorZones(state).findIndex((z) => z.id === state.zone));
 }
 
 /** How hard a raid hits right now (before Jackal and strike multipliers). */
@@ -703,8 +704,9 @@ function pickEvent(state: GameState, rng: Rng): EventKind | null {
     return true;
   });
   if (!options.length) return null;
+  const sectorWeights = sectorMods(state).eventWeights;
   const weight = (k: EventKind) => {
-    const base = eventDef(k).weight;
+    const base = eventDef(k).weight * (sectorWeights[k] ?? 1);
     return k === 'raid' ? base * (1 + t.heat * THREAT.heat.raidWeightPerHeat) : base;
   };
   const total = options.reduce((s, e) => s + weight(e.kind), 0);
@@ -729,7 +731,7 @@ export function startEvent(state: GameState, kind: EventKind, events: TickEvents
     ev.strength = raidStrength(state) * (jackal ? jackalStrengthMult(state) : 1);
   }
   if (kind === 'rogue') {
-    ev.rogueMax = drillPower(state) * THREAT.rogue.clicks;
+    ev.rogueMax = baseDrillPower(state) * THREAT.rogue.clicks;
     ev.rogueHp = ev.rogueMax;
   }
   if (kind === 'boom' || kind === 'crash') {
@@ -803,7 +805,7 @@ export function advanceThreats(state: GameState, dt: number, events: TickEvents,
   if (t.nextIn <= 0) {
     const rng = new Rng(state.rng);
     const kind = pickEvent(state, rng);
-    t.nextIn = rng.range(THREAT.intervalMin, THREAT.intervalMax);
+    t.nextIn = rng.range(THREAT.intervalMin, THREAT.intervalMax) * sectorMods(state).eventInterval;
     state.rng = rng.state;
     if (kind) startEvent(state, kind, events);
   }

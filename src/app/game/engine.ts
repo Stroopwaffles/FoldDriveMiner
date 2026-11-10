@@ -7,6 +7,7 @@ import { CONFIG, ORE_IDS, OreId, ZONES, ZoneDef, ZoneId, oreDef } from './config
 import {
   addOre,
   currentZone,
+  zoneBoost,
   emptyFlags,
   emptyOre,
   hasResearch,
@@ -31,6 +32,8 @@ import {
   salvagerDepletionBonus,
 } from './fleet-rules';
 import { RESEARCH, researchNode } from './research';
+import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
+import { generateSector, pulsarSurge, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
   LossContext,
   ONLINE,
@@ -71,6 +74,7 @@ function emptyEvents(): TickEvents {
     autoRepairs: [],
     threatStarted: [],
     threatResolved: [],
+    anomaly: [],
     ingots: emptyOre(),
     autoSoldCredits: 0,
   };
@@ -80,7 +84,7 @@ function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 4,
+    version: 5,
     commander,
     ship,
     createdAt: now,
@@ -106,8 +110,9 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     nextId: 1,
     wrecks: emptyDrones(),
     threats: emptyThreats(),
+    anomalies: emptyAnomalies(),
     asteroid: null as unknown as AsteroidState,
-    sector: { code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
+    sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
     research: { levels: {}, active: [] },
     refinery: { slots: [], capacityLevel: 0 },
@@ -127,8 +132,19 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     },
     flags: {},
   };
+  syncSector(state);
+  ensureAnomalies(state);
   state.asteroid = spawnAsteroid(state);
   return state;
+}
+
+/** Keeps the stored sector labels in step with the generated sector. */
+export function syncSector(state: GameState): void {
+  const def = generateSector(state.sector.seed, state.sector.depth);
+  state.sector.code = def.code;
+  state.sector.name = def.name;
+  state.sector.star = starLabel(def);
+  if (!def.zones.some((z) => z.id === state.zone)) state.zone = def.zones[0].id;
 }
 
 export function spawnAsteroid(state: GameState): AsteroidState {
@@ -138,7 +154,9 @@ export function spawnAsteroid(state: GameState): AsteroidState {
   const growth = Math.min(1 + state.stats.asteroidsCracked * a.massGrowthPerCrack, a.maxMassMult);
   const wobble = rng.range(0.8, 1.25);
   // Scale with drill power too, so upgrades don't make asteroids trivial.
-  const mass = Math.round(Math.max(a.baseMass * zone.massMult * growth, drillPower(state) * a.minClicks) * wobble);
+  const mass = Math.round(
+    Math.max(a.baseMass * zone.massMult * growth, baseDrillPower(state) * a.minClicks) * wobble * sectorMods(state).asteroidMass,
+  );
   const rich = rng.next() < a.richChance;
 
   // Wobble the zone's mix; rich rocks carry far more of the zone's top ore.
@@ -175,20 +193,30 @@ export function setZone(state: GameState, id: ZoneId): boolean {
 }
 
 export function unlockedZones(state: GameState): ZoneDef[] {
-  return ZONES.filter((z) => zoneUnlocked(state, z.id));
+  return sectorZones(state).filter((z) => zoneUnlocked(state, z.id));
 }
 
 
 // ---------------------------------------------------------------- derived values
 
-export function drillPower(state: GameState): number {
+/** Drill power from upgrades alone (used to size asteroids and targets). */
+export function baseDrillPower(state: GameState): number {
   const d = CONFIG.drill;
   const lvl = state.drill.powerLevel;
   return (d.basePower + lvl * d.powerPerLevel) * 2 ** Math.floor(lvl / d.powerDoublingEvery);
 }
 
+/** Power per click right now: upgrades × sector effects × Gravity Lens × comet. */
+export function drillPower(state: GameState): number {
+  return baseDrillPower(state) * sectorMods(state).clickPower * lensMult(state) * zoneBoost(state, state.zone);
+}
+
 export function overdriveMult(state: GameState): number {
-  return CONFIG.heat.overdriveMult + researchLevel(state, 'overdrive_tuning') * CONFIG.bonuses.overdrivePerLevel;
+  return (
+    CONFIG.heat.overdriveMult +
+    researchLevel(state, 'overdrive_tuning') * CONFIG.bonuses.overdrivePerLevel +
+    sectorMods(state).overdriveBonus
+  );
 }
 
 export function heatDecay(state: GameState): number {
@@ -233,7 +261,7 @@ export function perDroneRate(state: GameState): number {
 
 /** Ore per second from mining drones (all dispatched zones, with Command Link). */
 export function droneRates(state: GameState): OreAmounts {
-  return miningDroneRates(state);
+  return miningDroneRates(state, sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state));
 }
 
 export function droneRateTotal(state: GameState): number {
@@ -246,14 +274,21 @@ export function mechRateTotal(state: GameState): number {
 
 export function surveyDataPerCrack(state: GameState): number {
   const bonus = 1 + researchLevel(state, 'core_sampling') * CONFIG.bonuses.surveyDataPerLevel;
-  return currentZone(state).surveyData * CONFIG.asteroid.surveyDataPerCrack * bonus * (1 + postBonus(state, 'sensor'));
+  return (
+    currentZone(state).surveyData *
+    CONFIG.asteroid.surveyDataPerCrack *
+    bonus *
+    (1 + postBonus(state, 'sensor')) *
+    codexSurveyBonus(state)
+  );
 }
 
 export function offlineEfficiency(state: GameState): number {
   return (
     CONFIG.offline.efficiency +
     researchLevel(state, 'offline_efficiency') * CONFIG.bonuses.offlineEfficiencyPerLevel +
-    nightOwlBonus(state)
+    nightOwlBonus(state) +
+    sectorMods(state).offlineBonus
   );
 }
 
@@ -276,8 +311,10 @@ export function marketMultiplier(clock: number, ore: OreId): number {
 export function orePrice(state: GameState, ore: OreId): number {
   return (
     oreDef(ore).baseValue *
-    marketMultiplier(state.marketClock, ore) *
+    // Trade hubs swing harder.
+    (1 + (marketMultiplier(state.marketClock, ore) - 1) * mods(state).marketAmp) *
     eventPriceMult(state, ore) *
+    mods(state).sellPrice *
     (1 + postBonus(state, 'quartermaster'))
   );
 }
@@ -377,7 +414,7 @@ export function click(state: GameState): ClickResult {
   }
 
   state.stats.clicks++;
-  drill.heat += h.perClick;
+  drill.heat += h.perClick * sectorMods(state).heatPerClick;
   if (drill.heat >= h.max) {
     drill.heat = h.max;
     drill.lockRemaining = h.lockSec;
@@ -405,7 +442,8 @@ export function click(state: GameState): ClickResult {
     const a = CONFIG.asteroid;
     const bonusFrac =
       a.depletionBonusFrac *
-      (1 + researchLevel(state, 'depletion_bonus') * CONFIG.bonuses.depletionPerLevel + salvagerDepletionBonus(state));
+      (1 + researchLevel(state, 'depletion_bonus') * CONFIG.bonuses.depletionPerLevel + salvagerDepletionBonus(state)) *
+      sectorMods(state).crackBonus;
     for (const id of ORE_IDS) {
       if (oreReachable(state, id)) haul[id] += asteroid.maxMass * bonusFrac * asteroid.composition[id];
     }
@@ -561,7 +599,7 @@ export function researchBlocker(state: GameState, id: string): string | null {
   if (status === 'active') return 'In progress';
   const missing = n.requires.filter((r) => !hasResearch(state, r)).map((r) => researchNode(r).name);
   if (missing.length) return `Requires ${missing.join(', ')}`;
-  if (n.requiresTier && state.drill.tier < n.requiresTier) return `Requires Drill Mk.${['I', 'II', 'III', 'IV'][n.requiresTier - 1]}`;
+  if (n.requiresTier && state.drill.tier < n.requiresTier) return `Requires Drill Mk.${['I', 'II', 'III', 'IV', 'V'][n.requiresTier - 1]}`;
   if (state.research.active.length >= labSlots(state)) return 'All lab benches busy';
   const cost = researchCost(state, id);
   if (state.surveyData < cost.sd) return 'Not enough Survey Data';
@@ -626,6 +664,9 @@ function applyResearchEffect(state: GameState, id: string): void {
     case 'drill_mk4':
       state.drill.tier = Math.max(state.drill.tier, 4);
       break;
+    case 'drill_mk5':
+      state.drill.tier = Math.max(state.drill.tier, 5);
+      break;
     case 'refinery':
     case 'refinery_slots':
       syncRefinerySlots(state);
@@ -681,7 +722,10 @@ export function buyFurnaceCapacity(state: GameState): boolean {
 
 export function batchDuration(state: GameState): number {
   const r = CONFIG.refinery;
-  return r.baseDurationSec * r.speedFactor ** researchLevel(state, 'refinery_speed') * (1 - postBonus(state, 'refinery'));
+  return (
+    (r.baseDurationSec * r.speedFactor ** researchLevel(state, 'refinery_speed') * (1 - postBonus(state, 'refinery'))) /
+    sectorMods(state).refinerySpeed
+  );
 }
 
 /** Loads a batch into a slot from cargo. Returns false if there isn't enough ore. */
@@ -760,17 +804,20 @@ function advance(
 
   // Hazards: sheltering from a flare stops drones; a reactor fault slows everything.
   const hazard = productionMult(state);
-  const amounts = miningDroneRates(state, efficiency * hazard.drones * hazard.all);
+  const m = sectorMods(state);
+  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * hazard.all;
+  const amounts = miningDroneRates(state, efficiency * hazard.drones * m.droneOutput * boost);
   for (const id of ORE_IDS) amounts[id] *= dt;
-  addOre(amounts, advanceFleet(state, dt, efficiency * hazard.all, events));
+  addOre(amounts, advanceFleet(state, dt, efficiency * boost, events));
   const { added, lost } = addToCargo(state, amounts);
-  state.surveyData += passiveSdRate(state) * dt * efficiency;
+  state.surveyData += passiveSdRate(state) * dt * efficiency * codexSurveyBonus(state);
 
   advanceCrew(state, dt, events);
   events.ingots = advanceRefinery(state, dt);
   events.research = advanceResearch(state, dt);
   events.autoSoldCredits = runAutoSell(state);
   advanceThreats(state, dt, events, ctx);
+  advanceAnomalies(state, dt, events, ctx.offline);
   return { ...events, added, lost };
 }
 
@@ -820,6 +867,7 @@ export function simulateOffline(state: GameState, seconds: number): OfflineRepor
   for (let i = 0; i < steps; i++) {
     const r = advance(state, dt, efficiency, ctx);
     for (const t of r.threatResolved) report.threats.push(t.text);
+    for (const a of r.anomaly) report.threats.push(a.text);
     addOre(report.gained, r.added);
     addOre(report.ingots, r.ingots);
     report.credits += r.autoSoldCredits;
@@ -832,3 +880,7 @@ export function simulateOffline(state: GameState, seconds: number): OfflineRepor
 
 /** All research nodes, for UI iteration. */
 export { RESEARCH };
+
+function mods(state: GameState) {
+  return sectorMods(state);
+}

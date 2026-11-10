@@ -128,6 +128,25 @@ export class AsteroidViewport {
   protected readonly meteorLines = Array.from({ length: 14 }, (_, i) => ({ top: (i * 37) % 100, delay: -(i * 0.31) % 1.2, len: 40 + ((i * 23) % 60) }));
   protected readonly rogueFloats = signal<{ id: number; text: string; x: number; y: number }[]>([]);
 
+  protected readonly golden = computed(() => {
+    const s = this.game.state();
+    return s ? (s.anomalies.list.find((a) => a.kind === 'golden_asteroid' && a.status === 'signal' && a.zone === s.zone) ?? null) : null;
+  });
+  protected readonly comet = computed(() => {
+    const s = this.game.state();
+    return !!s && s.anomalies.list.some((a) => a.kind === 'comet' && a.status === 'active' && a.zone === s.zone);
+  });
+
+  protected onGolden(e: MouseEvent): void {
+    const r = this.game.goldenClick();
+    if (!r || r.locked) return;
+    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const text = r.overheated ? 'OVERHEAT!' : r.cracked ? `+${this.game.fmt(r.credits)} cr!` : `-${this.game.fmt(r.damage)}`;
+    const f = { id: ++fxId, text, x: e.clientX - box.left, y: e.clientY - box.top };
+    this.rogueFloats.update((l) => [...l.slice(-8), f]);
+    setTimeout(() => this.rogueFloats.update((l) => l.filter((x) => x.id !== f.id)), 900);
+  }
+
   protected onRogue(e: MouseEvent): void {
     const r = this.game.rogueClick();
     if (!r || r.locked) return;

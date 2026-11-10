@@ -16,7 +16,7 @@
           <div class="bay-frame">{{ c.frame.name }} frame</div>
           <div class="bay-status">
             <span class="led" [style.background]="c.cond.color" [style.boxShadow]="'0 0 6px ' + c.cond.color"></span>
-            {{ c.stats.overloaded ? 'OVERLOADED' : c.mech.job === 'mining' ? 'MINING · ' + c.zoneName : c.mech.job === 'repair' ? 'IN REPAIR' : c.mech.job === 'defense' ? 'DEFENSE STANDBY' : c.cond.id === 'disabled' ? 'DISABLED' : 'IDLE' }}
+            {{ c.stats.overloaded ? 'OVERLOADED' : c.mech.job === 'mining' ? 'MINING · ' + c.zoneName : c.mech.job === 'repair' ? 'IN REPAIR' : c.mech.job === 'defense' ? 'DEFENSE STANDBY' : c.mech.job === 'mission' ? 'ON MISSION' : c.cond.id === 'disabled' ? 'DISABLED' : 'IDLE' }}
           </div>
           <div class="armor-bar"><div [style.width.%]="c.cond.frac * 100" [style.background]="c.cond.color"></div></div>
           <div class="bay-pilot">

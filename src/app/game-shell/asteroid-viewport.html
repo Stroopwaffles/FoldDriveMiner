@@ -100,6 +100,24 @@
       }
     </div>
   }
+  @if (comet()) {
+    <div class="comet" aria-hidden="true"><span></span></div>
+  }
+  @if (golden(); as g) {
+    <button type="button" class="rogue golden" (click)="onGolden($event)" aria-label="Crack the golden asteroid">
+      <svg viewBox="-50 -50 100 100" aria-hidden="true">
+        <polygon class="gold-rock" points="0,-40 28,-30 40,-4 30,26 4,38 -24,32 -40,6 -32,-24" />
+        <polygon class="gold-lit" points="-8,-34 20,-26 30,-6 6,-2 -14,-16" />
+        <circle class="sparkle" cx="14" cy="-18" r="3" />
+        <circle class="sparkle s2" cx="-18" cy="8" r="2" />
+      </svg>
+      <span class="rogue-label gold">GOLDEN · {{ (g.expires ?? 0).toFixed(0) }}s</span>
+      <span class="rogue-hp gold"><span [style.width.%]="((g.hp ?? 0) / (g.hpMax ?? 1)) * 100"></span></span>
+      @for (f of rogueFloats(); track f.id) {
+        <span class="rogue-float" [style.left.px]="f.x" [style.top.px]="f.y">{{ f.text }}</span>
+      }
+    </button>
+  }
   @if (rogue(); as r) {
     <button type="button" class="rogue" (click)="onRogue($event)" aria-label="Crack the rogue asteroid">
       <svg viewBox="-50 -50 100 100" aria-hidden="true">

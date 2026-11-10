@@ -27,7 +27,7 @@ export class OpsPanel {
   protected readonly cargoRows = computed(() => {
     const s = this.s();
     const analysis = this.hasAnalysis();
-    return ORES.filter((o) => o.tier <= Math.max(s.drill.tier + 1, 2) && o.tier <= 4).map((o) => {
+    return ORES.filter((o) => o.tier <= Math.max(s.drill.tier + 1, 2) || s.cargo[o.id] > 0).map((o) => {
       const fc = analysis ? E.priceForecast(s, o.id) : null;
       return {
         ore: o,
@@ -101,6 +101,7 @@ export class OpsPanel {
     const t = this.s().drill.tier;
     if (t === 2) return { name: 'Drill Mk.III', node: 'drill_mk3', ore: 'Iridium' };
     if (t === 3) return { name: 'Drill Mk.IV', node: 'drill_mk4', ore: 'Helium-3' };
+    if (t === 4) return { name: 'Drill Mk.V', node: 'drill_mk5', ore: 'Voidglass' };
     return null;
   });
 

@@ -29,7 +29,8 @@ export function oreDef(id: OreId): OreDef {
   return ORES.find((o) => o.id === id)!;
 }
 
-export type ZoneId = 'inner' | 'trojan' | 'ring' | 'ice';
+/** Home zones use readable ids (inner, trojan…); generated sectors use '<code>:<index>'. */
+export type ZoneId = string;
 
 export interface ZoneDef {
   id: ZoneId;
@@ -91,10 +92,28 @@ export const ZONES: readonly ZoneDef[] = [
     research: 'survey_ice',
     color: '#9dff8a',
   },
+  {
+    id: 'deep',
+    name: 'Deep Field',
+    kana: 'しんえん',
+    desc: 'The dark edge of the system. Voidglass glitters in the oldest rock.',
+    composition: { iridium: 0.35, helium3: 0.45, voidglass: 0.2 },
+    massMult: 20,
+    surveyData: 16,
+    research: 'survey_deep',
+    color: '#ff5fa2',
+  },
 ];
 
+/** Zones of generated sectors, registered when a sector is generated. */
+const generatedZones = new Map<string, ZoneDef>();
+
+export function registerZones(zones: readonly ZoneDef[]): void {
+  for (const z of zones) generatedZones.set(z.id, z);
+}
+
 export function zoneDef(id: ZoneId): ZoneDef {
-  return ZONES.find((z) => z.id === id)!;
+  return ZONES.find((z) => z.id === id) ?? generatedZones.get(id) ?? ZONES[0];
 }
 
 export const CONFIG = {

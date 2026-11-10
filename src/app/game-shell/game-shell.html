@@ -61,7 +61,7 @@
         type="button"
         class="nav-btn"
         [class.active]="item.id === game.tab()"
-        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady())"
+        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady())"
         [class.locked]="item.locked"
         [attr.aria-disabled]="item.locked"
         [title]="item.locked ? item.hint : item.label"

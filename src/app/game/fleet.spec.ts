@@ -69,8 +69,8 @@ describe('milestone 3: drones', () => {
     E.setDispatch(s, 'inner', 50);
     E.setDispatch(s, 'trojan', 50);
     const shares = E.dispatchShares(s);
-    expect(shares.inner).toBeCloseTo(0.5, 6);
-    expect(shares.trojan).toBeCloseTo(0.5, 6);
+    expect(shares['inner']).toBeCloseTo(0.5, 6);
+    expect(shares['trojan']).toBeCloseTo(0.5, 6);
     // Trojan has less Ferrite, so the split lowers Ferrite and raises Titanite vs all-inner.
     const split = E.droneRates(s);
     s.dispatch = {};

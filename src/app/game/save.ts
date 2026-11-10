@@ -2,10 +2,11 @@
  * Save format, migrations and export/import encoding.
  * Pure functions so they can be tested without a browser.
  */
-import { ensureCrew, newGame, syncRefinerySlots } from './engine';
+import { ensureCrew, newGame, syncRefinerySlots, syncSector } from './engine';
+import { ensureAnomalies } from './anomaly-rules';
 import { GameState } from './types';
 
-export const CURRENT_VERSION = 4;
+export const CURRENT_VERSION = 5;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -29,6 +30,14 @@ export function migrate(raw: unknown): GameState {
     // Both start empty; existing saves get a fresh grace period.
     data['version'] = 4;
   }
+  if (data['version'] === 4) {
+    // v5 adds the seeded sector and anomalies. Existing games are in the home
+    // sector; give it a seed derived from the save so it stays stable.
+    const sector = (data['sector'] ?? {}) as Record<string, unknown>;
+    if (typeof sector['seed'] !== 'number') sector['seed'] = (Number(data['createdAt']) || 1) >>> 0;
+    data['sector'] = sector;
+    data['version'] = 5;
+  }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);
   }
@@ -47,6 +56,8 @@ function fillDefaults(saved: Partial<GameState>): GameState {
   }
   syncRefinerySlots(merged);
   ensureCrew(merged);
+  syncSector(merged);
+  ensureAnomalies(merged);
   return merged;
 }
 

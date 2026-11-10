@@ -1,6 +1,7 @@
 /** Drones of every type, Fleet Dispatch, mechs, loadouts, repair and techniques. */
-import { CONFIG, ZONES, ZoneId, zoneDef } from './config';
-import { emptyOre, hasResearch, nextId, researchLevel, splitByZone, zoneUnlocked } from './common';
+import { CONFIG, ZoneId, zoneDef } from './config';
+import { sectorZones } from './sector-rules';
+import { emptyOre, hasResearch, nextId, researchLevel, splitByZone, zoneBoost, zoneUnlocked } from './common';
 import { CREW, STORY_PILOTS } from './crew-data';
 import { hasTrait, isInjured, pilotById, pilotStats, postBonus, syncLevel, unassign } from './crew-rules';
 import {
@@ -87,7 +88,7 @@ export function dispatchShares(state: GameState): Partial<Record<ZoneId, number>
   if (!hasResearch(state, 'fleet_dispatch')) return { [state.zone]: 1 };
   let total = 0;
   const shares: Partial<Record<ZoneId, number>> = {};
-  for (const z of ZONES) {
+  for (const z of sectorZones(state)) {
     if (!zoneUnlocked(state, z.id)) continue;
     const w = Math.max(0, state.dispatch[z.id] ?? 0);
     shares[z.id] = w;
@@ -186,7 +187,7 @@ export function mechOreRate(state: GameState, mech: MechState, efficiency = 1): 
   const boost = mech.boostRemaining > 0 ? MECH.techniqueBoost : 1;
   // Each Mining point is worth MECH.orePerMining Prospector drones, so mechs scale with the fleet.
   const total = stats.mining * MECH.orePerMining * perDroneRateOf(state, 'prospector') * cond * pilotMultiplier(state, mech) * boost * efficiency;
-  splitByZone(state, zoneDef(mech.zone), total, out);
+  splitByZone(state, zoneDef(mech.zone), total * zoneBoost(state, mech.zone), out);
   return out;
 }
 
@@ -217,7 +218,7 @@ export function miningDroneRates(state: GameState, efficiency = 1): OreAmounts {
   for (const [zid, share] of Object.entries(shares) as [ZoneId, number][]) {
     if (!share) continue;
     const zone = zoneDef(zid);
-    const link = 1 + commandLink(state, zid);
+    const link = (1 + commandLink(state, zid)) * zoneBoost(state, zid);
     splitByZone(state, zone, prospector * share * link * efficiency, out);
     splitByZone(state, zone, cutter * share * link * efficiency, out, true);
   }

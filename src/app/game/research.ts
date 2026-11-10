@@ -75,6 +75,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     effect: 'Drill can extract Helium-3 (450 cr base)',
     flavor: 'Thermal lance and capture field. Helium-3 extraction ready.',
   }),
+  N({
+    id: 'drill_mk5', name: 'Drill Mk.V', branch: 'extraction', maxLevel: 1,
+    sd: 300, cr: 25000000, sec: 2400, requires: ['survey_deep'], requiresTier: 4,
+    effect: 'Drill can cut Voidglass (4,000 cr base)',
+    flavor: 'Resonant cutting field. Voidglass does not break; it unravels.',
+  }),
 
   // ---------------------------------------------------------------- Logistics
   N({
@@ -148,22 +154,34 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Every rock is a library. We are learning to read faster.',
   }),
   N({
-    id: 'survey_trojan', name: 'Survey: Trojan Cluster', branch: 'survey', maxLevel: 1,
+    id: 'survey_trojan', name: 'Survey Range I', branch: 'survey', maxLevel: 1,
     sd: 6, cr: 1500, sec: 120,
-    effect: 'Unlock the Trojan Cluster zone',
+    effect: "Unlock the sector's 2nd survey zone (Trojan Cluster at home)",
     flavor: 'Gravitational anomaly at the L4 point. Worth a look.',
   }),
   N({
-    id: 'survey_ring', name: 'Survey: Ring Debris', branch: 'survey', maxLevel: 1,
+    id: 'survey_ring', name: 'Survey Range II', branch: 'survey', maxLevel: 1,
     sd: 25, cr: 60000, sec: 420, requires: ['survey_trojan', 'drill_mk3'],
-    effect: 'Unlock the Ring Debris zone',
+    effect: "Unlock the sector's 3rd survey zone (Ring Debris at home)",
     flavor: 'Iridium signatures across the ring plane. Plotting a safe approach.',
   }),
   N({
-    id: 'survey_ice', name: 'Survey: Ice Halo', branch: 'survey', maxLevel: 1,
+    id: 'survey_ice', name: 'Survey Range III', branch: 'survey', maxLevel: 1,
     sd: 60, cr: 600000, sec: 900, requires: ['survey_ring'],
-    effect: 'Unlock the Ice Halo zone',
+    effect: "Unlock the sector's 4th survey zone (Ice Halo at home)",
     flavor: 'Helium-3 detected in the outer ice. Cold, slow, and very valuable.',
+  }),
+  N({
+    id: 'survey_deep', name: 'Survey Range IV', branch: 'survey', maxLevel: 1,
+    sd: 150, cr: 6000000, sec: 1800, requires: ['survey_ice', 'drill_mk4'],
+    effect: "Unlock the sector's 5th survey zone (Deep Field at home)",
+    flavor: 'Something glitters out past the ice. My sensors call it "impossible".',
+  }),
+  N({
+    id: 'deep_scan', name: 'Deep Scan Array', branch: 'survey', maxLevel: 3,
+    sd: 10, cr: 15000, sec: 180, growth: 2.6, requires: ['survey_trojan'],
+    effect: '+50% anomaly scan speed',
+    flavor: 'Longer antennae. More patience.',
   }),
 
   // ---------------------------------------------------------------- Station

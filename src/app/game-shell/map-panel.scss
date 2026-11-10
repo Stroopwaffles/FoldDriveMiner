@@ -204,3 +204,189 @@
     opacity: 0.3;
   }
 }
+
+.dim {
+  color: var(--text-dim);
+}
+
+.small {
+  font-size: 0.72rem;
+}
+
+.warn {
+  color: var(--warn);
+  font-weight: normal;
+}
+
+/* ---------- sector strip ---------- */
+.sector-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.55rem 0.9rem 0;
+  font-size: 0.72rem;
+}
+
+.star-chip {
+  color: var(--sc);
+  border: 1px solid var(--sc);
+  padding: 0.1rem 0.45rem;
+  text-shadow: 0 0 6px var(--sc);
+}
+
+.prof {
+  color: var(--amber);
+}
+
+.trait {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--text-dim);
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  cursor: help;
+
+  &.good {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+
+  &.bad {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  &.mixed {
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  &.unknown {
+    border-style: dashed;
+    letter-spacing: 0.2em;
+  }
+}
+
+/* ---------- sub-tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 0.9rem 0;
+  flex-wrap: wrap;
+}
+
+.tab {
+  appearance: none;
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.8rem;
+  background: #0a0d22;
+  border: 1px solid #2a3168;
+  color: var(--text-dim);
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(255, 181, 71, 0.06);
+  }
+}
+
+.badge {
+  display: inline-block;
+  min-width: 1.1rem;
+  margin-left: 0.3rem;
+  padding: 0 0.25rem;
+  background: var(--cyan);
+  color: #05060f;
+  font-family: var(--font-mono);
+  animation: badge 1s ease-in-out infinite alternate;
+}
+
+@keyframes badge {
+  to {
+    opacity: 0.6;
+  }
+}
+
+/* ---------- orbit extras ---------- */
+.band.comet {
+  stroke-dasharray: 6 3;
+  animation: comet-dash 0.6s linear infinite;
+}
+
+@keyframes comet-dash {
+  to {
+    stroke-dashoffset: -9;
+  }
+}
+
+.anomaly-marker .pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ping 1.4s ease-out infinite;
+}
+
+.signal-link {
+  appearance: none;
+  justify-self: start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+.comet-tag {
+  color: var(--cyan);
+  animation: badge 0.8s ease-in-out infinite alternate;
+}
+
+/* ---------- long-range scan ---------- */
+.range {
+  padding: 0.8rem 0.9rem 0.9rem;
+}
+
+.dest-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.dest {
+  border: 1px solid #232a5c;
+  border-top: 3px solid var(--sc);
+  background:
+    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--sc) 18%, transparent), transparent 60%),
+    rgba(10, 13, 34, 0.7);
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.dest-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.dest-star {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 0 6px var(--sc));
+}
+
+.dest-name {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+}
+
+.dest-traits {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}

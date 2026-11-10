@@ -2,6 +2,7 @@ import { OreId, ZoneId } from './config';
 import { BackgroundId, PostId, StatId } from './crew-data';
 import { DroneType, FrameId, SlotId } from './fleet-data';
 import { EventKind, StandingOrders } from './threat-data';
+import { AnomalyKind, Approach } from './anomaly-data';
 
 export type OreAmounts = Record<OreId, number>;
 export type OreFlags = Record<OreId, boolean>;
@@ -41,10 +42,57 @@ export interface GameStats {
 }
 
 export interface SectorInfo {
+  /** Seed + depth regenerate the whole sector (see sector-rules.ts). */
+  seed: number;
   code: string;
   name: string;
+  /** Display label of the star (kept for the title screen's save card). */
   star: string;
   depth: number;
+}
+
+export interface AnomalyState {
+  id: number;
+  kind: AnomalyKind;
+  zone: ZoneId;
+  fixed: boolean;
+  /** hidden → signal (detected) → scanned (identified) → active (being worked) → done. */
+  status: 'hidden' | 'signal' | 'scanned' | 'active' | 'done';
+  /** Passing anomalies: seconds before they slip away. */
+  expires?: number;
+  /** Fragments decoded, salvage cycles used, expeditions run, or rig deployed. */
+  progress: number;
+  /** Decode progress / comet time left, in seconds. */
+  timer: number;
+  /** Golden asteroid hit points. */
+  hp?: number;
+  hpMax?: number;
+}
+
+export interface MissionState {
+  id: number;
+  anomalyId: number;
+  approach: Approach;
+  mechId: number | null;
+  drones: number;
+  remaining: number;
+  duration: number;
+  chance: number;
+}
+
+export interface AnomaliesState {
+  list: AnomalyState[];
+  /** Seconds until the next passing-anomaly roll. */
+  nextIn: number;
+  scan: { anomalyId: number; remaining: number; duration: number } | null;
+  missions: MissionState[];
+  /** Times each kind has been identified (the Codex). */
+  codex: Partial<Record<AnomalyKind, number>>;
+  /** Silent Beacon fragments decoded (lore). */
+  lore: number;
+  nextId: number;
+  /** Which sector the fixed list belongs to. */
+  sectorKey: string;
 }
 
 export interface ResearchJob {
@@ -69,7 +117,7 @@ export interface RefinerySlot {
   repeat: boolean;
 }
 
-export type MechJob = 'idle' | 'mining' | 'repair' | 'defense';
+export type MechJob = 'idle' | 'mining' | 'repair' | 'defense' | 'mission';
 
 export interface MechState {
   id: number;
@@ -185,7 +233,7 @@ export interface ThreatState {
 }
 
 export interface GameState {
-  version: 4;
+  version: 5;
   commander: string;
   ship: string;
   createdAt: number;
@@ -217,6 +265,7 @@ export interface GameState {
   /** Lost drones, rebuildable at a discount until they drift away. */
   wrecks: Record<DroneType, number>;
   threats: ThreatState;
+  anomalies: AnomaliesState;
   asteroid: AsteroidState;
   sector: SectorInfo;
   zone: ZoneId;
@@ -259,6 +308,8 @@ export interface TickEvents {
   /** Threat events that started, warnings that began and things that resolved. */
   threatStarted: ActiveEvent[];
   threatResolved: { kind: EventKind; text: string; good: boolean; sortie?: SortieReport }[];
+  /** Anomaly news: detections, scans, mission results, lore. */
+  anomaly: { text: string; good: boolean; kind: AnomalyKind; lore?: number }[];
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
   ingots: OreAmounts;

@@ -79,7 +79,7 @@ export class GameShell {
     const s = this.s();
     return s.surveyData > 0 || s.stats.asteroidsCracked > 0 || Object.keys(s.research.levels).length > 0;
   });
-  private readonly mapOpen = computed(() => E.unlockedZones(this.s()).length > 1);
+  private readonly mapOpen = computed(() => E.unlockedZones(this.s()).length > 1 || this.s().anomalies.list.some((a) => a.status !== 'hidden'));
   private readonly hangarOpen = computed(() => E.hasResearch(this.s(), 'hangar'));
   /** Defense opens once the quiet grace period ends (or anything has happened). */
   private readonly defenseOpen = computed(() => !T.inGrace(this.s()) || this.s().threats.log.length > 0 || this.s().threats.events.length > 0);
@@ -87,6 +87,8 @@ export class GameShell {
   protected readonly blackout = computed(() => T.marketBlocked(this.s()));
   /** Crew badge: someone has a trait to choose. */
   protected readonly crewReady = computed(() => this.s().pilots.some((p) => p.traitChoice));
+  /** Map badge: an unscanned signal is waiting. */
+  protected readonly mapReady = computed(() => this.s().anomalies.list.some((a) => a.status === 'signal' && a.kind !== 'golden_asteroid'));
   /** Lab badge: a bench is free and something can be started. */
   protected readonly labReady = computed(() => {
     const s = this.s();

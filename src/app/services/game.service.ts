@@ -6,6 +6,8 @@ import { researchNode } from '../game/research';
 import { randomSeed } from '../game/rng';
 import { ClickResult, GameState, MechJob, OfflineReport, PilotState, SortieReport, TickEvents } from '../game/types';
 import * as T from '../game/threat-rules';
+import * as A from '../game/anomaly-rules';
+import { Approach } from '../game/anomaly-data';
 import { JACKAL, StandingOrders, eventDef } from '../game/threat-data';
 import { DroneType as DT } from '../game/fleet-data';
 import { PostId, postDef } from '../game/crew-data';
@@ -383,6 +385,14 @@ export class GameService {
   private handleEvents(ev: TickEvents): void {
     const s = this._state()!;
     for (const t of ev.threatStarted) this.announceThreat(t);
+    for (const a of ev.anomaly) {
+      this.say('VESPER', a.text);
+      if (a.lore) this.audio.dataCore();
+      else if (a.good) this.audio.blip();
+      if (a.kind === 'golden_asteroid' && a.text.startsWith('A golden')) this.audio.select();
+      if (a.lore === 1) this.say('JUNO', "A message older than the shipping lanes... and it's talking to US? I don't like this, Commander.", 2500);
+      if (a.lore === 3) this.say('VESPER', "Commander. The beacon is transmitting this ship's name. In my own voice.", 2500);
+    }
     for (const r of ev.threatResolved) {
       this.say('VESPER', r.text);
       if (r.sortie) this.afterSortie(r.sortie, false);
@@ -720,6 +730,52 @@ export class GameService {
     return r;
   }
 
+  // ------------------------------------------------------------ anomalies
+
+  scanAnomaly(id: number): void {
+    this.act((s) => A.startScan(s, id), () => this.audio.select());
+  }
+
+  launchMission(id: number, approach: Approach, mechId?: number): void {
+    this.act(
+      (s) => A.launchMission(s, id, approach, mechId),
+      () => {
+        this.audio.select();
+        const s = this._state()!;
+        const m = s.mechs.find((x) => x.id === mechId);
+        const p = m ? E.mechPilot(s, m) : null;
+        if (p) this.pilotSay(p, 'Heading out to take a look. Keep the comms open, Commander.');
+      },
+    );
+  }
+
+  startDecode(id: number): void {
+    this.act((s) => A.startDecode(s, id), () => this.audio.select());
+  }
+
+  deployRig(id: number): void {
+    this.act((s) => A.deployRig(s, id), () => this.audio.buy());
+  }
+
+  goldenClick(): A.GoldenClick | null {
+    const s = this._state();
+    if (!s) return null;
+    const events = this.blankEvents();
+    const r = A.goldenClick(s, events);
+    if (r) {
+      if (r.locked) this.audio.denied();
+      else if (r.overheated) this.audio.overheat();
+      else this.audio.drill(true);
+      if (r.cracked) {
+        this.audio.crack();
+        this.audio.victory();
+      }
+      for (const a of events.anomaly) this.say('VESPER', a.text);
+    }
+    this.publish();
+    return r;
+  }
+
   rebuildWrecks(type: DT): void {
     this.act((s) => T.rebuildWrecks(s, type) > 0, () => this.audio.buy());
   }
@@ -732,6 +788,7 @@ export class GameService {
       autoRepairs: [],
       threatStarted: [],
       threatResolved: [],
+      anomaly: [],
       ingots: E.emptyOre(),
       autoSoldCredits: 0,
     };

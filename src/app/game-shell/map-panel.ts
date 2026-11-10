@@ -1,130 +1,52 @@
-import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject } from '@angular/core';
-import { ORES, ZONES, ZoneDef, ZoneId } from '../game/config';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ORES, ZoneDef, ZoneId } from '../game/config';
+import { RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
 import * as E from '../game/engine';
 import { researchNode } from '../game/research';
+import * as S from '../game/sector-rules';
 import { GameService } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
+import { CodexPanel } from './codex-panel';
+import { SignalsPanel } from './signals-panel';
 
-/** The MAP tab: the home sector's survey zones as orbital bands. */
+type MapTab = 'zones' | 'signals' | 'codex' | 'range';
+
+/** Band radius for zone i on the orbit map. */
+const R = (i: number) => 52 + i * 30;
+
+/** The MAP tab: the sector's zones as orbital bands, anomaly signals, the Codex and the long-range scan. */
 @Component({
   selector: 'fdm-map-panel',
-  template: `
-    @let st = s();
-    <section class="panel map">
-      <div class="panel-title">
-        <span class="led"></span>Sector Map <span class="kana">ちず</span>
-        <span class="sector">SECTOR {{ st.sector.code }} · {{ st.sector.name }} · {{ st.sector.star }}</span>
-      </div>
-      <div class="map-body">
-        <svg class="orbits" viewBox="-200 -130 400 260" aria-hidden="true">
-          <defs>
-            <radialGradient id="map-star">
-              <stop offset="0" stop-color="#fff6d0" />
-              <stop offset="0.35" stop-color="#ffd23f" />
-              <stop offset="1" stop-color="#ff7a3d" stop-opacity="0" />
-            </radialGradient>
-          </defs>
-          <circle r="34" fill="url(#map-star)" />
-          <circle r="11" fill="#fff1b0" />
-          @for (z of zones(); track z.def.id; let i = $index) {
-            <ellipse
-              class="band"
-              [class.locked]="!z.unlocked"
-              [class.current]="z.current"
-              [attr.rx]="62 + i * 36"
-              [attr.ry]="(62 + i * 36) * 0.42"
-              [attr.stroke]="z.def.color"
-            />
-            @if (z.current) {
-              <!-- The ship orbits the star along its zone's band (outer bands are slower).
-                   With reduced motion it sits still on the left edge. -->
-              @if (still()) {
-                <g class="ship-marker" [attr.transform]="'translate(' + -(62 + i * 36) + ',0) rotate(90)'">
-                  <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
-                  <polygon points="6,0 -5,-4 -2,0 -5,4" fill="#ffb547" />
-                </g>
-              } @else {
-                <g class="ship-marker moving" [attr.data-rx]="62 + i * 36" [attr.data-period]="14 + i * 8">
-                  <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
-                  <polygon points="6,0 -5,-4 -2,0 -5,4" fill="#ffb547" />
-                  <circle cx="-6" r="1.6" fill="#ff7a3d" class="exhaust" />
-                </g>
-              }
-            }
-            <!-- Labels sit at -55° on each ellipse so they fan out instead of stacking -->
-            <text
-              class="band-label"
-              [attr.x]="(62 + i * 36) * 0.57 + 3"
-              [attr.y]="-(62 + i * 36) * 0.42 * 0.82 - 3"
-              [attr.fill]="z.unlocked ? z.def.color : '#4a54a0'"
-            >
-              {{ z.unlocked ? z.def.name : 'UNSURVEYED' }}
-            </text>
-          }
-        </svg>
-
-        <div class="zone-list">
-          @for (z of zones(); track z.def.id) {
-            <div class="zone" [class.current]="z.current" [class.locked]="!z.unlocked" [style.--zc]="z.def.color">
-              <div class="zone-head">
-                <span class="zone-name">{{ z.unlocked ? z.def.name : '???' }}</span>
-                <span class="kana">{{ z.unlocked ? z.def.kana : '' }}</span>
-                @if (z.current) {
-                  <span class="here">◀ CURRENT</span>
-                }
-              </div>
-              @if (z.unlocked) {
-                <div class="zone-desc">{{ z.def.desc }}</div>
-                <div class="chips">
-                  @for (c of z.comp; track c.ore.id) {
-                    <span class="chip" [class.slag]="!c.reachable" [style.--c]="c.ore.color">
-                      {{ c.ore.code }} {{ c.pct }}%{{ c.reachable ? '' : ' · SLAG' }}
-                    </span>
-                  }
-                </div>
-                <div class="zone-stats">
-                  <span>ROCK SIZE ×{{ z.def.massMult }}</span>
-                  <span>SURVEY DATA {{ z.def.surveyData }}/rock</span>
-                </div>
-                @if (hasDispatch()) {
-                  <label class="dispatch">
-                    <span>DRONES</span>
-                    <input type="range" min="0" max="100" step="5" [value]="z.weight" (input)="dispatch(z.def.id, $event)" [attr.aria-label]="'Drone share for ' + z.def.name" />
-                    <b>{{ (z.share * 100).toFixed(0) }}%</b>
-                  </label>
-                }
-                @if (z.mechs.length) {
-                  <div class="zone-mechs">MECHS: {{ z.mechs.join(', ') }}</div>
-                }
-                @if (!z.current) {
-                  <button type="button" class="btn btn-amber" (click)="game.setZone(z.def.id)">Set course</button>
-                }
-              } @else {
-                <div class="zone-desc dim">Requires research: {{ z.researchName }}</div>
-              }
-            </div>
-          }
-          <p class="note">
-            Changing zone abandons the current asteroid.
-            @if (hasDispatch()) {
-              Fleet Dispatch: drag the sliders to split mining drones between zones (all at 0 = follow the ship).
-            } @else {
-              Drones follow the ship and mine the new zone's mix.
-            }
-            Mechs mine whatever zone they're ordered to in the HANGAR.
-          </p>
-        </div>
-      </div>
-    </section>
-  `,
+  imports: [SignalsPanel, CodexPanel],
+  templateUrl: './map-panel.html',
   styleUrl: './map-panel.scss',
 })
 export class MapPanel {
   protected readonly game = inject(GameService);
   private readonly settings = inject(SettingsService);
   protected readonly s = computed(() => this.game.state()!);
+  protected readonly R = R;
 
+  protected readonly tab = signal<MapTab>('zones');
   protected readonly still = computed(() => this.settings.reducedMotion());
+
+  // ---------------------------------------------------------------- sector header
+  protected readonly sector = computed(() => {
+    const s = this.s();
+    const def = S.sectorOf(s);
+    return {
+      def,
+      star: S.mainStar(def),
+      starLabel: S.starLabel(def),
+      profile: S.profileDef(def.profile),
+      traits: def.traits.map((t) => S.sectorTraitDef(t)),
+    };
+  });
+
+  /** Signals waiting for a scan or a response (for the tab badge). */
+  protected readonly signalCount = computed(
+    () => this.s().anomalies.list.filter((a) => a.status === 'signal' || (a.status === 'scanned' && !a.fixed)).length,
+  );
 
   constructor() {
     // Fly the ship around its band every frame. Done in script rather than SVG
@@ -161,19 +83,48 @@ export class MapPanel {
   protected readonly zones = computed(() => {
     const s = this.s();
     const shares = E.dispatchShares(s);
-    return ZONES.map((def: ZoneDef) => ({
-      weight: s.dispatch[def.id] ?? 0,
-      share: shares[def.id] ?? 0,
-      mechs: s.mechs.filter((m) => m.zone === def.id && m.job === 'mining').map((m) => m.designation),
-      def,
-      unlocked: E.zoneUnlocked(s, def.id),
-      current: s.zone === def.id,
-      researchName: def.research ? researchNode(def.research).name : '',
-      comp: ORES.filter((o) => (def.composition[o.id] ?? 0) > 0).map((o) => ({
-        ore: o,
-        pct: Math.round((def.composition[o.id] ?? 0) * 100),
-        reachable: E.oreReachable(s, o.id),
-      })),
-    }));
+    return S.sectorZones(s).map((def: ZoneDef, i) => {
+      const anomalies = s.anomalies.list.filter((a) => a.zone === def.id && a.status !== 'hidden' && a.status !== 'done');
+      return {
+        i,
+        weight: s.dispatch[def.id] ?? 0,
+        share: shares[def.id] ?? 0,
+        mechs: s.mechs.filter((m) => m.zone === def.id && m.job === 'mining').map((m) => m.designation),
+        def,
+        unlocked: E.zoneUnlocked(s, def.id),
+        current: s.zone === def.id,
+        researchName: def.research ? researchNode(def.research).name : '',
+        comet: E.zoneBoost(s, def.id) > 1,
+        anomalies: anomalies.map((a, k) => ({
+          a,
+          label: a.status === 'signal' ? 'Unknown signal' : anomalyDef(a.kind).name,
+          color: a.status === 'signal' ? '#4fe3ff' : RARITY_COLOR[anomalyDef(a.kind).rarity],
+          // Markers sit at the bottom of the band, spread out.
+          x: -R(i) * Math.cos(Math.PI / 2 + 0.5 + k * 0.45),
+          y: R(i) * 0.42 * Math.sin(Math.PI / 2 + 0.5 + k * 0.45),
+        })),
+        comp: ORES.filter((o) => (def.composition[o.id] ?? 0) > 0).map((o) => ({
+          ore: o,
+          pct: Math.round((def.composition[o.id] ?? 0) * 100),
+          reachable: E.oreReachable(s, o.id),
+        })),
+      };
+    });
   });
+
+  // ---------------------------------------------------------------- long-range scan
+  protected readonly destinations = computed(() =>
+    S.destinationPreview(this.s()).map(({ def, revealed }) => ({
+      def,
+      star: S.mainStar(def),
+      starLabel: S.starLabel(def),
+      profile: S.profileDef(def.profile),
+      traits: def.traits.map((t, k) => (k < revealed ? S.sectorTraitDef(t) : null)),
+      zones: def.zones.length,
+    })),
+  );
+
+  protected setTab(t: MapTab): void {
+    this.tab.set(t);
+  }
 }

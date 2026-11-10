@@ -1,0 +1,178 @@
+@let st = s();
+@let sec = sector();
+<section class="panel map">
+  <div class="panel-title">
+    <span class="led"></span>Sector Map <span class="kana">ちず</span>
+    <span class="sector">SECTOR {{ sec.def.code }} · {{ sec.def.name }} · DEPTH {{ sec.def.depth }}</span>
+  </div>
+
+  <div class="sector-strip">
+    <span class="star-chip" [style.--sc]="sec.star.color">★ {{ sec.starLabel }}</span>
+    <span class="prof">{{ sec.profile.name }}</span>
+    @for (t of sec.traits; track t.id) {
+      <span class="trait" [class]="'trait ' + t.polarity" [title]="t.desc">{{ t.name }}</span>
+    } @empty {
+      <span class="dim small">No sector traits — a quiet home.</span>
+    }
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" [class.on]="tab() === 'zones'" (click)="setTab('zones')">ZONES</button>
+    <button type="button" class="tab" [class.on]="tab() === 'signals'" (click)="setTab('signals')">
+      SIGNALS
+      @if (signalCount()) {
+        <span class="badge">{{ signalCount() }}</span>
+      }
+    </button>
+    <button type="button" class="tab" [class.on]="tab() === 'codex'" (click)="setTab('codex')">CODEX</button>
+    <button type="button" class="tab" [class.on]="tab() === 'range'" (click)="setTab('range')">LONG-RANGE SCAN</button>
+  </div>
+
+  @switch (tab()) {
+    @case ('signals') {
+      <fdm-signals-panel />
+    }
+    @case ('codex') {
+      <fdm-codex-panel />
+    }
+    @case ('range') {
+      <div class="range">
+        <p class="dim small">
+          Long-range sensors can see the sectors a Fold Jump could reach next. Only the first trait of each is clear — the rest is static.
+          <b class="warn">Fold Drive offline — arrives in Milestone 6.</b>
+        </p>
+        <div class="dest-list">
+          @for (d of destinations(); track d.def.seed) {
+            <div class="dest" [style.--sc]="d.star.color">
+              <div class="dest-head">
+                <svg viewBox="-20 -20 40 40" class="dest-star" aria-hidden="true">
+                  <circle r="16" [attr.fill]="d.star.color" opacity="0.25" />
+                  <circle r="8" [attr.fill]="d.star.color" />
+                </svg>
+                <div>
+                  <div class="dest-name">SECTOR {{ d.def.code }} · {{ d.def.name }}</div>
+                  <div class="dim small">{{ d.starLabel }} · {{ d.profile.name }} · {{ d.zones }} zones</div>
+                </div>
+              </div>
+              <div class="dest-traits">
+                @for (t of d.traits; track $index) {
+                  @if (t) {
+                    <span [class]="'trait ' + t.polarity" [title]="t.desc">{{ t.name }}</span>
+                  } @else {
+                    <span class="trait unknown">???</span>
+                  }
+                }
+              </div>
+              <div class="dim small">{{ d.star.desc }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    @default {
+      <div class="map-body">
+        <svg class="orbits" viewBox="-200 -110 400 220" aria-hidden="true">
+          <defs>
+            <radialGradient id="map-star">
+              <stop offset="0" stop-color="#fff6d0" />
+              <stop offset="0.35" [attr.stop-color]="sec.star.color" />
+              <stop offset="1" [attr.stop-color]="sec.star.color" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <circle r="30" fill="url(#map-star)" />
+          <circle r="10" fill="#fff6e0" />
+          @for (z of zones(); track z.def.id) {
+            <ellipse
+              class="band"
+              [class.locked]="!z.unlocked"
+              [class.current]="z.current"
+              [class.comet]="z.comet"
+              [attr.rx]="R(z.i)"
+              [attr.ry]="R(z.i) * 0.42"
+              [attr.stroke]="z.def.color"
+            />
+            @if (z.current) {
+              @if (still()) {
+                <g class="ship-marker" [attr.transform]="'translate(' + -R(z.i) + ',0) rotate(90)'">
+                  <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
+                  <polygon points="6,0 -5,-4 -2,0 -5,4" fill="#ffb547" />
+                </g>
+              } @else {
+                <g class="ship-marker moving" [attr.data-rx]="R(z.i)" [attr.data-period]="14 + z.i * 8">
+                  <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
+                  <polygon points="6,0 -5,-4 -2,0 -5,4" fill="#ffb547" />
+                  <circle cx="-6" r="1.6" fill="#ff7a3d" class="exhaust" />
+                </g>
+              }
+            }
+            @for (m of z.anomalies; track m.a.id) {
+              <g class="anomaly-marker" [attr.transform]="'translate(' + m.x + ',' + m.y + ')'">
+                <circle r="6" fill="none" [attr.stroke]="m.color" class="pulse" />
+                <polygon points="0,-4 4,0 0,4 -4,0" [attr.fill]="m.color" />
+              </g>
+            }
+            <text class="band-label" [attr.x]="R(z.i) * 0.57 + 3" [attr.y]="-R(z.i) * 0.42 * 0.82 - 3" [attr.fill]="z.unlocked ? z.def.color : '#4a54a0'">
+              {{ z.unlocked ? z.def.name : 'UNSURVEYED' }}
+            </text>
+          }
+        </svg>
+
+        <div class="zone-list">
+          @for (z of zones(); track z.def.id) {
+            <div class="zone" [class.current]="z.current" [class.locked]="!z.unlocked" [style.--zc]="z.def.color">
+              <div class="zone-head">
+                <span class="zone-name">{{ z.unlocked ? z.def.name : '???' }}</span>
+                <span class="kana">{{ z.unlocked ? z.def.kana : '' }}</span>
+                @if (z.current) {
+                  <span class="here">◀ CURRENT</span>
+                }
+              </div>
+              @if (z.unlocked) {
+                <div class="zone-desc">{{ z.def.desc }}</div>
+                <div class="chips">
+                  @for (c of z.comp; track c.ore.id) {
+                    <span class="chip" [class.slag]="!c.reachable" [style.--c]="c.ore.color">{{ c.ore.code }} {{ c.pct }}%{{ c.reachable ? '' : ' · SLAG' }}</span>
+                  }
+                </div>
+                <div class="zone-stats">
+                  <span>ROCK SIZE ×{{ z.def.massMult.toFixed(1) }}</span>
+                  <span>SURVEY DATA {{ z.def.surveyData.toFixed(0) }}/rock</span>
+                  @if (z.comet) {
+                    <span class="comet-tag">☄ COMET ×2</span>
+                  }
+                </div>
+                @for (m of z.anomalies; track m.a.id) {
+                  <button type="button" class="signal-link" [style.color]="m.color" (click)="setTab('signals')">◈ {{ m.label }}</button>
+                }
+                @if (hasDispatch()) {
+                  <label class="dispatch">
+                    <span>DRONES</span>
+                    <input type="range" min="0" max="100" step="5" [value]="z.weight" (input)="dispatch(z.def.id, $event)" [attr.aria-label]="'Drone share for ' + z.def.name" />
+                    <b>{{ (z.share * 100).toFixed(0) }}%</b>
+                  </label>
+                }
+                @if (z.mechs.length) {
+                  <div class="zone-mechs">MECHS: {{ z.mechs.join(', ') }}</div>
+                }
+                @if (!z.current) {
+                  <button type="button" class="btn btn-amber" (click)="game.setZone(z.def.id)">Set course</button>
+                }
+              } @else {
+                <div class="zone-desc dim">Requires research: {{ z.researchName }}</div>
+              }
+            </div>
+          }
+          <p class="note">
+            Changing zone abandons the current asteroid.
+            @if (hasDispatch()) {
+              Fleet Dispatch: drag the sliders to split mining drones between zones (all at 0 = follow the ship).
+            } @else {
+              Drones follow the ship and mine the new zone's mix.
+            }
+            Mechs mine whatever zone they're ordered to in the HANGAR.
+          </p>
+        </div>
+      </div>
+    }
+  }
+</section>
