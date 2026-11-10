@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { BACKGROUNDS, CREW, POSTS, PostId, STATS, traitDef, xpForLevel } from '../game/crew-data';
+import { BONDS } from '../game/trade-data';
 import * as E from '../game/engine';
 import { FRAMES } from '../game/fleet-data';
 import { formatDuration } from '../game/format';
@@ -53,6 +54,13 @@ export class CrewPanel {
       traits: p.traits.map((t) => traitDef(t)),
       choice: p.traitChoice?.map((t) => traitDef(t)) ?? null,
       sync: FRAMES.map((f) => ({ frame: f, level: E.syncLevel(p, f.id) })),
+      bonds: recruit
+        ? []
+        : E.bondsOf(s, p.id).map((b) => {
+            const other = E.pilotById(s, b.a === p.id ? b.b : b.a);
+            const role = b.type === 'mentor' ? (b.a === p.id ? 'Mentor to' : 'Student of') : BONDS[b.type].name.replace(/s$/, '') + ' with';
+            return { text: `${role} ${other?.callsign ?? '?'}`, desc: BONDS[b.type].desc, type: b.type };
+          }),
     };
   }
 

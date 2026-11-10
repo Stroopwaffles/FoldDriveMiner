@@ -22,6 +22,7 @@ import {
 import { ActiveEvent, GameState, MechState, SortieReport, SortieRound, ThreatState, TickEvents } from './types';
 // Engine helpers (cyclic import, only used at call time).
 import { addToCargo, baseDrillPower, cargoUsed, drillPower, orePrice } from './engine';
+import { deterrentActive, escortStrength, onEscortResult, raidMult, squadBondEffects } from './trade-rules';
 
 /** Limits on losses while the player is away. */
 export interface LossContext {
@@ -108,7 +109,7 @@ export function raidStrength(state: GameState): number {
   const heat = 1 + state.threats.heat / r.heatScale;
   const zone = 1 + zoneIndex(state) * r.zoneScale;
   const wealth = 1 + Math.log10(1 + state.stats.creditsEarned / r.wealthUnit);
-  return r.baseStrength * heat * zone * wealth;
+  return r.baseStrength * heat * zone * wealth * raidMult(state);
 }
 
 export function jackalStrengthMult(state: GameState): number {
@@ -207,13 +208,18 @@ function simulate(
   const pilots = mechs.map((m) => mechPilot(state, m)).filter((p) => !!p);
   const reckless = pilots.some((p) => hasTrait(p!, 'reckless'));
   const luckyCount = pilots.filter((p) => hasTrait(p!, 'lucky')).length;
-  const takenMult = (reckless ? 1.15 : 1) * (pilots.some((p) => hasTrait(p!, 'hot_blooded')) ? 1.1 : 1);
+  const traitTaken = (reckless ? 1.15 : 1) * (pilots.some((p) => hasTrait(p!, 'hot_blooded')) ? 1.1 : 1);
 
+  const bonds = squadBondEffects(
+    state,
+    mechs.map((m) => m.pilotId).filter((x): x is number => x !== null),
+  );
+  const bondTaken = bonds.damageTaken;
   const fighters: Fighter[] = mechs.map((m) => {
     const max = mechStats(state, m).armor;
     return {
       mech: m,
-      power: mechCombatPower(state, m),
+      power: mechCombatPower(state, m) * (m.pilotId !== null ? (bonds.powerMult.get(m.pilotId) ?? 1) : 1),
       hp: m.armor,
       max,
       weight: m.frame === 'bulwark' ? THREAT.mech.bulwarkTaunt : 1,
@@ -226,9 +232,11 @@ function simulate(
   const rounds: SortieRound[] = [];
   const techniques: SimResult['techniques'] = [];
   let won = false;
+  const takenMult = traitTaken * bondTaken;
 
   for (let i = 0; i < r.rounds; i++) {
     const lines: string[] = [];
+    if (i === 0 && withLines) lines.push(...bonds.lines);
     const gAlive = Math.ceil(gHp / g.hp - 1e-9);
     let dmg = 0;
     let technique: SortieRound['technique'];
@@ -412,7 +420,8 @@ function runSortie(
     }
     const p = pilotById(state, f.mech.pilotId);
     if (p && !f.disabled) {
-      p.xp += THREAT.raid.xpBase + THREAT.raid.xpPerRound * res.rounds.length;
+      const bonus = squadBondEffects(state, opts.mechs.map((m) => m.pilotId).filter((x): x is number => x !== null)).xpMult.get(p.id) ?? 1;
+      p.xp += (THREAT.raid.xpBase + THREAT.raid.xpPerRound * res.rounds.length) * bonus;
       p.sync[f.mech.frame] += THREAT.raid.syncSec;
     }
   }
@@ -698,6 +707,7 @@ function pickEvent(state: GameState, rng: Rng): EventKind | null {
   const t = state.threats;
   const options = EVENTS.filter((e) => {
     if (e.hostile && inGrace(state)) return false;
+    if (e.kind === 'raid' && deterrentActive(state)) return false;
     if (t.events.some((x) => x.kind === e.kind)) return false;
     // Only one hostile event at a time.
     if (e.hostile && t.events.some((x) => eventDef(x.kind).hostile)) return false;
@@ -858,7 +868,25 @@ export function advanceThreats(state: GameState, dt: number, events: TickEvents,
 // ---------------------------------------------------------------- wrecks
 
 export function wreckRebuildCost(state: GameState, type: DroneType): number {
-  return droneCostOf(state, type, 1) * THREAT.wrecks.rebuildFrac;
+  const frac = state.trade?.perks.includes('combine_overhaul') ? 0.1 : THREAT.wrecks.rebuildFrac;
+  return droneCostOf(state, type, 1) * frac;
+}
+
+/** Escort a merchant convoy past the raiders shadowing it. */
+export function launchEscort(state: GameState, mechIds: number[], useGuardians: boolean, events: TickEvents): SortieReport | null {
+  const f = state.trade.fleet;
+  if (!f || f.escortDone) return null;
+  const mechs = state.mechs.filter((m) => mechIds.includes(m.id) && canFight(state, m));
+  if (!mechs.length && !(useGuardians && state.drones.guardian > 0)) return null;
+  const report = runSortie(
+    state,
+    { mechs, guardians: useGuardians ? state.drones.guardian : 0, strength: escortStrength(state), jackal: false, strike: false, title: 'Convoy Escort' },
+    events,
+    ONLINE,
+  );
+  report.enemy = 'Raiders shadowing the convoy';
+  onEscortResult(state, report.outcome !== 'defeat', events);
+  return report;
 }
 
 /** Rebuild as many whole wrecks of a type as credits allow. */

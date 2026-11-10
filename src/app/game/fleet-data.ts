@@ -164,10 +164,43 @@ export const PARTS: readonly PartDef[] = [
   // Unique parts: never sold; recovered from the Jackal and pirate bases.
   { id: 'crimson_lance', name: 'Crimson Fang Lance', slot: 'drill', cost: 0, stats: { mining: 40, combat: 15 }, draw: 9, rarity: 'unique' },
   { id: 'vermilion_plating', name: 'Vermilion Plating', slot: 'armor', cost: 0, stats: { armor: 160, speed: 2 }, draw: 1, rarity: 'unique' },
+  // Clan and corporate exclusives (Milestone 5b).
+  { id: 'halcyon_chrome', name: 'Halcyon Chrome Plating', slot: 'armor', cost: 0, stats: { armor: 130, speed: 6 }, draw: 1, rarity: 'unique' },
+  { id: 'meridian_core', name: 'Meridian Prototype Core', slot: 'reactor', cost: 0, stats: {}, draw: 0, supply: 48, rarity: 'unique' },
+  { id: 'aster_capacitor', name: 'Aster-Lune Fold Capacitor', slot: 'reactor', cost: 0, stats: { speed: 4 }, draw: 0, supply: 40, rarity: 'unique' },
+  { id: 'orrery_array', name: 'Orrery Deep Array', slot: 'sensor', cost: 0, stats: { sensors: 24 }, draw: 3, rarity: 'unique' },
+  { id: 'vanguard_aegis', name: 'Vanguard Aegis', slot: 'offhand', cost: 0, stats: { armor: 80, combat: 12 }, draw: 4, rarity: 'unique' },
 ];
 
+/** Sector-unique parts sold by merchants: 'sx:<sector seed>:<base part id>'. Stats ×1.3 of the base. */
+export function sectorPartId(sectorSeed: number, baseId: string): string {
+  return `sx:${sectorSeed >>> 0}:${baseId}`;
+}
+
+const SECTOR_PART_WORDS = ['Kestrel', 'Halo', 'Drift', 'Tempest', 'Reef', 'Cinder', 'Lantern', 'Expanse', 'Crown', 'Orrery', 'Tidewater', 'Ember', 'Lattice', 'Margin', 'Maw', 'Choir', 'Ashfall', 'Mirror', 'Vesper', 'Thorn'];
+
+function sectorPart(id: string): PartDef | undefined {
+  const m = /^sx:(\d+):(.+)$/.exec(id);
+  if (!m) return undefined;
+  const base = PARTS.find((p) => p.id === m[2]);
+  if (!base) return undefined;
+  const word = SECTOR_PART_WORDS[Number(m[1]) % SECTOR_PART_WORDS.length];
+  const stats: PartDef['stats'] = {};
+  for (const [k, v] of Object.entries(base.stats)) stats[k as MechStat] = Math.round((v as number) * 1.3);
+  return {
+    ...base,
+    id,
+    name: `${word} ${base.name}`,
+    cost: base.cost * 2,
+    stats,
+    supply: base.supply ? Math.round(base.supply * 1.3) : undefined,
+    rarity: 'unique',
+    research: undefined,
+  };
+}
+
 export function partDef(id: string): PartDef {
-  const p = PARTS.find((x) => x.id === id);
+  const p = PARTS.find((x) => x.id === id) ?? sectorPart(id);
   if (!p) throw new Error(`Unknown part: ${id}`);
   return p;
 }

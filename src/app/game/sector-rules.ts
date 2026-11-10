@@ -193,14 +193,15 @@ const modsCache = new Map<string, SectorMods>();
 
 /** All of the sector's effects combined (stars, profile, traits). */
 export function sectorMods(state: GameState): SectorMods {
-  const key = `${state.sector.seed}:${state.sector.depth}`;
+  const cancelled = state.trade?.sectorBuffs?.cancelled ?? [];
+  const key = `${state.sector.seed}:${state.sector.depth}:${cancelled.join(',')}`;
   const hit = modsCache.get(key);
   if (hit) return hit;
   const def = sectorOf(state);
   const parts: Partial<SectorMods>[] = [
     ...def.stars.map((s) => starDef(s).mods),
     profileDef(def.profile).mods,
-    ...def.traits.map((t) => sectorTraitDef(t).mods),
+    ...def.traits.filter((t) => !cancelled.includes(t)).map((t) => sectorTraitDef(t).mods),
   ];
   const out: SectorMods = { ...NEUTRAL_MODS, eventWeights: {} };
   for (const p of parts) {

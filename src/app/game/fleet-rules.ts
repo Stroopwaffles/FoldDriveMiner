@@ -18,6 +18,7 @@ import {
   partDef,
 } from './fleet-data';
 import { GameState, MechJob, MechState, OreAmounts, PilotState, TickEvents } from './types';
+import { droneCostMult } from './trade-rules';
 
 // ---------------------------------------------------------------- drones
 
@@ -47,13 +48,13 @@ export function perDroneRateOf(state: GameState, type: DroneType): number {
 export function droneCostOf(state: GameState, type: DroneType, count = 1): number {
   const d = droneDef(type);
   const g = d.costGrowth;
-  return (d.baseCost * g ** state.drones[type] * (g ** count - 1)) / (g - 1);
+  return ((d.baseCost * g ** state.drones[type] * (g ** count - 1)) / (g - 1)) * droneCostMult(state);
 }
 
 export function maxAffordableOf(state: GameState, type: DroneType): number {
   const d = droneDef(type);
   const g = d.costGrowth;
-  const first = d.baseCost * g ** state.drones[type];
+  const first = d.baseCost * g ** state.drones[type] * droneCostMult(state);
   if (first <= 0 || state.credits < first) return 0;
   return Math.floor(Math.log((state.credits * (g - 1)) / first + 1) / Math.log(g));
 }
@@ -368,7 +369,8 @@ export function useTechnique(state: GameState, mechId: number): boolean {
 
 export function repairRate(state: GameState, mech: MechState): number {
   const max = mechStats(state, mech).armor;
-  return ((max * MECH.repairPerMin) / 60) * (1 + postBonus(state, 'repair'));
+  const overhaul = state.trade?.perks.includes('combine_overhaul') ? 1.25 : 1;
+  return ((max * MECH.repairPerMin) / 60) * (1 + postBonus(state, 'repair')) * overhaul;
 }
 
 /** Pays for `points` of armor if possible; returns how many were affordable. */

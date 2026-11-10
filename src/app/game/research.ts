@@ -198,6 +198,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Three. Now we are cooking. — Kit Okafor (pending recruitment)',
   }),
   N({
+    id: 'contract_office', name: 'Contract Office', branch: 'station', maxLevel: 2,
+    sd: 10, cr: 20000, sec: 240, growth: 3,
+    effect: '+1 active contract slot',
+    flavor: 'A desk, a terminal and a stamp that says ACCEPTED.',
+  }),
+  N({
     id: 'medbay', name: 'Medbay', branch: 'station', maxLevel: 2,
     sd: 15, cr: 25000, sec: 240, growth: 3, requires: ['hangar'],
     effect: 'Injured pilots recover faster (+100% per level)',

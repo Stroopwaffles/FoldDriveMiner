@@ -11,6 +11,7 @@ import { mechCondition, mechOperable, mechPilot, mechStats } from './fleet-rules
 import { Rng } from './rng';
 import { sectorMods, sectorOf, sectorZones } from './sector-rules';
 import { injurePilot, startEvent } from './threat-rules';
+import { rollBond } from './trade-rules';
 import { AnomaliesState, AnomalyState, GameState, MechState, MissionState, TickEvents } from './types';
 import { addToCargo, baseDrillPower, drillPower, droneRates, mechRateTotal, orePrice, overdriveMult } from './engine';
 
@@ -357,6 +358,7 @@ function resolveMission(state: GameState, m: MissionState, events: TickEvents): 
           if (state.pilots.length < rosterCap(state)) {
             const pilot = generatePilot(state, rng);
             state.pilots.push(pilot);
+            rollBond(state, pilot, rng);
             news(events, a.kind, `Survivors! ${pilot.name} "${pilot.callsign}" (${pilot.background}) joins the crew.`, true);
           } else {
             const c = credits(state, 120);
@@ -390,6 +392,7 @@ function resolveMission(state: GameState, m: MissionState, events: TickEvents): 
           if (rng.next() < 0.15 && state.pilots.length < rosterCap(state)) {
             const pilot = generatePilot(state, rng, 'ace');
             state.pilots.push(pilot);
+            rollBond(state, pilot, rng);
             extra = ` A frozen pilot was revived: ${pilot.name} joins the crew!`;
           }
           news(events, a.kind, `Battlefield expedition ${a.progress}/${ANOMALY.battlefieldRuns}: recovered ${parts.join(', ')}.${extra}`, true);

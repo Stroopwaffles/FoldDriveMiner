@@ -3,6 +3,7 @@ import { BackgroundId, PostId, StatId } from './crew-data';
 import { DroneType, FrameId, SlotId } from './fleet-data';
 import { EventKind, StandingOrders } from './threat-data';
 import { AnomalyKind, Approach } from './anomaly-data';
+import { BondType, ClanId, ContractType, CorpId, ItemKind, OutfitArchetype } from './trade-data';
 
 export type OreAmounts = Record<OreId, number>;
 export type OreFlags = Record<OreId, boolean>;
@@ -232,8 +233,101 @@ export interface ThreatState {
   nextEventId: number;
 }
 
+export interface StockItem {
+  id: number;
+  kind: ItemKind;
+  label: string;
+  desc: string;
+  /** Credit price (0 = pay another way). */
+  price: number;
+  dataCores?: number;
+  /** Barter alternative: pay this much of an ore instead. */
+  barterOre?: OreId;
+  barterAmount?: number;
+  partId?: string;
+  drone?: DroneType;
+  count?: number;
+  ore?: OreId;
+  trait?: string;
+  sold: boolean;
+}
+
+export interface MerchantFleet {
+  clan: ClanId;
+  /** Seconds before they fold out. */
+  remaining: number;
+  stock: StockItem[];
+  /** Captain's favor: deliver ore before they leave. */
+  favor: { ore: OreId; amount: number; done: boolean } | null;
+  escortDone: boolean;
+}
+
+export interface TradeState {
+  fleet: MerchantFleet | null;
+  nextIn: number;
+  /** A convoy arrived while you were away and is waiting for you. */
+  pending: boolean;
+  visits: number;
+  rep: Record<ClanId, number>;
+  inventory: { repair_kit: number; medkit: number; fold_cell: number };
+  /** Seconds left on an Overdrive cell / deterrent beacon. */
+  overdriveCell: number;
+  deterrent: number;
+  /** Purchases that only last for the current sector. */
+  sectorBuffs: { key: string; sell: Partial<Record<OreId, number>>; cancelled: string[] };
+  /** Permanent unlocks (clan exclusives and the like). */
+  perks: string[];
+  nextId: number;
+}
+
+export interface Contract {
+  id: number;
+  issuer: { kind: 'corp' | 'local'; id: string };
+  type: ContractType;
+  title: string;
+  ore?: OreId;
+  target: number;
+  progress: number;
+  /** Seconds left (counts down only while you're playing). */
+  deadline: number;
+  duration: number;
+  reward: { credits: number; surveyData: number; dataCores: number };
+  /** For counters (raids won, scans, cracks) at the moment you accepted. */
+  baseline: number;
+  /** Sustain contracts: seconds above the target so far. */
+  held: number;
+}
+
+export interface LocalOutfit {
+  id: string;
+  name: string;
+  archetype: OutfitArchetype;
+  standing: number;
+  legacyClaimed: boolean;
+}
+
+export interface ContractsState {
+  board: Contract[];
+  active: Contract[];
+  refreshIn: number;
+  standing: Record<CorpId, number>;
+  /** Corporate exclusives already granted. */
+  exclusives: CorpId[];
+  local: LocalOutfit[];
+  localKey: string;
+  completed: number;
+  failed: number;
+  nextId: number;
+}
+
+export interface Bond {
+  a: number;
+  b: number;
+  type: BondType;
+}
+
 export interface GameState {
-  version: 5;
+  version: 6;
   commander: string;
   ship: string;
   createdAt: number;
@@ -266,6 +360,9 @@ export interface GameState {
   wrecks: Record<DroneType, number>;
   threats: ThreatState;
   anomalies: AnomaliesState;
+  trade: TradeState;
+  contracts: ContractsState;
+  bonds: Bond[];
   asteroid: AsteroidState;
   sector: SectorInfo;
   zone: ZoneId;
@@ -310,6 +407,8 @@ export interface TickEvents {
   threatResolved: { kind: EventKind; text: string; good: boolean; sortie?: SortieReport }[];
   /** Anomaly news: detections, scans, mission results, lore. */
   anomaly: { text: string; good: boolean; kind: AnomalyKind; lore?: number }[];
+  /** Merchant and contract news. */
+  trade: { text: string; good: boolean; from?: 'merchant' | 'corp' | 'vesper' }[];
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
   ingots: OreAmounts;

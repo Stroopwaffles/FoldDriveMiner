@@ -332,3 +332,27 @@ select {
   flex-wrap: wrap;
   margin-bottom: 0.5rem;
 }
+
+.bonds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.bond {
+  font-size: 0.62rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  cursor: help;
+
+  &.rivals {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  &.mentor {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+}

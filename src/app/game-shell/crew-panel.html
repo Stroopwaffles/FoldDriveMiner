@@ -50,6 +50,17 @@
           }
         </div>
 
+        @if (d.bonds.length) {
+          <div class="bonds">
+            @for (b of d.bonds; track $index) {
+              <span class="bond" [class]="'bond ' + b.type" [title]="b.desc">♦ {{ b.text }}</span>
+            }
+          </div>
+        }
+        @if (d.injured && st.trade.inventory.medkit > 0) {
+          <button type="button" class="btn small btn-amber" (click)="game.useMedkit(d.p.id)">Use med kit ({{ st.trade.inventory.medkit }})</button>
+        }
+
         <div class="syncs">
           @for (sy of d.sync; track sy.frame.id) {
             <div class="sync" [style.--fc]="sy.frame.color" [title]="'Sync with ' + sy.frame.name + ' frames'">

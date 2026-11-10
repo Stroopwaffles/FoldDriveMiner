@@ -7,6 +7,8 @@ import { randomSeed } from '../game/rng';
 import { ClickResult, GameState, MechJob, OfflineReport, PilotState, SortieReport, TickEvents } from '../game/types';
 import * as T from '../game/threat-rules';
 import * as A from '../game/anomaly-rules';
+import * as TR from '../game/trade-rules';
+import { clanDef } from '../game/trade-data';
 import { Approach } from '../game/anomaly-data';
 import { JACKAL, StandingOrders, eventDef } from '../game/threat-data';
 import { DroneType as DT } from '../game/fleet-data';
@@ -16,9 +18,9 @@ import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
 
-export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense';
+export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board';
 
-export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT' | 'JACKAL';
+export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT' | 'JACKAL' | 'TRADER' | 'CORP';
 
 export interface CommMessage {
   id: number;
@@ -34,9 +36,10 @@ export interface CommMessage {
 /** The sortie screen: choosing a squad, or watching a battle play out. */
 export interface SortieView {
   mode: 'prep' | 'play';
-  /** The raid being defended (prep), or a strike on the pirate base. */
+  /** The raid being defended (prep), a strike on the pirate base, or a convoy escort. */
   eventId?: number;
   strike?: boolean;
+  escort?: boolean;
   report?: SortieReport;
 }
 
@@ -56,7 +59,7 @@ export interface EpisodeCard {
   subtitle: string;
 }
 
-const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560, JACKAL: 330 };
+const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560, JACKAL: 330, TRADER: 500, CORP: 380 };
 
 /** Owns the live game state, the tick loop, saving and player actions. */
 @Injectable({ providedIn: 'root' })
@@ -385,6 +388,7 @@ export class GameService {
   private handleEvents(ev: TickEvents): void {
     const s = this._state()!;
     for (const t of ev.threatStarted) this.announceThreat(t);
+    for (const t of ev.trade) this.tradeSay(t);
     for (const a of ev.anomaly) {
       this.say('VESPER', a.text);
       if (a.lore) this.audio.dataCore();
@@ -672,9 +676,9 @@ export class GameService {
     this.publish();
   }
 
-  openSortiePrep(eventId?: number, strike = false): void {
+  openSortiePrep(eventId?: number, strike = false, escort = false): void {
     this.audio.select();
-    this.sortie.set({ mode: 'prep', eventId, strike });
+    this.sortie.set({ mode: 'prep', eventId, strike, escort });
   }
 
   closeSortie(): void {
@@ -686,15 +690,18 @@ export class GameService {
     const view = this.sortie();
     if (!s || !view) return;
     const events = this.blankEvents();
-    const report = view.strike
-      ? T.launchStrike(s, mechIds, useGuardians, events)
-      : T.launchDefense(s, view.eventId ?? -1, mechIds, useGuardians, events);
+    const report = view.escort
+      ? T.launchEscort(s, mechIds, useGuardians, events)
+      : view.strike
+        ? T.launchStrike(s, mechIds, useGuardians, events)
+        : T.launchDefense(s, view.eventId ?? -1, mechIds, useGuardians, events);
     if (!report) {
       this.audio.denied();
       return;
     }
     this.audio.explosion();
     for (const r of events.threatResolved) this.say('VESPER', r.text);
+    for (const t of events.trade) this.tradeSay(t);
     this.afterSortie(report, true);
     this.publish();
   }
@@ -776,6 +783,62 @@ export class GameService {
     return r;
   }
 
+  // ------------------------------------------------------------ trade & contracts
+
+  /** Merchant captains and corporate liaisons speak in the comm log. */
+  private tradeSay(t: { text: string; good: boolean; from?: string }): void {
+    const s = this._state()!;
+    if (t.from === 'merchant' && s.trade.fleet) {
+      const clan = clanDef(s.trade.fleet.clan);
+      this.say('TRADER', t.text, 0, undefined, clan.captain);
+    } else if (t.from === 'corp') {
+      this.say('CORP', t.text);
+    } else {
+      this.say('VESPER', t.text);
+    }
+  }
+
+  buyItem(itemId: number, pay: TR.PayMethod): void {
+    const s = this._state();
+    if (!s) return;
+    const events = this.blankEvents();
+    if (TR.buyItem(s, itemId, pay, events)) this.audio.buy();
+    else this.audio.denied();
+    for (const t of events.trade) this.tradeSay(t);
+    for (const t of events.threatStarted) this.announceThreat(t);
+    this.publish();
+  }
+
+  deliverFavor(): void {
+    const s = this._state();
+    if (!s) return;
+    const events = this.blankEvents();
+    if (TR.deliverFavor(s, events)) this.audio.sell();
+    else this.audio.denied();
+    for (const t of events.trade) this.tradeSay(t);
+    this.publish();
+  }
+
+  useRepairKit(mechId: number): void {
+    this.act((s) => TR.useRepairKit(s, mechId), () => this.audio.buy());
+  }
+
+  useMedkit(pilotId: number): void {
+    this.act((s) => TR.useMedkit(s, pilotId), () => this.audio.buy());
+  }
+
+  acceptContract(id: number): void {
+    this.act((s) => TR.acceptContract(s, id), () => this.audio.select());
+  }
+
+  abandonContract(id: number): void {
+    this.act((s) => TR.abandonContract(s, id), () => this.audio.denied());
+  }
+
+  rerollBoard(): void {
+    this.act(TR.rerollBoard, () => this.audio.blip());
+  }
+
   rebuildWrecks(type: DT): void {
     this.act((s) => T.rebuildWrecks(s, type) > 0, () => this.audio.buy());
   }
@@ -789,6 +852,7 @@ export class GameService {
       threatStarted: [],
       threatResolved: [],
       anomaly: [],
+      trade: [],
       ingots: E.emptyOre(),
       autoSoldCredits: 0,
     };
@@ -796,10 +860,11 @@ export class GameService {
 
   // ------------------------------------------------------------ comms
 
-  say(from: Speaker, text: string, delayMs = 0, pilot?: PilotState): void {
+  say(from: Speaker, text: string, delayMs = 0, pilot?: PilotState, name?: string): void {
     const push = () => {
       this.audio.comm(SPEAKER_PITCH[from]);
       const msg: CommMessage = { id: ++this.commId, from, text, at: Date.now() };
+      if (name) msg.name = name;
       if (from === 'PILOT' && pilot) {
         msg.name = `${pilot.name} "${pilot.callsign}"`;
         msg.seed = pilot.portraitSeed;

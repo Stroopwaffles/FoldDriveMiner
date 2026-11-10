@@ -4,9 +4,10 @@
  */
 import { ensureCrew, newGame, syncRefinerySlots, syncSector } from './engine';
 import { ensureAnomalies } from './anomaly-rules';
+import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
 
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -38,6 +39,10 @@ export function migrate(raw: unknown): GameState {
     data['sector'] = sector;
     data['version'] = 5;
   }
+  if (data['version'] === 5) {
+    // v6 adds merchant convoys, contracts and pilot bonds; all start empty.
+    data['version'] = 6;
+  }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);
   }
@@ -58,6 +63,8 @@ function fillDefaults(saved: Partial<GameState>): GameState {
   ensureCrew(merged);
   syncSector(merged);
   ensureAnomalies(merged);
+  ensureTradeSector(merged);
+  ensureStoryBonds(merged);
   return merged;
 }
 

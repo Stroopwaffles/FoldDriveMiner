@@ -1,0 +1,331 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.head-info {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+}
+
+.dim {
+  color: var(--text-dim);
+}
+
+.small {
+  font-size: 0.72rem;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.section {
+  padding: 0.8rem 0.9rem 0;
+
+  &:last-child {
+    padding-bottom: 0.9rem;
+  }
+}
+
+.sub {
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  margin-bottom: 0.45rem;
+
+  .kana {
+    font-family: var(--font-kana);
+    color: var(--text-dim);
+  }
+
+  &.row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-top: 0.8rem;
+  }
+}
+
+.btn.small {
+  font-size: 0.62rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.btn.tiny {
+  font-size: 0.58rem;
+  padding: 0.15rem 0.45rem;
+}
+
+/* ---------- convoy ---------- */
+.convoy {
+  border: 1px solid var(--cc);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cc) 10%, transparent), transparent 50%), rgba(10, 13, 34, 0.7);
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.convoy-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.crest {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--cc);
+  color: var(--cc);
+  font-family: var(--font-kana);
+  font-size: 0.6rem;
+  text-align: center;
+  transform: rotate(45deg);
+
+  /* keep the text upright inside the diamond */
+  line-height: 1;
+}
+
+.clan-name {
+  font-family: var(--font-display);
+  color: var(--cc);
+}
+
+.leaving {
+  text-align: right;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+
+  b {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    color: var(--amber);
+  }
+}
+
+.stock {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+}
+
+.item {
+  border: 1px solid #232a5c;
+  background: rgba(5, 6, 15, 0.6);
+  padding: 0.45rem 0.55rem;
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+
+  &.sold {
+    opacity: 0.45;
+  }
+
+  &.excl {
+    border-color: var(--amber);
+    box-shadow: 0 0 12px rgba(255, 181, 71, 0.25);
+  }
+}
+
+.item-top {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.item-name {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+}
+
+.tag {
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 0 0.25rem;
+
+  &.red {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}
+
+.buy {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.extras {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.extra {
+  font-size: 0.72rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+
+  b {
+    font-family: var(--font-display);
+    font-weight: normal;
+    color: var(--cc);
+    letter-spacing: 0.08em;
+  }
+}
+
+.inv {
+  margin-top: 0.5rem;
+  color: var(--text-dim);
+
+  b {
+    color: var(--cyan);
+    font-weight: normal;
+  }
+}
+
+/* ---------- contracts ---------- */
+.contract {
+  position: relative;
+  border: 1px solid #232a5c;
+  border-left: 3px solid var(--cc);
+  padding: 0.45rem 0.6rem;
+  background: rgba(10, 13, 34, 0.65);
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 6px;
+}
+
+.c-top {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.c-kind {
+  font-size: 0.56rem;
+  letter-spacing: 0.15em;
+  color: var(--cc);
+}
+
+.c-title {
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+}
+
+.deadline {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--amber);
+
+  &.soon {
+    color: var(--danger);
+  }
+}
+
+.c-bar {
+  height: 6px;
+  background: #0a0d22;
+  border: 1px solid var(--bezel);
+
+  div {
+    height: 100%;
+    background: var(--cc, var(--cyan));
+    transition: width 0.2s;
+  }
+}
+
+.c-foot {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+
+  .btn {
+    margin-left: auto;
+  }
+}
+
+.reward {
+  color: var(--ok);
+}
+
+/* Offers look like teletype printouts pinned to the board. */
+.offers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.offer {
+  background: repeating-linear-gradient(0deg, rgba(232, 236, 255, 0.04) 0 1px, transparent 1px 3px), #10142e;
+  font-family: var(--font-mono);
+  overflow: hidden;
+
+  .btn {
+    justify-self: start;
+  }
+}
+
+.stamp {
+  position: absolute;
+  right: -6px;
+  top: 8px;
+  transform: rotate(12deg);
+  border: 2px solid rgba(255, 181, 71, 0.4);
+  color: rgba(255, 181, 71, 0.4);
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  padding: 0 0.4rem;
+}
+
+/* ---------- standing ---------- */
+.standing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.corp {
+  border-left: 3px solid var(--cc, var(--ok));
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 6px;
+  display: grid;
+  gap: 0.25rem;
+  background: rgba(10, 13, 34, 0.5);
+
+  &.local {
+    --cc: var(--ok);
+  }
+}
+
+.corp-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.corp-name {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+}
+
+.corp-st {
+  margin-left: auto;
+  color: var(--cc, var(--ok));
+  font-weight: normal;
+}

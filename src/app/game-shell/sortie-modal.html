@@ -3,7 +3,7 @@
     <div class="panel sortie" role="dialog" [attr.aria-label]="v.strike ? 'Strike sortie' : 'Sortie'">
       @if (v.mode === 'prep') {
         <div class="panel-title">
-          {{ v.strike ? 'Strike on the Pirate Base' : 'Raid Defense — Sortie Prep' }} <span class="kana">しゅつげき</span>
+          {{ v.strike ? 'Strike on the Pirate Base' : v.escort ? 'Convoy Escort' : 'Raid Defense — Sortie Prep' }} <span class="kana">しゅつげき</span>
           @if (event(); as ev) {
             <span class="count">IMPACT IN {{ ev.remaining.toFixed(0) }}s</span>
           }
@@ -16,7 +16,7 @@
                 <fdm-pilot-portrait story="jackal" [size]="48" />
               }
               <div>
-                <div class="enemy-name">{{ event()?.jackal ? 'The Vermilion Jackal + raiders' : v.strike ? 'Fortified pirate base' : 'Pirate raiders' }}</div>
+                <div class="enemy-name">{{ event()?.jackal ? 'The Vermilion Jackal + raiders' : v.strike ? 'Fortified pirate base' : v.escort ? 'Raiders shadowing the convoy' : 'Pirate raiders' }}</div>
                 <div class="strength">STRENGTH {{ game.fmt(strength()) }} / round · HP {{ game.fmt(strength() * 6) }}</div>
               </div>
             </div>
@@ -65,7 +65,7 @@
           @if (!v.strike && event()) {
             <button type="button" class="btn" (click)="game.surrender(event()!.id)">Surrender cargo</button>
           }
-          <button type="button" class="btn" (click)="close()">{{ v.strike ? 'Cancel' : 'Decide later' }}</button>
+          <button type="button" class="btn" (click)="close()">{{ v.strike || v.escort ? 'Cancel' : 'Decide later' }}</button>
           <button type="button" class="btn btn-primary" [disabled]="!odds()" (click)="launch()">LAUNCH!</button>
         </div>
       } @else if (report(); as r) {

@@ -15,7 +15,7 @@ function ev(): TickEvents {
     autoRepairs: [],
     threatStarted: [],
     threatResolved: [],
-    anomaly: [],
+    anomaly: [], trade: [],
     ingots: E.emptyOre(),
     autoSoldCredits: 0,
   };

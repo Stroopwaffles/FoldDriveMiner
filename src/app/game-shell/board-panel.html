@@ -1,0 +1,172 @@
+@let st = s();
+<section class="panel board">
+  <div class="panel-title">
+    <span class="led" [class.amber]="!!fleet()"></span>Trade &amp; Contracts <span class="kana">けいやく</span>
+    <span class="head-info">CONTRACTS DONE {{ st.contracts.completed }}</span>
+  </div>
+
+  <!-- Merchant convoy -->
+  <div class="section">
+    <div class="sub">MERCHANT CONVOY <span class="kana">しょうだん</span></div>
+    @if (fleet(); as v) {
+      <div class="convoy" [style.--cc]="v.clan.color">
+        <div class="convoy-head">
+          <div class="crest" aria-hidden="true">{{ v.clan.kana }}</div>
+          <div>
+            <div class="clan-name">{{ v.clan.name }}</div>
+            <div class="dim small">{{ v.clan.captain }} · {{ v.clan.specialty }}</div>
+            <div class="small">
+              Reputation <b>{{ v.rep }}</b> — {{ v.tier.name }}{{ v.tier.discount ? ' (' + v.tier.discount * 100 + '% off)' : '' }}
+              @if (v.next) {
+                <span class="dim">· {{ v.next.min - v.rep }} more to {{ v.next.name }}</span>
+              }
+            </div>
+          </div>
+          <div class="leaving">FOLDS OUT IN<br /><b>{{ duration(v.f.remaining) }}</b></div>
+        </div>
+        <div class="stock">
+          @for (row of v.stock; track row.item.id) {
+            <div class="item" [class.sold]="row.item.sold" [class.excl]="row.item.kind === 'exclusive'">
+              <div class="item-top">
+                <span class="item-name">{{ row.item.label }}</span>
+                @if (row.info.sectorBound) {
+                  <span class="tag">THIS SECTOR</span>
+                }
+                @if (row.info.contraband) {
+                  <span class="tag red">CONTRABAND</span>
+                }
+              </div>
+              <div class="dim small">{{ row.item.desc }}</div>
+              @if (row.item.sold) {
+                <div class="ok small">SOLD</div>
+              } @else {
+                <div class="buy">
+                  <button type="button" class="btn small" [disabled]="!!row.credits" [title]="row.credits ?? ''" (click)="game.buyItem(row.item.id, 'credits')">
+                    {{ game.fmt(row.item.price) }} cr
+                  </button>
+                  @if (row.item.barterOre) {
+                    <button type="button" class="btn small btn-amber" [disabled]="!!row.barter" [title]="row.barter ?? ''" (click)="game.buyItem(row.item.id, 'barter')">
+                      or {{ game.fmt(row.item.barterAmount ?? 0) }} t {{ oreName(row.item.barterOre) }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="extras">
+          @if (v.f.favor; as fav) {
+            <div class="extra">
+              <b>CAPTAIN'S FAVOR</b> — "Bring me {{ game.fmt(fav.amount) }} t of {{ oreName(fav.ore) }} before we fold out."
+              @if (fav.done) {
+                <span class="ok">Delivered ✓</span>
+              } @else {
+                <button type="button" class="btn small" [disabled]="!v.favorReady" (click)="game.deliverFavor()">Deliver ({{ game.fmt(st.cargo[fav.ore]) }} in hold)</button>
+              }
+            </div>
+          }
+          <div class="extra">
+            <b>ESCORT REQUEST</b> — raiders are shadowing the convoy. Win a sortie for +5 reputation.
+            @if (v.f.escortDone) {
+              <span class="ok">Done ✓</span>
+            } @else {
+              <button type="button" class="btn small btn-primary" (click)="game.openSortiePrep(undefined, false, true)">Escort</button>
+            }
+          </div>
+        </div>
+      </div>
+    } @else {
+      <p class="dim small">No convoy in the sector. Next one expected {{ nextConvoy() }}. Trade hubs bring them more often; the Lantern Market only trades in pirate havens.</p>
+    }
+    <div class="inv small">
+      STORES: Repair kits <b>{{ inventory().repair_kit }}</b> (use in HANGAR) · Med kits <b>{{ inventory().medkit }}</b> (use in CREW) · Fold cells <b>{{ inventory().fold_cell }}</b>
+      @if (st.trade.overdriveCell > 0) {
+        · <span class="ok">Overdrive cell {{ duration(st.trade.overdriveCell) }}</span>
+      }
+      @if (st.trade.deterrent > 0) {
+        · <span class="ok">Deterrent {{ duration(st.trade.deterrent) }}</span>
+      }
+    </div>
+  </div>
+
+  <!-- Contracts -->
+  <div class="section">
+    <div class="sub">ACTIVE CONTRACTS {{ st.contracts.active.length }}/{{ slots() }} <span class="kana">しんこうちゅう</span></div>
+    @for (v of active(); track v.c.id) {
+      <div class="contract active" [style.--cc]="v.color">
+        <div class="c-top">
+          <span class="c-kind">{{ v.kind }}</span>
+          <span class="c-title">{{ v.c.title }}</span>
+          <span class="deadline" [class.soon]="v.c.deadline < 120">⏳ {{ duration(v.c.deadline) }}</span>
+        </div>
+        <div class="c-bar"><div [style.width.%]="v.frac * 100"></div></div>
+        <div class="c-foot">
+          <span class="small">{{ v.progressText }}{{ v.c.type === 'delivery' || v.c.type === 'refinement' ? ' — taken from the hold automatically' : '' }}</span>
+          <span class="reward small">+{{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · +' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · +1 Data Core' : '' }}</span>
+          <button type="button" class="btn tiny" (click)="game.abandonContract(v.c.id)" title="Costs a little standing">Abandon</button>
+        </div>
+      </div>
+    } @empty {
+      <p class="dim small">No active contracts. Take one from the board below.</p>
+    }
+
+    <div class="sub row">
+      CONTRACT BOARD <span class="kana">けいじばん</span>
+      <span class="dim small">new offers in {{ duration(st.contracts.refreshIn) }}</span>
+      <button type="button" class="btn tiny" [disabled]="st.credits < rerollCost" (click)="game.rerollBoard()">New offers · {{ game.fmt(rerollCost) }} cr</button>
+    </div>
+    <div class="offers">
+      @for (v of board(); track v.c.id) {
+        <div class="contract offer" [style.--cc]="v.color">
+          <div class="stamp" aria-hidden="true">OFFER</div>
+          <div class="c-kind">{{ v.kind }}</div>
+          <div class="c-title">{{ v.c.title }}</div>
+          <div class="dim small">Deadline {{ duration(v.c.duration) }} of play time · deadlines pause while you're away</div>
+          <div class="reward small">Reward: {{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · ' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · 1 Data Core' : '' }}</div>
+          <button type="button" class="btn small btn-primary" [disabled]="st.contracts.active.length >= slots()" (click)="game.acceptContract(v.c.id)">Accept</button>
+        </div>
+      } @empty {
+        <p class="dim small">The board is empty. Offers arrive once your operation is earning.</p>
+      }
+    </div>
+  </div>
+
+  <!-- Standing -->
+  <div class="section standing">
+    <div>
+      <div class="sub">CORPORATE STANDING <span class="kana">きぎょう</span></div>
+      @for (c of corps(); track c.def.id) {
+        <div class="corp" [style.--cc]="c.def.color">
+          <div class="corp-head">
+            <span class="corp-name">{{ c.def.name }}</span>
+            <span class="dim small">{{ c.def.liaison }}</span>
+            <b class="corp-st">{{ c.st }}</b>
+          </div>
+          <div class="c-bar"><div [style.width.%]="c.frac * 100"></div></div>
+          <div class="small" [class.ok]="c.trusted" [class.dim]="!c.trusted">
+            {{ c.trusted ? '✓' : 'At ' + standing.trusted + ':' }} {{ c.def.perk }}
+            · {{ c.partner ? '✓ exclusive part received' : 'At ' + standing.partner + ': an exclusive part' }}
+          </div>
+        </div>
+      }
+    </div>
+    <div>
+      <div class="sub">LOCAL OUTFITS <span class="kana">ちいき</span></div>
+      @for (l of locals(); track l.o.id) {
+        <div class="corp local">
+          <div class="corp-head">
+            <span class="corp-name">{{ l.o.name }}</span>
+            <span class="dim small">{{ l.label }}</span>
+            <b class="corp-st">{{ l.o.standing }}/{{ legacyAt }}</b>
+          </div>
+          <div class="c-bar"><div [style.width.%]="(l.o.standing / legacyAt) * 100"></div></div>
+          <div class="small" [class.ok]="l.o.legacyClaimed" [class.dim]="!l.o.legacyClaimed">
+            {{ l.o.legacyClaimed ? '✓ Sector Legacy received' : 'Sector Legacy at ' + legacyAt + ' (lasts beyond this sector)' }}
+          </div>
+        </div>
+      } @empty {
+        <p class="dim small">No local outfits in this sector.</p>
+      }
+    </div>
+  </div>
+</section>

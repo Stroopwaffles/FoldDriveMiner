@@ -583,3 +583,19 @@
     margin-left: auto;
   }
 }
+
+.from-trader .msg-body {
+  border-left-color: var(--sun-1);
+}
+
+.from-trader .msg-from {
+  color: var(--sun-1);
+}
+
+.from-corp .msg-body {
+  border-left-color: var(--amber);
+}
+
+.from-corp .msg-from {
+  color: var(--amber);
+}

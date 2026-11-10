@@ -156,6 +156,9 @@
           <div><span>COMMAND LINK</span><b>+{{ (v.link * 100).toFixed(0) }}% drones</b></div>
           <div><span>SURVEY DATA</span><b>{{ v.sdPerSec.toFixed(2) }}/s</b></div>
         </div>
+        @if (st.trade.inventory.repair_kit > 0 && v.cond.frac < 1) {
+          <button type="button" class="btn small btn-amber" (click)="game.useRepairKit(v.mech.id)">Use repair kit ({{ st.trade.inventory.repair_kit }})</button>
+        }
         @if (v.mech.job === 'repair') {
           <div class="dim small">Repairs cost {{ repairCost.credits }} cr + {{ repairCost.ore }} Ferrite/Titanite per armor point.</div>
         }

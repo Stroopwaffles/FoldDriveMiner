@@ -61,7 +61,7 @@
         type="button"
         class="nav-btn"
         [class.active]="item.id === game.tab()"
-        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady())"
+        [class.ready]="(item.id === 'lab' && !item.locked && labReady()) || (item.id === 'crew' && crewReady()) || (item.id === 'map' && !item.locked && mapReady()) || (item.id === 'board' && boardReady())"
         [class.locked]="item.locked"
         [attr.aria-disabled]="item.locked"
         [title]="item.locked ? item.hint : item.label"
@@ -103,6 +103,9 @@
         @case ('defense') {
           <fdm-defense-panel />
         }
+        @case ('board') {
+          <fdm-board-panel />
+        }
         @default {
           <fdm-ops-panel />
         }
@@ -127,6 +130,20 @@
               @case ('PILOT') {
                 <fdm-pilot-portrait [seed]="m.seed ?? 0" [size]="40" />
               }
+              @case ('TRADER') {
+                <svg viewBox="0 0 40 40">
+                  <rect width="40" height="40" fill="#2a1a10" />
+                  <polygon points="20,5 35,20 20,35 5,20" fill="none" stroke="#ffd23f" stroke-width="1.5" />
+                  <text x="20" y="24" text-anchor="middle" fill="#ffd23f" font-size="11">¥</text>
+                </svg>
+              }
+              @case ('CORP') {
+                <svg viewBox="0 0 40 40">
+                  <rect width="40" height="40" fill="#1a1530" />
+                  <rect x="8" y="10" width="24" height="20" fill="none" stroke="#ffb547" stroke-width="1.5" />
+                  <text x="20" y="24" text-anchor="middle" fill="#ffb547" font-size="8">CORP</text>
+                </svg>
+              }
               @case ('JACKAL') {
                 <fdm-pilot-portrait story="jackal" [size]="40" />
               }
@@ -144,7 +161,7 @@
             }
           </div>
           <div class="msg-body">
-            <div class="msg-from">{{ m.from === 'JUNO' ? 'JUNO HART' : m.from === 'KIT' ? 'KIT OKAFOR' : m.from === 'JACKAL' ? '??? — UNKNOWN FRAME' : m.from === 'PILOT' ? m.name : m.from }}</div>
+            <div class="msg-from">{{ m.from === 'JUNO' ? 'JUNO HART' : m.from === 'KIT' ? 'KIT OKAFOR' : m.from === 'JACKAL' ? '??? — UNKNOWN FRAME' : m.from === 'TRADER' ? (m.name ?? 'TRADER') : m.from === 'CORP' ? 'CORPORATE LIAISON' : m.from === 'PILOT' ? m.name : m.from }}</div>
             <div class="msg-text">{{ m.text }}</div>
           </div>
         </div>

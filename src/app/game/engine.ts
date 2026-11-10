@@ -35,6 +35,16 @@ import { RESEARCH, researchNode } from './research';
 import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
 import { generateSector, pulsarSurge, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
+  advanceTrade,
+  emptyContracts,
+  emptyTrade,
+  ensureStoryBonds,
+  ensureTradeSector,
+  overdriveCellActive,
+  surveyMult,
+  tradeSellMult,
+} from './trade-rules';
+import {
   LossContext,
   ONLINE,
   advanceThreats,
@@ -66,7 +76,7 @@ function emptyDrones(): Record<DroneType, number> {
   return d;
 }
 
-function emptyEvents(): TickEvents {
+export function emptyEvents(): TickEvents {
   return {
     research: [],
     levelUps: [],
@@ -75,6 +85,7 @@ function emptyEvents(): TickEvents {
     threatStarted: [],
     threatResolved: [],
     anomaly: [],
+    trade: [],
     ingots: emptyOre(),
     autoSoldCredits: 0,
   };
@@ -84,7 +95,7 @@ function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 5,
+    version: 6,
     commander,
     ship,
     createdAt: now,
@@ -111,6 +122,9 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     wrecks: emptyDrones(),
     threats: emptyThreats(),
     anomalies: emptyAnomalies(),
+    trade: emptyTrade(),
+    contracts: emptyContracts(),
+    bonds: [],
     asteroid: null as unknown as AsteroidState,
     sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
@@ -134,6 +148,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
   };
   syncSector(state);
   ensureAnomalies(state);
+  ensureTradeSector(state);
   state.asteroid = spawnAsteroid(state);
   return state;
 }
@@ -279,7 +294,8 @@ export function surveyDataPerCrack(state: GameState): number {
     CONFIG.asteroid.surveyDataPerCrack *
     bonus *
     (1 + postBonus(state, 'sensor')) *
-    codexSurveyBonus(state)
+    codexSurveyBonus(state) *
+    surveyMult(state)
   );
 }
 
@@ -315,6 +331,7 @@ export function orePrice(state: GameState, ore: OreId): number {
     (1 + (marketMultiplier(state.marketClock, ore) - 1) * mods(state).marketAmp) *
     eventPriceMult(state, ore) *
     mods(state).sellPrice *
+    tradeSellMult(state, ore) *
     (1 + postBonus(state, 'quartermaster'))
   );
 }
@@ -414,7 +431,9 @@ export function click(state: GameState): ClickResult {
   }
 
   state.stats.clicks++;
+  const cell = overdriveCellActive(state);
   drill.heat += h.perClick * sectorMods(state).heatPerClick;
+  if (cell) drill.heat = Math.min(drill.heat, h.max - 1);
   if (drill.heat >= h.max) {
     drill.heat = h.max;
     drill.lockRemaining = h.lockSec;
@@ -422,7 +441,7 @@ export function click(state: GameState): ClickResult {
     result.overheated = true;
     return result;
   }
-  result.overdrive = drill.heat <= h.overdriveMax;
+  result.overdrive = cell || drill.heat <= h.overdriveMax;
   if (result.overdrive) state.stats.overdriveClicks++;
 
   const asteroid = state.asteroid;
@@ -810,11 +829,12 @@ function advance(
   for (const id of ORE_IDS) amounts[id] *= dt;
   addOre(amounts, advanceFleet(state, dt, efficiency * boost, events));
   const { added, lost } = addToCargo(state, amounts);
-  state.surveyData += passiveSdRate(state) * dt * efficiency * codexSurveyBonus(state);
+  state.surveyData += passiveSdRate(state) * dt * efficiency * codexSurveyBonus(state) * surveyMult(state);
 
   advanceCrew(state, dt, events);
   events.ingots = advanceRefinery(state, dt);
   events.research = advanceResearch(state, dt);
+  advanceTrade(state, dt, events, ctx.offline);
   events.autoSoldCredits = runAutoSell(state);
   advanceThreats(state, dt, events, ctx);
   advanceAnomalies(state, dt, events, ctx.offline);
@@ -868,6 +888,7 @@ export function simulateOffline(state: GameState, seconds: number): OfflineRepor
     const r = advance(state, dt, efficiency, ctx);
     for (const t of r.threatResolved) report.threats.push(t.text);
     for (const a of r.anomaly) report.threats.push(a.text);
+    for (const t of r.trade) report.threats.push(t.text);
     addOre(report.gained, r.added);
     addOre(report.ingots, r.ingots);
     report.credits += r.autoSoldCredits;
@@ -884,3 +905,6 @@ export { RESEARCH };
 function mods(state: GameState) {
   return sectorMods(state);
 }
+
+export { ensureStoryBonds };
+export { bondsOf } from './trade-rules';

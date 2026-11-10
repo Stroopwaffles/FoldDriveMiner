@@ -2,6 +2,7 @@ import { Component, DestroyRef, computed, effect, inject, signal, untracked } fr
 import { frameDef } from '../game/fleet-data';
 import * as E from '../game/engine';
 import * as T from '../game/threat-rules';
+import * as TR from '../game/trade-rules';
 import { AudioService } from '../services/audio.service';
 import { GameService } from '../services/game.service';
 import { MechPortrait } from '../ui/mech-portrait';
@@ -35,6 +36,7 @@ export class SortieModal {
   protected readonly strength = computed(() => {
     const v = this.view();
     if (v?.strike) return T.strikeStrength(this.s());
+    if (v?.escort) return TR.escortStrength(this.s());
     return this.event()?.strength ?? T.raidStrength(this.s());
   });
 

@@ -21,6 +21,7 @@ import {
 import { FRAMES, FrameId } from './fleet-data';
 import { Rng } from './rng';
 import { GameState, MechState, PilotState, TickEvents } from './types';
+import { ensureStoryBonds, rollBond } from './trade-rules';
 
 // ---------------------------------------------------------------- lookups
 
@@ -159,6 +160,7 @@ export function ensureCrew(state: GameState): string[] {
   };
   if (hasResearch(state, 'hangar')) add('juno');
   if (hasResearch(state, 'repair_bay')) add('kit');
+  ensureStoryBonds(state);
   if (crewUnlocked(state) && state.recruits.length === 0) refreshRecruits(state);
   return joined;
 }
@@ -184,6 +186,7 @@ export function hirePilot(state: GameState, index: number): boolean {
   state.credits -= cost;
   state.recruits.splice(index, 1);
   state.pilots.push(recruit);
+  rollBond(state, recruit);
   return true;
 }
 
@@ -248,6 +251,12 @@ export function advanceCrew(state: GameState, dt: number, events: TickEvents): v
     const post = pilotPost(state, p);
     let rate = mech && mech.job === 'mining' ? CREW.xpMining : post ? CREW.xpPost : CREW.xpIdle;
     if (hasTrait(p, 'quick_learner')) rate *= 1.25;
+    // Mentor & student: the student learns faster mining the same zone as the mentor.
+    if (mech && mech.job === 'mining') {
+      const mentor = state.bonds.find((b) => b.type === 'mentor' && b.b === p.id);
+      const mm = mentor ? state.mechs.find((x) => x.pilotId === mentor.a && x.job === 'mining' && x.zone === mech.zone) : null;
+      if (mm) rate *= 1.5;
+    }
     if (p.id !== instructorId) rate *= 1 + instructor;
     p.xp += rate * dt;
 

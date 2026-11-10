@@ -23,6 +23,7 @@ import { MusicService } from '../services/music.service';
 import { AsteroidViewport } from './asteroid-viewport';
 import { CrewPanel } from './crew-panel';
 import { DefensePanel } from './defense-panel';
+import { BoardPanel } from './board-panel';
 import { SortieModal } from './sortie-modal';
 import { ThreatBanner } from './threat-banner';
 import * as T from '../game/threat-rules';
@@ -34,7 +35,7 @@ import { MapPanel } from './map-panel';
 import { OpsPanel } from './ops-panel';
 
 interface NavItem {
-  id: Tab | 'board';
+  id: Tab;
   label: string;
   kana: string;
   icon: string;
@@ -52,6 +53,7 @@ interface NavItem {
     HangarPanel,
     CrewPanel,
     DefensePanel,
+    BoardPanel,
     ThreatBanner,
     SortieModal,
     SettingsPanel,
@@ -87,6 +89,13 @@ export class GameShell {
   protected readonly blackout = computed(() => T.marketBlocked(this.s()));
   /** Crew badge: someone has a trait to choose. */
   protected readonly crewReady = computed(() => this.s().pilots.some((p) => p.traitChoice));
+  /** Board opens once contracts are offered or a convoy shows up. */
+  private readonly boardOpen = computed(() => {
+    const s = this.s();
+    return s.contracts.board.length > 0 || s.contracts.active.length > 0 || !!s.trade.fleet || s.contracts.completed > 0;
+  });
+  /** Board badge: a merchant convoy is in the sector. */
+  protected readonly boardReady = computed(() => !!this.s().trade.fleet);
   /** Map badge: an unscanned signal is waiting. */
   protected readonly mapReady = computed(() => this.s().anomalies.list.some((a) => a.status === 'signal' && a.kind !== 'golden_asteroid'));
   /** Lab badge: a bench is free and something can be started. */
@@ -103,7 +112,7 @@ export class GameShell {
     { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: !this.labOpen(), hint: 'Research lab offline. Crack an asteroid to recover Survey Data.' },
     { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
     { id: 'defense', label: 'DEFENSE', kana: 'ぼうえい', icon: '⚔', locked: !this.defenseOpen(), hint: 'Sector is quiet. Defense command opens when trouble starts.' },
-    { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: true, hint: 'Contract board unavailable.' },
+    { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: !this.boardOpen(), hint: 'No contracts or traders yet. Earn a little first.' },
   ]);
 
   protected readonly ticker = computed(() => {
