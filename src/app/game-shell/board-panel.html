@@ -166,9 +166,9 @@
           <div class="corp-head">
             <span class="corp-name">{{ l.o.name }}</span>
             <span class="dim small">{{ l.label }}</span>
-            <b class="corp-st">{{ l.o.standing }}/{{ legacyAt }}</b>
+            <b class="corp-st">{{ Math.min(l.o.standing, legacyAt) }}/{{ legacyAt }}</b>
           </div>
-          <div class="c-bar"><div [style.width.%]="(l.o.standing / legacyAt) * 100"></div></div>
+          <div class="c-bar"><div [style.width.%]="Math.min(1, l.o.standing / legacyAt) * 100"></div></div>
           <div class="small" [class.ok]="l.o.legacyClaimed" [class.dim]="!l.o.legacyClaimed">
             {{ l.o.legacyClaimed ? '✓ Sector Legacy received' : 'Sector Legacy at ' + legacyAt + ' (lasts beyond this sector)' }}
           </div>

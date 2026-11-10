@@ -80,6 +80,7 @@ export class BoardPanel {
     }),
   );
   protected readonly standing = STANDING;
+  protected readonly Math = Math;
 
   protected readonly locals = computed(() =>
     this.s().contracts.local.map((o) => ({ o, label: OUTFITS[o.archetype].label, legacy: OUTFITS[o.archetype].legacy })),

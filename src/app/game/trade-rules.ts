@@ -87,6 +87,8 @@ export function ensureTradeSector(state: GameState): void {
     state.contracts.board = state.contracts.board.filter((c) => c.issuer.kind === 'corp');
     state.contracts.active = state.contracts.active.filter((c) => c.issuer.kind === 'corp');
   }
+  // Older saves could run past the cap.
+  for (const o of state.contracts.local) o.standing = Math.min(CONTRACT.localLegacy, o.standing);
 }
 
 function news(events: TickEvents, text: string, good: boolean, from: 'merchant' | 'corp' | 'vesper' = 'vesper'): void {
@@ -704,7 +706,8 @@ function changeStanding(state: GameState, c: Contract, delta: number): void {
     state.contracts.standing[id] = Math.max(0, state.contracts.standing[id] + delta);
   } else {
     const o = state.contracts.local.find((l) => l.id === c.issuer.id);
-    if (o) o.standing = Math.max(0, o.standing + delta);
+    // Local standing tops out at the Sector Legacy.
+    if (o) o.standing = Math.min(CONTRACT.localLegacy, Math.max(0, o.standing + delta));
   }
 }
 

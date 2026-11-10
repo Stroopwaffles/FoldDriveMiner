@@ -221,6 +221,25 @@ describe('milestone 5b: contracts', () => {
     expect(o.standing).toBe(CONTRACT.localLegacy);
     expect(o.legacyClaimed).toBe(true);
   });
+
+  it('local standing stops at the Sector Legacy, even after more contracts', () => {
+    const s = rich();
+    const o = s.contracts.local[0];
+    o.standing = CONTRACT.localLegacy - 1;
+    s.contracts.active = [
+      {
+        id: 8, issuer: { kind: 'local', id: o.id }, type: 'delivery', title: 't', ore: 'ferrite', target: 1, progress: 0,
+        deadline: 600, duration: 600, reward: { credits: 10, surveyData: 0, dataCores: 0 }, baseline: 0, held: 0,
+      },
+    ];
+    s.cargo.ferrite = 5;
+    run(s, 1);
+    expect(o.standing).toBe(CONTRACT.localLegacy);
+    // Saves from before the cap are brought back down on load.
+    o.standing = CONTRACT.localLegacy + 7;
+    TR.ensureTradeSector(s);
+    expect(o.standing).toBe(CONTRACT.localLegacy);
+  });
 });
 
 describe('milestone 5b: pilot bonds', () => {
