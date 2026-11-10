@@ -2,6 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
 import { mechOperable, overdriveMult } from '../game/engine';
 import { MechPortrait } from '../ui/mech-portrait';
+import { DroneSprite } from '../ui/drone-sprite';
+import { DRONE_IDS, DroneType } from '../game/fleet-data';
 import { Rng } from '../game/rng';
 import { AsteroidState } from '../game/types';
 import { GameService } from '../services/game.service';
@@ -95,7 +97,7 @@ function buildShape(a: AsteroidState): Shape {
 
 @Component({
   selector: 'fdm-asteroid-viewport',
-  imports: [Starfield, MechPortrait],
+  imports: [Starfield, MechPortrait, DroneSprite],
   templateUrl: './asteroid-viewport.html',
   styleUrl: './asteroid-viewport.scss',
 })
@@ -139,14 +141,33 @@ export class AsteroidViewport {
   });
   protected readonly Math = Math;
 
-  private readonly droneCount = computed(() => Math.min(this.game.state()?.drones.prospector ?? 0, 18));
+  /** Owned drone counts as a stable string, so the sprite list only rebuilds when it changes. */
+  private readonly droneKey = computed(() => {
+    const d = this.game.state()?.drones;
+    return d ? DRONE_IDS.map((id) => d[id]).join(',') : '';
+  });
+
+  /**
+   * Up to 18 orbiting sprites, shared out by how many of each type you own
+   * (every owned type gets at least one). Each type flies its own ring.
+   */
   protected readonly drones = computed(() => {
-    const n = this.droneCount();
-    return Array.from({ length: n }, (_, i) => ({
-      r: 120 + (i % 3) * 26,
-      dur: 9 + (i % 5) * 2.3,
-      delay: -i * 1.7,
-    }));
+    const counts = this.droneKey().split(',').map(Number);
+    const owned = DRONE_IDS.map((id, i) => ({ id, n: counts[i] || 0 })).filter((x) => x.n > 0);
+    const total = owned.reduce((s, x) => s + x.n, 0);
+    const slots = Math.min(total, 18);
+    const list: { type: DroneType; r: number; dur: number; delay: number }[] = [];
+    let left = slots;
+    owned.forEach((x, k) => {
+      const share = k === owned.length - 1 ? left : Math.max(1, Math.round((x.n / total) * slots));
+      const n = Math.min(share, left, x.n);
+      left -= n;
+      const ring = DRONE_IDS.indexOf(x.id);
+      for (let i = 0; i < n; i++) {
+        list.push({ type: x.id, r: 112 + (ring % 3) * 24 + (i % 2) * 10, dur: 9 + (ring % 4) * 2.1 + (i % 3), delay: -(list.length * 1.7) });
+      }
+    });
+    return list;
   });
 
   protected readonly composition = computed(() => {

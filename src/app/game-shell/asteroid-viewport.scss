@@ -277,10 +277,8 @@
 
 .drone {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  transform: translate(var(--r), 0) translate(-50%, -50%);
-  filter: drop-shadow(0 0 4px #4fe3ff);
+  /* out to the ring, then turn 90° so the drone's nose points along its orbit */
+  transform: translate(var(--r), 0) translate(-50%, -50%) rotate(90deg);
 }
 
 @keyframes orbit {

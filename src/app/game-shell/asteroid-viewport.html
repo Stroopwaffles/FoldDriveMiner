@@ -34,10 +34,7 @@
   <div class="orbit-center" aria-hidden="true">
     @for (d of drones(); track $index) {
       <div class="drone-orbit" [style.--r.px]="d.r" [style.--dur.s]="d.dur" [style.--delay.s]="d.delay">
-        <svg class="drone" viewBox="-6 -6 12 12">
-          <polygon points="0,-5 5,0 0,5 -5,0" fill="#1b2250" stroke="#4fe3ff" stroke-width="1" />
-          <circle r="1.5" fill="#ffb547" />
-        </svg>
+        <fdm-drone-sprite class="drone" [type]="d.type" [size]="d.type === 'hauler' ? 18 : 15" />
       </div>
     }
   </div>

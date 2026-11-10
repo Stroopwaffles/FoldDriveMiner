@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { CONFIG, ORES, OreId } from '../game/config';
 import { DRONES, DRONE_IDS } from '../game/fleet-data';
+import { DroneSprite } from '../ui/drone-sprite';
 import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
 import { GameService } from '../services/game.service';
@@ -10,6 +11,7 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 /** The OPS tab: cargo & market, refinery, drill upgrades, drone bay. */
 @Component({
   selector: 'fdm-ops-panel',
+  imports: [DroneSprite],
   templateUrl: './ops-panel.html',
   styleUrl: './ops-panel.scss',
 })
