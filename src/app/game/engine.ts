@@ -3,7 +3,33 @@
  * touch the DOM, timers or storage, so they can be unit tested and reused
  * for offline catch-up.
  */
-import { CONFIG, ORE_IDS, OreId, ZONES, ZoneDef, ZoneId, oreDef, zoneDef } from './config';
+import { CONFIG, ORE_IDS, OreId, ZONES, ZoneDef, ZoneId, oreDef } from './config';
+import {
+  addOre,
+  currentZone,
+  emptyFlags,
+  emptyOre,
+  hasResearch,
+  oreReachable,
+  researchLevel,
+  sumOre,
+  zoneUnlocked,
+} from './common';
+import { advanceCrew, ensureCrew, nightOwlBonus, postBonus } from './crew-rules';
+import { DRONE_IDS, DroneType } from './fleet-data';
+import {
+  advanceFleet,
+  buyDronesOf,
+  droneCostOf,
+  haulerCargoMult,
+  maxAffordableOf,
+  mechRates,
+  miningDroneRates,
+  passiveSdRate,
+  perDroneRateOf,
+  salvagerDataCoreBonus,
+  salvagerDepletionBonus,
+} from './fleet-rules';
 import { RESEARCH, researchNode } from './research';
 import { Rng } from './rng';
 import {
@@ -12,33 +38,30 @@ import {
   GameState,
   OfflineReport,
   OreAmounts,
-  OreFlags,
   RefinerySlot,
   ResearchDone,
   TickEvents,
 } from './types';
 
-export function emptyOre(): OreAmounts {
-  return { ferrite: 0, titanite: 0, iridium: 0, helium3: 0, voidglass: 0 };
+export * from './common';
+export * from './crew-rules';
+export * from './fleet-rules';
+
+function emptyDrones(): Record<DroneType, number> {
+  const d = {} as Record<DroneType, number>;
+  for (const id of DRONE_IDS) d[id] = 0;
+  return d;
 }
 
-export function emptyFlags(): OreFlags {
-  return { ferrite: false, titanite: false, iridium: false, helium3: false, voidglass: false };
-}
-
-function sumOre(a: OreAmounts): number {
-  return ORE_IDS.reduce((s, id) => s + a[id], 0);
-}
-
-function addOre(into: OreAmounts, from: OreAmounts): void {
-  for (const id of ORE_IDS) into[id] += from[id];
+function emptyEvents(): TickEvents {
+  return { research: [], levelUps: [], syncUps: [], autoRepairs: [], ingots: emptyOre(), autoSoldCredits: 0 };
 }
 
 // ---------------------------------------------------------------- setup
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 2,
+    version: 3,
     commander,
     ship,
     createdAt: now,
@@ -53,7 +76,15 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     ingots: emptyOre(),
     cargoLevel: 0,
     drill: { powerLevel: 0, tier: 1, heat: 0, lockRemaining: 0, heatSinkLevel: 0 },
-    drones: { prospector: 0 },
+    drones: emptyDrones(),
+    dispatch: {},
+    mechs: [],
+    parts: {},
+    pilots: [],
+    recruits: [],
+    recruitRefresh: 0,
+    posts: {},
+    nextId: 1,
     asteroid: null as unknown as AsteroidState,
     sector: { code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
@@ -70,6 +101,8 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
       creditsEarned: 0,
       ingotsRefined: 0,
       researchCompleted: 0,
+      mechOre: 0,
+      mechsBuilt: 0,
     },
     flags: {},
   };
@@ -111,23 +144,6 @@ export function spawnAsteroid(state: GameState): AsteroidState {
 
 // ---------------------------------------------------------------- research levels & zones
 
-export function researchLevel(state: GameState, id: string): number {
-  return state.research.levels[id] ?? 0;
-}
-
-export function hasResearch(state: GameState, id: string): boolean {
-  return researchLevel(state, id) > 0;
-}
-
-export function currentZone(state: GameState): ZoneDef {
-  return zoneDef(state.zone);
-}
-
-export function zoneUnlocked(state: GameState, id: ZoneId): boolean {
-  const z = zoneDef(id);
-  return !z.research || hasResearch(state, z.research);
-}
-
 export function setZone(state: GameState, id: ZoneId): boolean {
   if (!zoneUnlocked(state, id) || state.zone === id) return false;
   state.zone = id;
@@ -139,10 +155,6 @@ export function unlockedZones(state: GameState): ZoneDef[] {
   return ZONES.filter((z) => zoneUnlocked(state, z.id));
 }
 
-/** Can the drill (and drones) collect this ore? */
-export function oreReachable(state: GameState, ore: OreId): boolean {
-  return oreDef(ore).tier <= state.drill.tier;
-}
 
 // ---------------------------------------------------------------- derived values
 
@@ -168,51 +180,41 @@ export function isOverdrive(state: GameState): boolean {
 export function cargoCapacity(state: GameState, level = state.cargoLevel): number {
   const c = CONFIG.cargo;
   const bonus = 1 + researchLevel(state, 'cargo_compression') * CONFIG.bonuses.cargoPerLevel;
-  return Math.floor(c.baseCapacity * c.capacityGrowth ** level * bonus);
+  return Math.floor(c.baseCapacity * c.capacityGrowth ** level * bonus * haulerCargoMult(state));
 }
 
 export function cargoUsed(state: GameState): number {
   return sumOre(state.cargo);
 }
 
-export function droneMultiplier(count: number): number {
-  return 2 ** CONFIG.drones.milestones.filter((m) => count >= m).length;
-}
-
-export function nextDroneMilestone(count: number): number | null {
-  return CONFIG.drones.milestones.find((m) => m > count) ?? null;
-}
-
 export function perDroneRate(state: GameState): number {
-  const n = state.drones.prospector;
-  const firmware = 1 + researchLevel(state, 'drone_efficiency') * CONFIG.bonuses.dronePerLevel;
-  return CONFIG.drones.prospector.orePerSec * droneMultiplier(n) * firmware;
+  return perDroneRateOf(state, 'prospector');
 }
 
-/** Ore per second from drones, split by the zone mix, for ores the drill can reach. */
+/** Ore per second from mining drones (all dispatched zones, with Command Link). */
 export function droneRates(state: GameState): OreAmounts {
-  const rates = emptyOre();
-  const n = state.drones.prospector;
-  if (n === 0) return rates;
-  const total = n * perDroneRate(state);
-  const comp = currentZone(state).composition;
-  for (const id of ORE_IDS) {
-    if (oreReachable(state, id)) rates[id] = total * (comp[id] ?? 0);
-  }
-  return rates;
+  return miningDroneRates(state);
 }
 
 export function droneRateTotal(state: GameState): number {
   return sumOre(droneRates(state));
 }
 
+export function mechRateTotal(state: GameState): number {
+  return sumOre(mechRates(state));
+}
+
 export function surveyDataPerCrack(state: GameState): number {
   const bonus = 1 + researchLevel(state, 'core_sampling') * CONFIG.bonuses.surveyDataPerLevel;
-  return currentZone(state).surveyData * CONFIG.asteroid.surveyDataPerCrack * bonus;
+  return currentZone(state).surveyData * CONFIG.asteroid.surveyDataPerCrack * bonus * (1 + postBonus(state, 'sensor'));
 }
 
 export function offlineEfficiency(state: GameState): number {
-  return CONFIG.offline.efficiency + researchLevel(state, 'offline_efficiency') * CONFIG.bonuses.offlineEfficiencyPerLevel;
+  return (
+    CONFIG.offline.efficiency +
+    researchLevel(state, 'offline_efficiency') * CONFIG.bonuses.offlineEfficiencyPerLevel +
+    nightOwlBonus(state)
+  );
 }
 
 export function offlineCapHours(state: GameState): number {
@@ -230,8 +232,9 @@ export function marketMultiplier(clock: number, ore: OreId): number {
   return 1 + slow * m.slowAmp + fast * m.fastAmp;
 }
 
+/** Sell price including the Quartermaster's haggling. */
 export function orePrice(state: GameState, ore: OreId): number {
-  return oreDef(ore).baseValue * marketMultiplier(state.marketClock, ore);
+  return oreDef(ore).baseValue * marketMultiplier(state.marketClock, ore) * (1 + postBonus(state, 'quartermaster'));
 }
 
 export function ingotPrice(state: GameState, ore: OreId): number {
@@ -260,19 +263,13 @@ export function priceForecast(state: GameState, ore: OreId, horizon = 90): { pea
 
 // ---------------------------------------------------------------- costs
 
+/** Prospector cost for `count` more drones. */
 export function droneCost(state: GameState, count = 1): number {
-  const p = CONFIG.drones.prospector;
-  const owned = state.drones.prospector;
-  // Geometric series: base * g^owned * (g^count - 1) / (g - 1)
-  return (p.baseCost * p.costGrowth ** owned * (p.costGrowth ** count - 1)) / (p.costGrowth - 1);
+  return droneCostOf(state, 'prospector', count);
 }
 
 export function maxAffordableDrones(state: GameState): number {
-  const p = CONFIG.drones.prospector;
-  const g = p.costGrowth;
-  const first = p.baseCost * g ** state.drones.prospector;
-  if (state.credits < first) return 0;
-  return Math.floor(Math.log((state.credits * (g - 1)) / first + 1) / Math.log(g));
+  return maxAffordableOf(state, 'prospector');
 }
 
 export function drillPowerCost(state: GameState): number {
@@ -361,12 +358,14 @@ export function click(state: GameState): ClickResult {
   if (asteroid.mass <= 1e-9) {
     result.cracked = true;
     const a = CONFIG.asteroid;
-    const bonusFrac = a.depletionBonusFrac * (1 + researchLevel(state, 'depletion_bonus') * CONFIG.bonuses.depletionPerLevel);
+    const bonusFrac =
+      a.depletionBonusFrac *
+      (1 + researchLevel(state, 'depletion_bonus') * CONFIG.bonuses.depletionPerLevel + salvagerDepletionBonus(state));
     for (const id of ORE_IDS) {
       if (oreReachable(state, id)) haul[id] += asteroid.maxMass * bonusFrac * asteroid.composition[id];
     }
     const rng = new Rng(state.rng);
-    if (rng.next() < a.dataCoreChance) {
+    if (rng.next() < a.dataCoreChance + salvagerDataCoreBonus(state)) {
       result.dataCore = true;
       state.dataCores++;
     }
@@ -439,14 +438,8 @@ export function toggleSmartSell(state: GameState): boolean {
 
 // ---------------------------------------------------------------- shop
 
-export function buyDrones(state: GameState, count: number): number {
-  let n = Math.min(count, maxAffordableDrones(state));
-  // Guard against floating-point rounding in the closed-form max.
-  while (n > 0 && droneCost(state, n) > state.credits) n--;
-  if (n <= 0) return 0;
-  state.credits -= droneCost(state, n);
-  state.drones.prospector += n;
-  return n;
+export function buyDrones(state: GameState, count: number, type: DroneType = 'prospector'): number {
+  return buyDronesOf(state, type, count);
 }
 
 export function buyDrillPower(state: GameState): boolean {
@@ -556,7 +549,8 @@ export function cancelResearch(state: GameState, index: number): boolean {
 
 function advanceResearch(state: GameState, dt: number): ResearchDone[] {
   const done: ResearchDone[] = [];
-  for (const job of state.research.active) job.remaining -= dt;
+  const speed = 1 + postBonus(state, 'science');
+  for (const job of state.research.active) job.remaining -= dt * speed;
   const finished = state.research.active.filter((j) => j.remaining <= 0);
   if (!finished.length) return done;
   state.research.active = state.research.active.filter((j) => j.remaining > 0);
@@ -566,7 +560,7 @@ function advanceResearch(state: GameState, dt: number): ResearchDone[] {
     state.research.levels[job.id] = Math.max(researchLevel(state, job.id), job.level);
     state.stats.researchCompleted++;
     applyResearchEffect(state, job.id);
-    const eureka = rng.next() < CONFIG.research.eurekaChance;
+    const eureka = rng.next() < CONFIG.research.eurekaChance * (1 + postBonus(state, 'science'));
     if (eureka) {
       state.surveyData += job.paidSd;
       state.credits += job.paidCr;
@@ -588,6 +582,10 @@ function applyResearchEffect(state: GameState, id: string): void {
     case 'refinery':
     case 'refinery_slots':
       syncRefinerySlots(state);
+      break;
+    case 'hangar':
+    case 'repair_bay':
+      ensureCrew(state);
       break;
   }
 }
@@ -620,7 +618,7 @@ export function batchCapacity(state: GameState): number {
 
 export function batchDuration(state: GameState): number {
   const r = CONFIG.refinery;
-  return r.baseDurationSec * r.speedFactor ** researchLevel(state, 'refinery_speed');
+  return r.baseDurationSec * r.speedFactor ** researchLevel(state, 'refinery_speed') * (1 - postBonus(state, 'refinery'));
 }
 
 /** Loads a batch into a slot from cargo. Returns false if there isn't enough ore. */
@@ -687,21 +685,22 @@ function advanceRefinery(state: GameState, dt: number): OreAmounts {
 
 // ---------------------------------------------------------------- time
 
-function produce(state: GameState, seconds: number, efficiency: number): { added: OreAmounts; lost: number } {
-  const rates = droneRates(state);
-  const amounts = emptyOre();
-  for (const id of ORE_IDS) amounts[id] = rates[id] * seconds * efficiency;
-  return addToCargo(state, amounts);
-}
-
-/** Everything that runs over time: drones, refinery, research, auto-sell. */
-function advance(state: GameState, dt: number, droneEfficiency: number): TickEvents & { added: OreAmounts; lost: number } {
+/** Everything that runs over time: drones, mechs, crew, refinery, research, auto-sell. */
+function advance(state: GameState, dt: number, efficiency: number): TickEvents & { added: OreAmounts; lost: number } {
+  const events = emptyEvents();
   state.marketClock += dt;
-  const { added, lost } = produce(state, dt, droneEfficiency);
-  const ingots = advanceRefinery(state, dt);
-  const research = advanceResearch(state, dt);
-  const autoSoldCredits = runAutoSell(state);
-  return { research, ingots, autoSoldCredits, added, lost };
+
+  const amounts = miningDroneRates(state, efficiency);
+  for (const id of ORE_IDS) amounts[id] *= dt;
+  addOre(amounts, advanceFleet(state, dt, efficiency, events));
+  const { added, lost } = addToCargo(state, amounts);
+  state.surveyData += passiveSdRate(state) * dt * efficiency;
+
+  advanceCrew(state, dt, events);
+  events.ingots = advanceRefinery(state, dt);
+  events.research = advanceResearch(state, dt);
+  events.autoSoldCredits = runAutoSell(state);
+  return { ...events, added, lost };
 }
 
 /** Advances the game by dt seconds while the game is open. */
@@ -717,8 +716,8 @@ export function tick(state: GameState, dt: number): TickEvents {
     drill.heat = Math.max(0, drill.heat - heatDecay(state) * dt);
   }
 
-  const { research, ingots, autoSoldCredits } = advance(state, dt, 1);
-  return { research, ingots, autoSoldCredits };
+  const { added: _added, lost: _lost, ...events } = advance(state, dt, 1);
+  return events;
 }
 
 /**

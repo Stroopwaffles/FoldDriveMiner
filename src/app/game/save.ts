@@ -2,10 +2,10 @@
  * Save format, migrations and export/import encoding.
  * Pure functions so they can be tested without a browser.
  */
-import { newGame, syncRefinerySlots } from './engine';
+import { ensureCrew, newGame, syncRefinerySlots } from './engine';
 import { GameState } from './types';
 
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -18,6 +18,11 @@ export function migrate(raw: unknown): GameState {
     // v2 adds zones, research, refinery, ingots and auto-sell. All of them
     // start empty, so fillDefaults supplies them; only the version changes.
     data['version'] = 2;
+  }
+  if (data['version'] === 2) {
+    // v3 adds drone types, Fleet Dispatch, mechs, parts and pilots. They start
+    // empty (fillDefaults), and prospector counts carry over unchanged.
+    data['version'] = 3;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);
@@ -36,6 +41,7 @@ function fillDefaults(saved: Partial<GameState>): GameState {
     throw new SaveError('Save data is corrupt (asteroid).');
   }
   syncRefinerySlots(merged);
+  ensureCrew(merged);
   return merged;
 }
 

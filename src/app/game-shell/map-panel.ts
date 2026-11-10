@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { ORES, ZONES, ZoneDef } from '../game/config';
+import { ORES, ZONES, ZoneDef, ZoneId } from '../game/config';
 import * as E from '../game/engine';
 import { researchNode } from '../game/research';
 import { GameService } from '../services/game.service';
@@ -76,6 +76,16 @@ import { GameService } from '../services/game.service';
                   <span>ROCK SIZE ×{{ z.def.massMult }}</span>
                   <span>SURVEY DATA {{ z.def.surveyData }}/rock</span>
                 </div>
+                @if (hasDispatch()) {
+                  <label class="dispatch">
+                    <span>DRONES</span>
+                    <input type="range" min="0" max="100" step="5" [value]="z.weight" (input)="dispatch(z.def.id, $event)" [attr.aria-label]="'Drone share for ' + z.def.name" />
+                    <b>{{ (z.share * 100).toFixed(0) }}%</b>
+                  </label>
+                }
+                @if (z.mechs.length) {
+                  <div class="zone-mechs">MECHS: {{ z.mechs.join(', ') }}</div>
+                }
                 @if (!z.current) {
                   <button type="button" class="btn btn-amber" (click)="game.setZone(z.def.id)">Set course</button>
                 }
@@ -84,7 +94,15 @@ import { GameService } from '../services/game.service';
               }
             </div>
           }
-          <p class="note">Changing zone abandons the current asteroid. Drones follow the ship and mine the new zone's mix.</p>
+          <p class="note">
+            Changing zone abandons the current asteroid.
+            @if (hasDispatch()) {
+              Fleet Dispatch: drag the sliders to split mining drones between zones (all at 0 = follow the ship).
+            } @else {
+              Drones follow the ship and mine the new zone's mix.
+            }
+            Mechs mine whatever zone they're ordered to in the HANGAR.
+          </p>
         </div>
       </div>
     </section>
@@ -95,9 +113,19 @@ export class MapPanel {
   protected readonly game = inject(GameService);
   protected readonly s = computed(() => this.game.state()!);
 
+  protected readonly hasDispatch = computed(() => E.hasResearch(this.s(), 'fleet_dispatch'));
+
+  protected dispatch(zone: ZoneId, e: Event): void {
+    this.game.setDispatch(zone, Number((e.target as HTMLInputElement).value));
+  }
+
   protected readonly zones = computed(() => {
     const s = this.s();
+    const shares = E.dispatchShares(s);
     return ZONES.map((def: ZoneDef) => ({
+      weight: s.dispatch[def.id] ?? 0,
+      share: shares[def.id] ?? 0,
+      mechs: s.mechs.filter((m) => m.zone === def.id && m.job === 'mining').map((m) => m.designation),
       def,
       unlocked: E.zoneUnlocked(s, def.id),
       current: s.zone === def.id,

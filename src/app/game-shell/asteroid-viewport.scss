@@ -450,3 +450,63 @@
     inset 0 0 60px rgba(0, 0, 0, 0.8),
     inset 0 0 40px rgba(255, 59, 59, 0.35);
 }
+
+/* ---------- mechs beside the asteroid ---------- */
+.mech-line {
+  position: absolute;
+  left: 4%;
+  top: 30%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.mech-here {
+  position: relative;
+  animation: hover-bob 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.8s);
+  filter: drop-shadow(0 0 6px rgba(79, 227, 255, 0.4));
+}
+
+.beam {
+  position: absolute;
+  left: 52px;
+  top: 52px;
+  width: 120px;
+  height: 3px;
+  background: linear-gradient(90deg, #fff, var(--magenta) 30%, transparent);
+  box-shadow: 0 0 8px var(--magenta);
+  transform: rotate(-8deg);
+  transform-origin: left center;
+  animation: beam 0.18s steps(2) infinite;
+}
+
+.boost .beam {
+  height: 6px;
+  width: 170px;
+  background: linear-gradient(90deg, #fff, var(--amber) 30%, transparent);
+  box-shadow: 0 0 16px var(--amber);
+}
+
+.mech-tag {
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  font-size: 0.55rem;
+  color: var(--amber);
+  letter-spacing: 0.08em;
+}
+
+@keyframes hover-bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes beam {
+  50% {
+    opacity: 0.6;
+  }
+}

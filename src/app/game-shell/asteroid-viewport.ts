@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
-import { overdriveMult } from '../game/engine';
+import { mechOperable, overdriveMult } from '../game/engine';
+import { MechPortrait } from '../ui/mech-portrait';
 import { Rng } from '../game/rng';
 import { AsteroidState } from '../game/types';
 import { GameService } from '../services/game.service';
@@ -94,7 +95,7 @@ function buildShape(a: AsteroidState): Shape {
 
 @Component({
   selector: 'fdm-asteroid-viewport',
-  imports: [Starfield],
+  imports: [Starfield, MechPortrait],
   templateUrl: './asteroid-viewport.html',
   styleUrl: './asteroid-viewport.scss',
 })
@@ -118,7 +119,14 @@ export class AsteroidViewport {
     const s = this.game.state();
     return s ? zoneDef(s.zone).name : '';
   });
-  protected readonly massLeft =computed(() => this.game.state()?.asteroid.mass ?? 0);
+  protected readonly massLeft = computed(() => this.game.state()?.asteroid.mass ?? 0);
+
+  /** Mechs mining the zone the ship is in, drawn beside the asteroid. */
+  protected readonly mechsHere = computed(() => {
+    const s = this.game.state();
+    if (!s) return [];
+    return s.mechs.filter((m) => m.zone === s.zone && m.job === 'mining' && mechOperable(s, m)).slice(0, 3);
+  });
   protected readonly cracksShown = computed(() => Math.ceil((1 - this.integrity()) * 6));
 
   protected readonly heat = computed(() => this.game.state()?.drill.heat ?? 0);

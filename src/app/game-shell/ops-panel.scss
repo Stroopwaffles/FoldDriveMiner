@@ -369,3 +369,27 @@ th {
   font-size: 0.7rem;
   color: var(--text-dim);
 }
+
+.drone-row {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #232a5c;
+  border-left: 3px solid var(--dc);
+  background: rgba(10, 13, 34, 0.6);
+
+  &.locked {
+    opacity: 0.5;
+    border-style: dashed;
+  }
+
+  .count {
+    font-size: 1.15rem;
+    color: var(--dc);
+  }
+
+  .drone-icon {
+    width: 30px;
+    height: 30px;
+  }
+}

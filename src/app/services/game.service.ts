@@ -4,20 +4,36 @@ import * as E from '../game/engine';
 import { formatNumber } from '../game/format';
 import { researchNode } from '../game/research';
 import { randomSeed } from '../game/rng';
-import { ClickResult, GameState, OfflineReport, TickEvents } from '../game/types';
-
-export type Tab = 'ops' | 'lab' | 'map';
+import { ClickResult, GameState, MechJob, OfflineReport, PilotState, TickEvents } from '../game/types';
+import { PostId, postDef } from '../game/crew-data';
+import { DroneType, FrameId, SlotId, frameDef } from '../game/fleet-data';
 import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
 
-export type Speaker = 'VESPER' | 'JUNO' | 'SYSTEM';
+export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew';
+
+export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT';
 
 export interface CommMessage {
   id: number;
   from: Speaker;
+  /** Display name for generated pilots. */
+  name?: string;
+  /** Portrait seed for generated pilots. */
+  seed?: number;
   text: string;
   at: number;
+}
+
+/** A Special Technique cut-in waiting to play full screen. */
+export interface CutIn {
+  pilot: string;
+  callsign: string;
+  story: string | null;
+  seed: number;
+  technique: string;
+  color: string;
 }
 
 export interface EpisodeCard {
@@ -26,7 +42,7 @@ export interface EpisodeCard {
   subtitle: string;
 }
 
-const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, SYSTEM: 300 };
+const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560 };
 
 /** Owns the live game state, the tick loop, saving and player actions. */
 @Injectable({ providedIn: 'root' })
@@ -44,6 +60,7 @@ export class GameService {
   readonly episode = signal<EpisodeCard | null>(null);
   readonly comms = signal<CommMessage[]>([]);
   readonly lastSaved = signal<number | null>(null);
+  readonly cutIn = signal<CutIn | null>(null);
 
   // Derived values used across the HUD.
   readonly power = computed(() => this.withState(E.drillPower, 0));
@@ -51,6 +68,7 @@ export class GameService {
   readonly used = computed(() => this.withState(E.cargoUsed, 0));
   readonly cargoFull = computed(() => this.used() >= this.capacity() - 1e-6);
   readonly droneRate = computed(() => this.withState(E.droneRateTotal, 0));
+  readonly mechRate = computed(() => this.withState(E.mechRateTotal, 0));
   readonly overdrive = computed(() => this.withState(E.isOverdrive, false));
 
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -346,6 +364,23 @@ export class GameService {
   }
 
   private handleEvents(ev: TickEvents): void {
+    const s = this._state()!;
+    for (const up of ev.levelUps) {
+      const p = s.pilots.find((x) => x.id === up.pilotId);
+      // Only announce every fifth level so the comm log doesn't fill with level-ups.
+      if (!p || up.level % 5 !== 0) continue;
+      this.pilotSay(p, up.level % 10 === 0 && p.traitChoice ? `Level ${up.level}! I've learned something new — check my dossier, Commander.` : `Level ${up.level}. Getting the hang of this.`);
+    }
+    for (const sy of ev.syncUps) {
+      const p = s.pilots.find((x) => x.id === sy.pilotId);
+      if (!p) continue;
+      const frame = frameDef(sy.frame).name;
+      this.pilotSay(p, sy.level >= 5 ? `Full sync with the ${frame}! I've got a Special Technique ready — just say the word!` : `Sync ${sy.level} with the ${frame}. It's starting to feel like part of me.`);
+    }
+    for (const id of ev.autoRepairs) {
+      const m = s.mechs.find((x) => x.id === id);
+      if (m) this.say('VESPER', `${m.designation} "${m.name}" returning to the repair bay for maintenance.`);
+    }
     for (const r of ev.research) {
       const node = researchNode(r.id);
       const lvl = node.maxLevel > 1 ? ` (level ${r.level})` : '';
@@ -373,6 +408,16 @@ export class GameService {
       case 'auto_refine':
         this.say('VESPER', 'Auto-Refine online. Set a slot to REPEAT and it will keep itself fed.', 1500);
         break;
+      case 'hangar':
+        this.say('JUNO', "Juno Hart, reporting for duty! Build me a mech and I'll show you real mining, Commander.", 1500);
+        this.say('VESPER', 'HANGAR and CREW systems are online.', 3000);
+        break;
+      case 'repair_bay':
+        this.say('KIT', "Kit Okafor, engineer! I brought a few tools. Okay, a lot of tools. Your mechs are in good hands.", 1500);
+        break;
+      case 'fleet_dispatch':
+        this.say('VESPER', 'Fleet Dispatch online. Split mining drones across zones on the MAP.', 1500);
+        break;
       case 'drill_mk4':
         this.say('JUNO', 'Mk.IV online! Helium-3, here we come. Fuel of the future, right?', 1500);
         break;
@@ -387,12 +432,156 @@ export class GameService {
     this.publish();
   }
 
+  // ------------------------------------------------------------ fleet
+
+  buyDronesOf(type: DroneType, count: number): void {
+    this.act((s) => E.buyDronesOf(s, type, count) > 0, () => this.audio.buy());
+  }
+
+  setDispatch(zone: ZoneId, weight: number): void {
+    const s = this._state();
+    if (!s) return;
+    E.setDispatch(s, zone, weight);
+    this.publish();
+  }
+
+  buildMech(frame: FrameId): void {
+    this.act(
+      (s) => E.buildMech(s, frame) !== null,
+      () => {
+        this.audio.select();
+        const s = this._state()!;
+        const m = s.mechs[s.mechs.length - 1];
+        this.say('VESPER', `${m.designation} "${m.name}" (${frameDef(frame).name} frame) assembled in bay ${s.mechs.length}. Fit parts, seat a pilot, then set it to MINE.`);
+        if (!s.flags['firstMech']) {
+          s.flags['firstMech'] = true;
+          this.say('JUNO', "Oh, she's beautiful. Put me in, Commander! And maybe give her a drill first.", 2500);
+        }
+      },
+    );
+  }
+
+  scrapMech(id: number): void {
+    this.act((s) => E.scrapMech(s, id), () => this.audio.blip());
+  }
+
+  setMechJob(id: number, job: MechJob): void {
+    this.act(
+      (s) => E.setMechJob(s, id, job),
+      () => {
+        this.audio.blip();
+        const s = this._state()!;
+        const m = s.mechs.find((x) => x.id === id)!;
+        if (job === 'mining') {
+          const p = E.mechPilot(s, m);
+          this.say(p?.story === 'juno' ? 'JUNO' : p?.story === 'kit' ? 'KIT' : p ? 'PILOT' : 'VESPER',
+            p ? `${m.designation}, launching! Heading for the ${zoneDef(m.zone).name}.` : `${m.designation} launching on autopilot.`,
+            0, p ?? undefined);
+        }
+      },
+    );
+  }
+
+  setMechZone(id: number, zone: ZoneId): void {
+    this.act((s) => E.setMechZone(s, id, zone), () => this.audio.blip());
+  }
+
+  seatPilot(mechId: number, pilotId: number | null): void {
+    this.act((s) => E.seatPilot(s, mechId, pilotId), () => this.audio.blip());
+  }
+
+  buyPart(partId: string): void {
+    this.act((s) => E.buyPart(s, partId), () => this.audio.buy());
+  }
+
+  equipPart(mechId: number, slot: SlotId, partId: string | null): void {
+    this.act((s) => E.equipPart(s, mechId, slot, partId), () => this.audio.blip());
+  }
+
+  useTechnique(mechId: number): void {
+    const s = this._state();
+    if (!s) return;
+    const m = s.mechs.find((x) => x.id === mechId);
+    if (!m || !E.useTechnique(s, mechId)) {
+      this.audio.denied();
+      return;
+    }
+    const p = E.mechPilot(s, m)!;
+    const name = E.techniqueName(s, m);
+    this.cutIn.set({
+      pilot: p.name,
+      callsign: p.callsign,
+      story: p.story,
+      seed: p.portraitSeed,
+      technique: name,
+      color: frameDef(m.frame).color,
+    });
+    this.audio.overdrive();
+    this.publish();
+  }
+
+  // ------------------------------------------------------------ crew
+
+  hirePilot(index: number): void {
+    this.act(
+      (s) => E.hirePilot(s, index),
+      () => {
+        this.audio.select();
+        const s = this._state()!;
+        this.pilotSay(s.pilots[s.pilots.length - 1], 'Reporting aboard, Commander. Where do you need me?');
+      },
+    );
+  }
+
+  rerollRecruits(): void {
+    this.act(E.rerollRecruits, () => this.audio.blip());
+  }
+
+  dismissPilot(id: number): void {
+    const s = this._state();
+    const p = s?.pilots.find((x) => x.id === id);
+    this.act(
+      (st) => E.dismissPilot(st, id),
+      () => {
+        this.audio.blip();
+        if (p) this.pilotSay(p, 'Understood. It was an honour flying with you, Commander.');
+      },
+    );
+  }
+
+  assignPost(post: PostId, pilotId: number | null): void {
+    this.act(
+      (s) => E.assignPost(s, post, pilotId),
+      () => {
+        this.audio.blip();
+        const s = this._state()!;
+        const p = s.pilots.find((x) => x.id === pilotId);
+        if (p) this.pilotSay(p, `Taking over as ${postDef(post).name}.`);
+      },
+    );
+  }
+
+  chooseTrait(pilotId: number, trait: string): void {
+    this.act((s) => E.chooseTrait(s, pilotId, trait), () => this.audio.select());
+  }
+
+  /** A line from a pilot, using the story speakers where possible. */
+  pilotSay(p: PilotState, text: string): void {
+    const from: Speaker = p.story === 'juno' ? 'JUNO' : p.story === 'kit' ? 'KIT' : 'PILOT';
+    this.say(from, text, 0, p);
+  }
+
   // ------------------------------------------------------------ comms
 
-  say(from: Speaker, text: string, delayMs = 0): void {
+  say(from: Speaker, text: string, delayMs = 0, pilot?: PilotState): void {
     const push = () => {
       this.audio.comm(SPEAKER_PITCH[from]);
-      this.comms.update((list) => [...list, { id: ++this.commId, from, text, at: Date.now() }].slice(-40));
+      const msg: CommMessage = { id: ++this.commId, from, text, at: Date.now() };
+      if (from === 'PILOT' && pilot) {
+        msg.name = `${pilot.name} "${pilot.callsign}"`;
+        msg.seed = pilot.portraitSeed;
+      }
+      this.comms.update((list) => [...list, msg].slice(-40));
     };
     if (delayMs > 0) setTimeout(push, delayMs);
     else push();

@@ -113,7 +113,7 @@ describe('engine', () => {
     s.credits = 5000;
     expect(E.buyDrillTier(s)).toBe(true);
     expect(s.drill.tier).toBe(2);
-    expect(E.droneRates({ ...s, drones: { prospector: 5 } }).titanite).toBeGreaterThan(0);
+    expect(E.droneRates({ ...s, drones: { ...s.drones, prospector: 5 } }).titanite).toBeGreaterThan(0);
   });
 
   it('offline progress runs at 50% and is capped at 8 hours', () => {
@@ -324,7 +324,7 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     delete v1['autoSell'];
     delete v1['zone'];
     const m = migrate(v1);
-    expect(m.version).toBe(2);
+    expect(m.version).toBe(3);
     expect(m.zone).toBe('inner');
     expect(m.research.levels).toEqual({});
     expect(m.ingots.ferrite).toBe(0);

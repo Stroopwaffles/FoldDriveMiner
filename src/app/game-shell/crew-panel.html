@@ -1,0 +1,145 @@
+@let st = s();
+<section class="panel crew">
+  <div class="panel-title">
+    <span class="led"></span>Crew Roster <span class="kana">クルー</span>
+    <span class="head-info">PILOTS {{ st.pilots.length }}/{{ cap() }}</span>
+  </div>
+
+  <!-- Roster -->
+  <div class="roster">
+    @for (d of roster(); track d.p.id) {
+      <article class="dossier" [class.injured]="d.injured">
+        <div class="stamp" aria-hidden="true">{{ d.p.story ? 'PERSONNEL' : 'CLASSIFIED' }}</div>
+        <div class="d-head">
+          <fdm-pilot-portrait [seed]="d.p.portraitSeed" [story]="d.p.story" [size]="64" [injured]="d.injured" />
+          <div class="d-id">
+            <div class="d-name">{{ d.p.name }}</div>
+            <div class="d-call">"{{ d.p.callsign }}" · {{ d.bg.name }}</div>
+            <div class="d-lvl">
+              LV {{ d.p.level }}
+              <div class="xp"><div [style.width.%]="(d.p.xp / d.xpNeed) * 100"></div></div>
+            </div>
+            <div class="tag" [class.busy]="d.mech || d.post" [class.hurt]="d.injured">
+              {{ d.injured ? 'INJURED · ' + duration(d.p.injuredRemaining) : d.mech ? 'PILOTING ' + d.mech.designation : d.post ? d.post.name.toUpperCase() : 'AVAILABLE' }}
+            </div>
+          </div>
+        </div>
+
+        @if (d.choice) {
+          <div class="choice">
+            <div class="choice-title">★ NEW TRAIT — CHOOSE ONE</div>
+            @for (t of d.choice; track t.id) {
+              <button type="button" class="btn small" (click)="game.chooseTrait(d.p.id, t.id)" [title]="t.desc">{{ t.name }}</button>
+            }
+          </div>
+        }
+
+        <div class="stats">
+          @for (sd of statDefs; track sd.id) {
+            <div class="stat" [title]="sd.desc">
+              <span>{{ sd.short }}</span>
+              <div class="bar"><div [style.width.%]="Math.min(100, d.stats[sd.id] * 2)"></div></div>
+              <b>{{ d.stats[sd.id].toFixed(0) }}</b>
+            </div>
+          }
+        </div>
+
+        <div class="traits">
+          @for (t of d.traits; track t.id) {
+            <span class="trait" [class.later]="t.later" [title]="t.desc + (t.later ? ' — ' + t.later : '')">{{ t.name }}</span>
+          }
+        </div>
+
+        <div class="syncs">
+          @for (sy of d.sync; track sy.frame.id) {
+            <div class="sync" [style.--fc]="sy.frame.color" [title]="'Sync with ' + sy.frame.name + ' frames'">
+              <span>{{ sy.frame.name }}</span>
+              <div class="pips">
+                @for (i of [1, 2, 3, 4, 5]; track i) {
+                  <i [class.on]="i <= sy.level"></i>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (!d.p.story) {
+          <button type="button" class="btn small dismiss" (click)="game.dismissPilot(d.p.id)">Dismiss</button>
+        }
+      </article>
+    } @empty {
+      <p class="hint">No pilots yet. Research the Mech Hangar — Juno Hart is waiting.</p>
+    }
+  </div>
+
+  <!-- Station posts -->
+  <div class="section">
+    <div class="sub-title">STATION POSTS <span class="kana">ぶしょ</span></div>
+    <p class="hint">Pilots who aren't flying can staff a post. A pilot can hold one job at a time.</p>
+    <div class="posts">
+      @for (row of posts(); track row.def.id) {
+        <div class="post" [class.staffed]="row.pilot">
+          <div class="post-head">
+            <span class="post-name">{{ row.def.name }}</span>
+            <span class="kana">{{ row.def.kana }}</span>
+          </div>
+          <div class="dim small">{{ row.def.desc }} · uses {{ row.def.stat }}</div>
+          <div class="post-row">
+            @if (row.pilot) {
+              <fdm-pilot-portrait [seed]="row.pilot.portraitSeed" [story]="row.pilot.story" [size]="28" />
+            }
+            <select (change)="assign(row.def.id, $event)" [attr.aria-label]="row.def.name">
+              <option value="" [selected]="!row.pilot">— vacant —</option>
+              @for (d of roster(); track d.p.id) {
+                <option [value]="d.p.id" [selected]="row.pilot?.id === d.p.id">{{ d.p.name }} ({{ where(d.p) }})</option>
+              }
+            </select>
+            <b class="bonus">+{{ pct(row.bonus) }}</b>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Recruitment -->
+  <div class="section">
+    <div class="sub-title">STATION ROSTER — FOR HIRE <span class="kana">ぼしゅう</span></div>
+    <div class="recruit-bar">
+      <span class="dim small">New candidates in {{ refreshIn() }}</span>
+      <button type="button" class="btn small" [disabled]="st.credits < rerollCost" (click)="game.rerollRecruits()">New candidates · {{ game.fmt(rerollCost) }} cr</button>
+      @if (full()) {
+        <span class="warn small">Roster full — research Crew Quarters or dismiss a pilot.</span>
+      }
+    </div>
+    <div class="roster">
+      @for (d of recruits(); track d.p.id; let i = $index) {
+        <article class="dossier recruit">
+          <div class="d-head">
+            <fdm-pilot-portrait [seed]="d.p.portraitSeed" [story]="null" [size]="52" />
+            <div class="d-id">
+              <div class="d-name">{{ d.p.name }}</div>
+              <div class="d-call">"{{ d.p.callsign }}" · {{ d.bg.name }}</div>
+            </div>
+          </div>
+          <div class="stats">
+            @for (sd of statDefs; track sd.id) {
+              <div class="stat" [title]="sd.desc">
+                <span>{{ sd.short }}</span>
+                <div class="bar"><div [style.width.%]="Math.min(100, d.stats[sd.id] * 2)"></div></div>
+                <b>{{ d.stats[sd.id].toFixed(0) }}</b>
+              </div>
+            }
+          </div>
+          <div class="traits">
+            @for (t of d.traits; track t.id) {
+              <span class="trait" [class.later]="t.later" [title]="t.desc">{{ t.name }}</span>
+            }
+          </div>
+          <button type="button" class="btn btn-amber small" [disabled]="full() || st.credits < hireCost()" (click)="game.hirePilot(i)">
+            Hire · {{ game.fmt(hireCost()) }} cr
+          </button>
+        </article>
+      }
+    </div>
+  </div>
+</section>

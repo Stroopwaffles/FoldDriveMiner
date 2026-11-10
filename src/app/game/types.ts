@@ -1,4 +1,6 @@
 import { OreId, ZoneId } from './config';
+import { BackgroundId, PostId, StatId } from './crew-data';
+import { DroneType, FrameId, SlotId } from './fleet-data';
 
 export type OreAmounts = Record<OreId, number>;
 export type OreFlags = Record<OreId, boolean>;
@@ -33,6 +35,8 @@ export interface GameStats {
   creditsEarned: number;
   ingotsRefined: number;
   researchCompleted: number;
+  mechOre: number;
+  mechsBuilt: number;
 }
 
 export interface SectorInfo {
@@ -64,8 +68,48 @@ export interface RefinerySlot {
   repeat: boolean;
 }
 
+export type MechJob = 'idle' | 'mining' | 'repair';
+
+export interface MechState {
+  id: number;
+  name: string;
+  designation: string;
+  frame: FrameId;
+  parts: Partial<Record<SlotId, string>>;
+  armor: number;
+  job: MechJob;
+  /** Job to go back to after an automatic repair. */
+  returnJob: MechJob | null;
+  zone: ZoneId;
+  pilotId: number | null;
+  /** Special Technique: seconds of boost left, and cooldown left. */
+  boostRemaining: number;
+  cooldown: number;
+}
+
+export interface PilotState {
+  id: number;
+  name: string;
+  callsign: string;
+  background: BackgroundId;
+  /** Story pilot key (juno, kit…) or null for generated pilots. */
+  story: string | null;
+  portraitSeed: number;
+  /** Stats at level 1; growth is applied from the background. */
+  baseStats: Record<StatId, number>;
+  traits: string[];
+  level: number;
+  xp: number;
+  /** Seconds spent piloting each frame type. */
+  sync: Record<FrameId, number>;
+  /** Two traits to choose from after a milestone level, or null. */
+  traitChoice: string[] | null;
+  /** Seconds until recovered from injury (Milestone 4 damage). */
+  injuredRemaining: number;
+}
+
 export interface GameState {
-  version: 2;
+  version: 3;
   commander: string;
   ship: string;
   createdAt: number;
@@ -84,7 +128,16 @@ export interface GameState {
   cargoLevel: number;
 
   drill: DrillState;
-  drones: { prospector: number };
+  drones: Record<DroneType, number>;
+  /** Fleet Dispatch weights per zone (0–100). Empty = all drones follow the ship. */
+  dispatch: Partial<Record<ZoneId, number>>;
+  mechs: MechState[];
+  parts: Record<string, number>;
+  pilots: PilotState[];
+  recruits: PilotState[];
+  recruitRefresh: number;
+  posts: Partial<Record<PostId, number>>;
+  nextId: number;
   asteroid: AsteroidState;
   sector: SectorInfo;
   zone: ZoneId;
@@ -122,6 +175,9 @@ export interface ResearchDone {
 /** Things that happened during a tick that the UI may want to announce. */
 export interface TickEvents {
   research: ResearchDone[];
+  levelUps: { pilotId: number; level: number }[];
+  syncUps: { pilotId: number; frame: FrameId; level: number }[];
+  autoRepairs: number[];
   ingots: OreAmounts;
   autoSoldCredits: number;
 }

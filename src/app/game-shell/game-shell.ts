@@ -21,6 +21,10 @@ import { MusicToggle } from '../ui/music-toggle';
 import { SettingsPanel } from '../ui/settings-panel';
 import { MusicService } from '../services/music.service';
 import { AsteroidViewport } from './asteroid-viewport';
+import { CrewPanel } from './crew-panel';
+import { HangarPanel } from './hangar-panel';
+import { CutIn } from '../ui/cut-in';
+import { PilotPortrait } from '../ui/pilot-portrait';
 import { LabPanel } from './lab-panel';
 import { MapPanel } from './map-panel';
 import { OpsPanel } from './ops-panel';
@@ -36,7 +40,7 @@ interface NavItem {
 
 @Component({
   selector: 'fdm-game-shell',
-  imports: [AsteroidViewport, OpsPanel, LabPanel, MapPanel, SettingsPanel, MusicToggle],
+  imports: [AsteroidViewport, OpsPanel, LabPanel, MapPanel, HangarPanel, CrewPanel, SettingsPanel, MusicToggle, CutIn, PilotPortrait],
   templateUrl: './game-shell.html',
   styleUrl: './game-shell.scss',
   host: {
@@ -58,6 +62,9 @@ export class GameShell {
     return s.surveyData > 0 || s.stats.asteroidsCracked > 0 || Object.keys(s.research.levels).length > 0;
   });
   private readonly mapOpen = computed(() => E.unlockedZones(this.s()).length > 1);
+  private readonly hangarOpen = computed(() => E.hasResearch(this.s(), 'hangar'));
+  /** Crew badge: someone has a trait to choose. */
+  protected readonly crewReady = computed(() => this.s().pilots.some((p) => p.traitChoice));
   /** Lab badge: a bench is free and something can be started. */
   protected readonly labReady = computed(() => {
     const s = this.s();
@@ -67,8 +74,8 @@ export class GameShell {
 
   protected readonly nav = computed<NavItem[]>(() => [
     { id: 'ops', label: 'OPS', kana: 'さぎょう', icon: '◆', locked: false, hint: '' },
-    { id: 'hangar', label: 'HANGAR', kana: 'かくのうこ', icon: '⬢', locked: true, hint: 'Mech hangar not yet installed.' },
-    { id: 'crew', label: 'CREW', kana: 'クルー', icon: '☺', locked: true, hint: 'Crew quarters sealed. Pilots arrive later.' },
+    { id: 'hangar', label: 'HANGAR', kana: 'かくのうこ', icon: '⬢', locked: !this.hangarOpen(), hint: 'Mech hangar sealed. Research Mech Hangar in the LAB.' },
+    { id: 'crew', label: 'CREW', kana: 'クルー', icon: '☺', locked: !this.hangarOpen(), hint: 'No crew aboard yet. Research Mech Hangar in the LAB.' },
     { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: !this.labOpen(), hint: 'Research lab offline. Crack an asteroid to recover Survey Data.' },
     { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
     { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: true, hint: 'Contract board unavailable.' },

@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { CONFIG, ORES, OreId } from '../game/config';
+import { DRONES, DRONE_IDS } from '../game/fleet-data';
 import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
 import { GameService } from '../services/game.service';
@@ -93,14 +94,27 @@ export class OpsPanel {
   });
 
   // ---------------------------------------------------------------- drones
-  protected readonly droneCount = computed(() => this.s().drones.prospector);
-  protected readonly droneCost1 = computed(() => E.droneCost(this.s(), 1));
-  protected readonly droneCost10 = computed(() => E.droneCost(this.s(), 10));
-  protected readonly droneMax = computed(() => E.maxAffordableDrones(this.s()));
-  protected readonly droneMult = computed(() => E.droneMultiplier(this.droneCount()));
-  protected readonly nextMilestone = computed(() => E.nextDroneMilestone(this.droneCount()));
-  protected readonly perDrone = computed(() => E.perDroneRate(this.s()));
-  protected readonly droneName = CONFIG.drones.prospector.name;
+  protected readonly droneCount = computed(() => DRONE_IDS.reduce((n, id) => n + this.s().drones[id], 0));
+  protected readonly droneRows = computed(() => {
+    const s = this.s();
+    return DRONES.map((def) => {
+      const count = s.drones[def.id];
+      const unlocked = E.droneUnlocked(s, def.id);
+      const mult = E.droneMultiplier(count);
+      return {
+        def,
+        count,
+        unlocked,
+        lockText: def.teaser ? `Arrives in ${def.teaser}` : `Research ${def.name} drones in the LAB`,
+        effect: def.orePerSec > 0 ? `${this.game.fmt(E.perDroneRateOf(s, def.id))} ore/s each · ${def.role}` : def.role,
+        mult,
+        next: def.orePerSec > 0 || def.id === 'surveyor' ? E.nextDroneMilestone(count) : null,
+        cost1: E.droneCostOf(s, def.id, 1),
+        cost10: E.droneCostOf(s, def.id, 10),
+        max: unlocked ? E.maxAffordableOf(s, def.id) : 0,
+      };
+    }).filter((r) => r.unlocked || r.def.id !== 'guardian' || this.s().drones.prospector >= 10);
+  });
 
   protected trendGlyph(t: number): string {
     return t > 0 ? '▲' : t < 0 ? '▼' : '■';

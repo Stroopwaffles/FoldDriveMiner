@@ -1,0 +1,206 @@
+@let st = s();
+<section class="panel hangar">
+  <div class="panel-title">
+    <span class="led"></span>Mech Hangar <span class="kana">かくのうこ</span>
+    <span class="head-info">BAYS {{ st.mechs.length }}/{{ bays() }} · REPAIR BAY {{ hasRepair() ? (hasAutoRepair() ? 'AUTO' : 'ONLINE') : 'OFFLINE' }}</span>
+  </div>
+
+  <!-- Bays -->
+  <div class="bays">
+    @for (c of cards().cards; track c.mech.id) {
+      <button type="button" class="bay" [class.selected]="selected()?.mech?.id === c.mech.id" (click)="select(c.mech.id)" [style.--fc]="c.frame.color">
+        <div class="gantry" aria-hidden="true"></div>
+        <fdm-mech-portrait [frame]="c.mech.frame" [parts]="c.mech.parts" [size]="74" />
+        <div class="bay-info">
+          <div class="bay-name">{{ c.mech.designation }} <span>"{{ c.mech.name }}"</span></div>
+          <div class="bay-frame">{{ c.frame.name }} frame</div>
+          <div class="bay-status">
+            <span class="led" [style.background]="c.cond.color" [style.boxShadow]="'0 0 6px ' + c.cond.color"></span>
+            {{ c.stats.overloaded ? 'OVERLOADED' : c.mech.job === 'mining' ? 'MINING · ' + c.zoneName : c.mech.job === 'repair' ? 'IN REPAIR' : 'STANDBY' }}
+          </div>
+          <div class="armor-bar"><div [style.width.%]="c.cond.frac * 100" [style.background]="c.cond.color"></div></div>
+          <div class="bay-pilot">
+            @if (c.pilot) {
+              <fdm-pilot-portrait [seed]="c.pilot.portraitSeed" [story]="c.pilot.story" [size]="18" [injured]="!c.flying" />
+              {{ c.pilot.callsign }}
+            } @else {
+              <span class="dim">AUTOPILOT (50%)</span>
+            }
+          </div>
+          @if (c.boosting) {
+            <div class="boost">TECHNIQUE ×{{ MECH.techniqueBoost }}</div>
+          }
+        </div>
+      </button>
+    }
+    @for (i of emptyBays(); track $index) {
+      <div class="bay empty">
+        <div class="gantry" aria-hidden="true"></div>
+        <div class="empty-label">EMPTY BAY — BUILD A FRAME</div>
+        <div class="build-list">
+          @for (f of frames; track f.id) {
+            <button type="button" class="build" [style.--fc]="f.color" [disabled]="st.credits < f.cost" (click)="build(f.id)">
+              <fdm-mech-portrait [frame]="f.id" [parts]="{}" [size]="34" />
+              <span class="build-text">
+                <b>{{ f.name }}</b>
+                <small>{{ f.role }}</small>
+                <span class="cost">{{ game.fmt(f.cost) }} cr</span>
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Selected mech -->
+  @if (selected(); as v) {
+    <div class="detail" [style.--fc]="v.frame.color">
+      <div class="col portrait-col">
+        <fdm-mech-portrait [frame]="v.mech.frame" [parts]="v.mech.parts" [size]="140" />
+        <div class="d-name">{{ v.mech.designation }} "{{ v.mech.name }}"</div>
+        <div class="dim small">{{ v.frame.name }} — {{ v.frame.role }}</div>
+        <div class="cond" [style.color]="v.cond.color">
+          {{ v.cond.name.toUpperCase() }} · ARMOR {{ game.fmt(v.mech.armor) }}/{{ game.fmt(v.cond.max) }}
+        </div>
+        <div class="armor-bar big"><div [style.width.%]="v.cond.frac * 100" [style.background]="v.cond.color"></div></div>
+      </div>
+
+      <!-- Loadout -->
+      <div class="col loadout">
+        <div class="sub-title">LOADOUT <span class="kana">そうび</span></div>
+        <div class="power" [class.over]="v.stats.overloaded">
+          <span>POWER</span>
+          <div class="power-bar">
+            <div class="power-fill" [style.width.%]="Math.min(100, (v.stats.draw / v.stats.supply) * 100)"></div>
+          </div>
+          <span>{{ v.stats.draw.toFixed(1) }} / {{ v.stats.supply.toFixed(1) }}</span>
+        </div>
+        @if (v.stats.overloaded) {
+          <div class="warn small">⚠ OVERLOADED — draw exceeds reactor supply. The mech can't launch. Fit a bigger reactor or lighter parts.</div>
+        }
+        @for (row of v.parts; track row.slot.id) {
+          <label class="slot">
+            <span class="slot-name">{{ row.slot.name }}</span>
+            <select (change)="equip(v.mech.id, row.slot.id, $event)">
+              <option value="" [selected]="!row.part">— empty —</option>
+              @if (row.part) {
+                <option [value]="row.part.id" selected>{{ row.part.name }} (fitted)</option>
+              }
+              @for (p of row.owned; track p.id) {
+                @if (p.id !== row.part?.id) {
+                  @let pv = previewPower(row.slot.id, p.id);
+                  <option [value]="p.id">{{ p.name }} ×{{ st.parts[p.id] }}{{ pv?.over ? ' — OVERLOAD' : '' }}</option>
+                }
+              }
+            </select>
+            <span class="slot-stats">{{ row.part ? (row.part.supply ? '+' + row.part.supply + ' PWR' : partStats(row.part.stats) + (row.part.draw ? ' · −' + row.part.draw + ' PWR' : '')) : '' }}</span>
+          </label>
+        }
+        <div class="stats">
+          @for (sd of mechStatDefs; track sd.id) {
+            <div class="stat" [class.inactive]="!sd.active" [title]="sd.active ? '' : 'Used in later milestones'">
+              <span>{{ sd.name }}</span>
+              <b>{{ v.stats[sd.id].toFixed(0) }}</b>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Pilot + job -->
+      <div class="col control">
+        <div class="sub-title">PILOT <span class="kana">パイロット</span></div>
+        <div class="pilot-row">
+          @if (v.pilot) {
+            <fdm-pilot-portrait [seed]="v.pilot.portraitSeed" [story]="v.pilot.story" [size]="44" [injured]="!v.flying" />
+          }
+          <select (change)="seat(v.mech.id, $event)" [attr.aria-label]="'Pilot for ' + v.mech.designation">
+            <option value="" [selected]="!v.pilot">Autopilot (50% output)</option>
+            @for (o of seatOptions(); track o.p.id) {
+              <option [value]="o.p.id" [selected]="v.pilot?.id === o.p.id" [disabled]="o.injured">{{ o.label }}</option>
+            }
+          </select>
+        </div>
+        @if (v.pilot) {
+          <div class="sync">
+            <span>SYNC {{ v.sync }}/5 with {{ v.frame.name }}</span>
+            <div class="sync-pips">
+              @for (i of [1, 2, 3, 4, 5]; track i) {
+                <span [class.on]="i <= v.sync"></span>
+              }
+            </div>
+            @if (v.syncNext) {
+              <small class="dim">{{ duration(v.syncSec) }} / {{ duration(v.syncNext) }} piloting this frame type</small>
+            }
+          </div>
+        }
+        <div class="mult dim small">Output ×{{ v.pilotMult.toFixed(2) }} from {{ v.flying ? 'pilot' : 'autopilot' }}</div>
+
+        <div class="sub-title">ORDERS <span class="kana">めいれい</span></div>
+        <div class="jobs">
+          <button type="button" class="btn small" [class.on]="v.mech.job === 'mining'" [disabled]="v.stats.overloaded" (click)="setJob(v.mech.id, 'mining')">Mine</button>
+          <button type="button" class="btn small" [class.on]="v.mech.job === 'idle'" (click)="setJob(v.mech.id, 'idle')">Standby</button>
+          <button type="button" class="btn small" [class.on]="v.mech.job === 'repair'" [disabled]="!hasRepair()" (click)="setJob(v.mech.id, 'repair')" [title]="hasRepair() ? '' : 'Research Repair Bay'">Repair</button>
+        </div>
+        <label class="zone-pick">
+          <span>ZONE</span>
+          <select (change)="setZone(v.mech.id, $event)">
+            @for (z of zones(); track z.id) {
+              <option [value]="z.id" [selected]="z.id === v.mech.zone">{{ z.name }}</option>
+            }
+          </select>
+        </label>
+        <div class="output">
+          <div><span>ORE</span><b>{{ game.fmt(v.orePerSec) }}/s</b></div>
+          <div><span>COMMAND LINK</span><b>+{{ (v.link * 100).toFixed(0) }}% drones</b></div>
+          <div><span>SURVEY DATA</span><b>{{ v.sdPerSec.toFixed(2) }}/s</b></div>
+        </div>
+        @if (v.mech.job === 'repair') {
+          <div class="dim small">Repairs cost {{ repairCost.credits }} cr + {{ repairCost.ore }} Ferrite/Titanite per armor point.</div>
+        }
+
+        <div class="technique" [class.ready]="v.techniqueReady">
+          <div class="tech-name">★ {{ v.sync >= 5 ? v.technique : 'Special Technique' }}</div>
+          @if (v.sync < 5) {
+            <small class="dim">Unlocks at Sync 5 with a pilot.</small>
+          } @else if (v.mech.cooldown > 0) {
+            <small class="dim">Recharging… {{ duration(v.mech.cooldown) }}</small>
+          }
+          <button type="button" class="btn btn-primary small" [disabled]="!v.techniqueReady" (click)="game.useTechnique(v.mech.id)">
+            Activate (×{{ MECH.techniqueBoost }} for {{ MECH.techniqueSec }}s)
+          </button>
+        </div>
+        <button type="button" class="btn small scrap" (click)="game.scrapMech(v.mech.id)" title="Parts return to storage; the frame is lost">Scrap frame</button>
+      </div>
+    </div>
+  } @else if (bays() > 0) {
+    <p class="hint">Build a frame in an empty bay to get started. Pickaxe is the best miner.</p>
+  }
+
+  <!-- Parts shop -->
+  <div class="shop">
+    <div class="sub-title">PARTS DEPOT <span class="kana">ぶひん</span></div>
+    <div class="shop-tabs">
+      @for (sl of slots; track sl.id) {
+        <button type="button" class="tab" [class.on]="shopSlot() === sl.id" (click)="shopSlot.set(sl.id)">{{ sl.name }}</button>
+      }
+    </div>
+    <div class="shop-list">
+      @for (item of shop(); track item.part.id) {
+        <div class="shop-item" [class.locked]="item.locked">
+          <div>
+            <div class="part-name">{{ item.part.name }} <span class="owned">×{{ item.owned }} in storage</span></div>
+            <div class="dim small">
+              {{ item.part.supply ? '+' + item.part.supply + ' power supply' : partStats(item.part.stats) + ' · draws ' + item.part.draw + ' power' }}
+            </div>
+          </div>
+          @if (item.locked) {
+            <span class="dim small">🔒 {{ item.lockName }}</span>
+          } @else {
+            <button type="button" class="btn small" [disabled]="st.credits < item.part.cost" (click)="game.buyPart(item.part.id)">{{ game.fmt(item.part.cost) }} cr</button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>

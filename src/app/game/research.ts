@@ -97,9 +97,9 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'fleet_dispatch', name: 'Fleet Dispatch', branch: 'logistics', maxLevel: 1,
-    sd: 0, cr: 0, sec: 0, teaser: 'Milestone 3',
-    effect: 'Split drones across survey zones',
-    flavor: 'Requires a larger fleet.',
+    sd: 25, cr: 50000, sec: 300, requires: ['survey_trojan', 'auto_sell'],
+    effect: 'Split mining drones across survey zones (MAP)',
+    flavor: 'Why mine one field when you can mine all of them?',
   }),
 
   // ---------------------------------------------------------------- Refinery
@@ -180,6 +180,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Three. Now we are cooking. — Kit Okafor (pending recruitment)',
   }),
   N({
+    id: 'crew_quarters', name: 'Crew Quarters', branch: 'station', maxLevel: 2,
+    sd: 20, cr: 50000, sec: 300, growth: 3, requires: ['hangar'],
+    effect: '+2 pilot roster slots',
+    flavor: 'Bunks, a galley and a coffee machine Juno has already broken.',
+  }),
+  N({
     id: 'offline_efficiency', name: 'Autonomous Ops', branch: 'station', maxLevel: 3,
     sd: 8, cr: 8000, sec: 240, growth: 3,
     effect: '+10% offline efficiency',
@@ -200,10 +206,70 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Patch notes: fewer collisions, more ore.',
   }),
   N({
+    id: 'hauler_drones', name: 'Hauler Drones', branch: 'fleet', maxLevel: 1,
+    sd: 5, cr: 2000, sec: 90, requires: ['drone_efficiency'],
+    effect: 'Haulers: +2% cargo capacity each',
+    flavor: 'Flying crates with ambition.',
+  }),
+  N({
+    id: 'cutter_drones', name: 'Cutter Drones', branch: 'fleet', maxLevel: 1,
+    sd: 8, cr: 4000, sec: 120, requires: ['drone_efficiency'],
+    effect: 'Cutters: mine the best ore they can reach',
+    flavor: 'Laser-edged and picky.',
+  }),
+  N({
+    id: 'surveyor_drones', name: 'Surveyor Drones', branch: 'fleet', maxLevel: 1,
+    sd: 10, cr: 6000, sec: 150, requires: ['drone_efficiency'],
+    effect: 'Surveyors: stream Survey Data',
+    flavor: 'Tiny eyes everywhere. I see so much more now.',
+  }),
+  N({
+    id: 'salvager_drones', name: 'Salvager Drones', branch: 'fleet', maxLevel: 1,
+    sd: 15, cr: 15000, sec: 240, requires: ['surveyor_drones'],
+    effect: 'Salvagers: bigger crack bonus, more Data Cores',
+    flavor: "One prospector's rubble is another drone's treasure.",
+  }),
+  N({
+    id: 'guardian_drones', name: 'Guardian Drones', branch: 'fleet', maxLevel: 1,
+    sd: 0, cr: 0, sec: 0, teaser: 'Milestone 4',
+    effect: 'Defend the operation during raids',
+    flavor: 'Threat assessment pending.',
+  }),
+  N({
     id: 'hangar', name: 'Mech Hangar', branch: 'fleet', maxLevel: 1,
-    sd: 0, cr: 0, sec: 0, teaser: 'Milestone 3',
-    effect: 'Build and pilot mining mechs',
-    flavor: 'Hangar bay sealed. Clearance pending.',
+    sd: 30, cr: 40000, sec: 300, requires: ['drone_efficiency', 'refinery'],
+    effect: 'Build mining mechs. Pilot Juno Hart reports for duty.',
+    flavor: 'Hangar bay unsealed. Pilot Hart has been waiting by the door for an hour.',
+  }),
+  N({
+    id: 'hangar_bays', name: 'Hangar Expansion', branch: 'fleet', maxLevel: 3,
+    sd: 40, cr: 150000, sec: 600, growth: 3.5, requires: ['hangar'],
+    effect: '+1 mech bay',
+    flavor: 'More gantries, more giants.',
+  }),
+  N({
+    id: 'repair_bay', name: 'Repair Bay', branch: 'fleet', maxLevel: 1,
+    sd: 20, cr: 30000, sec: 240, requires: ['hangar'],
+    effect: 'Repair mech armor. Engineer Kit Okafor joins.',
+    flavor: 'Kit Okafor, engineer, transferring aboard. Bringing "a few" tools.',
+  }),
+  N({
+    id: 'auto_repair', name: 'Auto-Repair', branch: 'fleet', maxLevel: 1,
+    sd: 40, cr: 120000, sec: 480, requires: ['repair_bay'],
+    effect: 'Worn mining mechs repair themselves and return to work',
+    flavor: 'The mechs will check themselves in. Like responsible adults.',
+  }),
+  N({
+    id: 'reactor_efficiency', name: 'Reactor Tuning', branch: 'fleet', maxLevel: 3,
+    sd: 25, cr: 60000, sec: 300, growth: 2.8, requires: ['hangar'],
+    effect: '+10% mech power supply',
+    flavor: 'More power budget for the loadout puzzle.',
+  }),
+  N({
+    id: 'mech_engineering', name: 'Mech Engineering', branch: 'fleet', maxLevel: 1,
+    sd: 60, cr: 300000, sec: 900, requires: ['hangar', 'drill_mk3'],
+    effect: 'Advanced parts: Plasma Lance, Rail Rifle, He-3 Reactor',
+    flavor: 'Military-grade schematics. Meridian would like them back.',
   }),
 
   // ---------------------------------------------------------------- Fold

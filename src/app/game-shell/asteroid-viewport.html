@@ -81,6 +81,17 @@
     </button>
   }
 
+  <!-- Mining mechs working this zone -->
+  <div class="mech-line" aria-hidden="true">
+    @for (m of mechsHere(); track m.id; let i = $index) {
+      <div class="mech-here" [style.--i]="i" [class.boost]="m.boostRemaining > 0">
+        <fdm-mech-portrait [frame]="m.frame" [parts]="m.parts" [size]="56" />
+        <div class="beam"></div>
+        <span class="mech-tag">{{ m.designation }}</span>
+      </div>
+    }
+  </div>
+
   @if (flash()) {
     <div class="crack-flash"></div>
   }
