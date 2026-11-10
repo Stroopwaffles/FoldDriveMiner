@@ -330,3 +330,14 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     expect(m.ingots.ferrite).toBe(0);
   });
 });
+
+describe('asteroid toughness', () => {
+  it('asteroids always take about 30 normal clicks, even after power upgrades', () => {
+    const s = E.newGame('Rook', 'Halberd', 1, 99);
+    s.drill.powerLevel = 40;
+    for (let i = 0; i < 20; i++) {
+      const a = E.spawnAsteroid(s);
+      expect(a.maxMass / E.drillPower(s)).toBeGreaterThanOrEqual(CONFIG.asteroid.minClicks * 0.8 - 1e-9);
+    }
+  });
+});

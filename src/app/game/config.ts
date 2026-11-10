@@ -149,7 +149,9 @@ export const CONFIG = {
   },
 
   asteroid: {
-    baseMass: 25,
+    baseMass: 60,
+    /** Every asteroid takes at least this many normal clicks at the current drill power. */
+    minClicks: 30,
     /** Each cracked asteroid makes the next one this fraction heavier. */
     massGrowthPerCrack: 0.04,
     maxMassMult: 20,

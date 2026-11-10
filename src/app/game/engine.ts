@@ -115,7 +115,9 @@ export function spawnAsteroid(state: GameState): AsteroidState {
   const a = CONFIG.asteroid;
   const zone = currentZone(state);
   const growth = Math.min(1 + state.stats.asteroidsCracked * a.massGrowthPerCrack, a.maxMassMult);
-  const mass = Math.round(a.baseMass * zone.massMult * growth * rng.range(0.8, 1.25));
+  const wobble = rng.range(0.8, 1.25);
+  // Scale with drill power too, so upgrades don't make asteroids trivial.
+  const mass = Math.round(Math.max(a.baseMass * zone.massMult * growth, drillPower(state) * a.minClicks) * wobble);
   const rich = rng.next() < a.richChance;
 
   // Wobble the zone's mix; rich rocks carry far more of the zone's top ore.
