@@ -6,7 +6,6 @@ import { GameService } from '../services/game.service';
 @Component({
   selector: 'fdm-codex-panel',
   template: `
-    @let st = s();
     <div class="codex">
       <div class="sets">
         @for (set of sets(); track set.id) {

@@ -5,12 +5,10 @@ import * as A from '../game/anomaly-rules';
 import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
 import { GameService } from '../services/game.service';
-import { MechPortrait } from '../ui/mech-portrait';
 
 /** MAP › SIGNALS: detected anomalies, scanning, responses and missions in flight. */
 @Component({
   selector: 'fdm-signals-panel',
-  imports: [MechPortrait],
   template: `
     @let st = s();
     <div class="signals">
