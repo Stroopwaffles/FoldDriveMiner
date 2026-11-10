@@ -4,14 +4,14 @@
  * pilot bonds.
  */
 import { choice } from './story-rules';
-import { ORES, ORE_IDS, OreId, oreDef } from './config';
-import { hasResearch, oreReachable, zoneUnlocked } from './common';
+import { CONFIG, ORES, ORE_IDS, OreId, oreDef } from './config';
+import { currentZone, hasResearch, oreReachable, zoneUnlocked } from './common';
 import { generatePilot, pilotById, rosterCap } from './crew-rules';
 import { DroneType, PARTS, partDef, sectorPartId } from './fleet-data';
 import { droneCostOf, droneUnlocked, mechStats } from './fleet-rules';
 import { Rng } from './rng';
 import { SECTOR_NAMES } from './sector-data';
-import { sectorOf } from './sector-rules';
+import { sectorMods, sectorOf } from './sector-rules';
 import { startEvent } from './threat-rules';
 import {
   BOND_CHANCE,
@@ -35,7 +35,7 @@ import {
 } from './trade-data';
 import { Contract, ContractsState, GameState, LocalOutfit, MerchantFleet, PilotState, StockItem, TickEvents, TradeState } from './types';
 // Engine helpers (cyclic import, only used at call time).
-import { batchCapacity, droneRateTotal, ingotPrice, mechRateTotal, oreRatio, orePrice } from './engine';
+import { baseDrillPower, batchCapacity, drillPower, droneRateTotal, ingotPrice, mechRateTotal, oreRatio, orePrice, overdriveMult } from './engine';
 import { productionValuePerSec } from './anomaly-rules';
 
 // ---------------------------------------------------------------- state
@@ -575,10 +575,10 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
       deadline *= 2;
       break;
     case 'blitz':
-      target = 5 + Math.floor(rng.next() * 6);
-      reward = valueSec * 30 * target;
-      title = `Crack ${target} asteroids in ${Math.round(600 / 60)} minutes`;
-      deadline = 600;
+      target = blitzTarget(state, rng);
+      reward = valueSec * 12 * target;
+      title = `Crack ${target} asteroids in ${Math.round(CONTRACT.blitz.seconds / 60)} minutes`;
+      deadline = CONTRACT.blitz.seconds;
       break;
     case 'sustain': {
       const rate = Math.max(1, (droneRateTotal(state) + mechRateTotal(state)) * 1.15);
@@ -603,6 +603,31 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
     baseline: 0,
     held: 0,
   };
+}
+
+/**
+ * Asteroids for a 10-minute blitz: a quarter to two-fifths of what steady clicking
+ * in Overdrive could crack, simulated rock by rock (each crack makes the next
+ * rock heavier, but never lighter than the drill's minimum clicks).
+ */
+export function blitzTarget(state: GameState, rng: Rng): number {
+  const B = CONTRACT.blitz;
+  const a = CONFIG.asteroid;
+  const perClick = drillPower(state) * overdriveMult(state);
+  const zoneMass = a.baseMass * currentZone(state).massMult;
+  const floor = baseDrillPower(state) * a.minClicks;
+  const mods = sectorMods(state).asteroidMass;
+  let time = 0;
+  let possible = 0;
+  for (let c = state.stats.asteroidsCracked; possible < 1000; c++) {
+    const growth = Math.min(1 + c * a.massGrowthPerCrack, a.maxMassMult);
+    const mass = Math.max(zoneMass * growth, floor) * mods;
+    time += Math.ceil(mass / perClick) / B.clicksPerSec + B.respawnSec;
+    if (time > B.seconds) break;
+    possible++;
+  }
+  const share = rng.range(B.shareMin, B.shareMax);
+  return Math.max(B.minTarget, Math.min(B.maxTarget, Math.round(possible * share)));
 }
 
 /** After Master the Cycle, Meridian pays 50% more. */

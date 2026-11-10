@@ -181,6 +181,11 @@ export const CONTRACT = {
   deadlineMax: 2400,
   failStanding: 1,
   localLegacy: 10,
+  /**
+   * Crack-asteroids blitz: the target is a share of what steady Overdrive
+   * clicking (clicksPerSec, plus respawnSec between rocks) could crack in time.
+   */
+  blitz: { seconds: 600, clicksPerSec: 3, respawnSec: 0.6, shareMin: 0.25, shareMax: 0.4, minTarget: 12, maxTarget: 100 },
 };
 
 // ---------------------------------------------------------------- bonds

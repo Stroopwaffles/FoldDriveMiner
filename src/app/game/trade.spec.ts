@@ -6,6 +6,7 @@ import * as T from './threat-rules';
 import { CONTRACT, MERCHANT, STANDING } from './trade-data';
 import * as TR from './trade-rules';
 import { GameState } from './types';
+import { Rng } from './rng';
 
 function rich(): GameState {
   const s = E.newGame('Rook', 'Halberd Dawn', 1, 9090);
@@ -285,5 +286,22 @@ describe('milestone 5b: pilot bonds', () => {
     expect(m.trade.rep.halcyon).toBe(0);
     expect(m.contracts.local.length).toBeGreaterThanOrEqual(1);
     expect(m.bonds).toEqual([]);
+  });
+});
+
+describe('crack-asteroids blitz contracts', () => {
+  it('ask for a real share of what Overdrive clicking can crack in 10 minutes', () => {
+    const { blitzTarget } = TR;
+    const s = E.newGame('Rook', 'Halberd', 1, 7);
+    const rng = new Rng(1);
+    const targets = Array.from({ length: 20 }, () => blitzTarget(s, rng));
+    expect(Math.min(...targets)).toBeGreaterThanOrEqual(CONTRACT.blitz.minTarget);
+    expect(Math.min(...targets)).toBeGreaterThan(10);
+    // Half of what's possible at most: never above the steady-clicking ceiling.
+    expect(Math.max(...targets)).toBeLessThanOrEqual(CONTRACT.blitz.maxTarget);
+    // A stronger drill against the same rocks means a bigger ask.
+    s.drill.powerLevel = 20;
+    const strong = Array.from({ length: 20 }, () => blitzTarget(s, rng));
+    expect(Math.min(...strong)).toBeGreaterThan(Math.min(...targets));
   });
 });
