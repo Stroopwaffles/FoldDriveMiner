@@ -2,6 +2,7 @@
  * Sector generation (seed + depth → star, ore profile, traits, survey zones,
  * fixed anomalies) and the combined modifiers a sector applies.
  */
+import { SITES, SPECIAL } from './special-data';
 import { ORES, ORE_IDS, OreId, ZONES, ZoneDef, oreDef, registerZones } from './config';
 import { Rng } from './rng';
 import {
@@ -141,6 +142,12 @@ function buildSector(seed: number, depth: number): SectorDef {
       research: ZONE_RESEARCH[i],
       color: top.color,
     });
+  }
+
+  // Zone sites (battlefields, shipping lanes…) from their own seed, so older sectors keep their layout.
+  const siteRng = new Rng((seed ^ Math.imul(depth + 7, 0x85ebca6b) ^ 0x51ed270b) >>> 0);
+  for (const z of zones) {
+    if (siteRng.next() < SPECIAL.siteChance) z.site = SITES[Math.floor(siteRng.next() * SITES.length)].id;
   }
 
   // Fixed anomalies: more in deeper sectors; an Ancient Survey Marker guarantees a Rare+.

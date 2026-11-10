@@ -8,7 +8,7 @@ import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
 import { ensureStory } from './story-rules';
 
-export const CURRENT_VERSION = 11;
+export const CURRENT_VERSION = 12;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -68,6 +68,10 @@ export function migrate(raw: unknown): GameState {
   if (data['version'] === 10) {
     // v11 adds the Core Matrix (empty) and Data Core costs; nothing to convert.
     data['version'] = 11;
+  }
+  if (data['version'] === 11) {
+    // v12 adds special asteroids and the Sensor Array; the current rock stays ordinary.
+    data['version'] = 12;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);

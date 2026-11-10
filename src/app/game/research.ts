@@ -174,6 +174,12 @@ export const RESEARCH: readonly ResearchNode[] = [
 
   // ---------------------------------------------------------------- Survey
   N({
+    id: 'signature_scanner', name: 'Signature Scanner', branch: 'survey', maxLevel: 3,
+    sd: 8, cr: 5000, sec: 150, growth: 2.6,
+    effect: '+30% chance of special asteroids and derelicts',
+    flavor: 'Mass, spin, metal content. Anything odd out there, I will flag it.',
+  }),
+  N({
     id: 'core_decryption', name: 'Core Decryption', branch: 'survey', maxLevel: 3,
     sd: 15, cr: 12000, sec: 300, growth: 2.5, cores: 2,
     effect: '+20% Survey Data from every source',

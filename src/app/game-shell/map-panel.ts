@@ -1,3 +1,4 @@
+import { siteDef } from '../game/special-data';
 import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ORES, ZoneDef, ZoneId } from '../game/config';
 import { RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
@@ -96,6 +97,8 @@ export class MapPanel {
         current: s.zone === def.id,
         researchName: def.research ? researchNode(def.research).name : '',
         comet: E.zoneBoost(s, def.id) > 1,
+        site: def.site ? siteDef(def.site) : null,
+        specialOdds: (E.specialChance(s, def) * 100).toFixed(1),
         anomalies: anomalies.map((a, k) => ({
           a,
           label: a.status === 'signal' ? 'Unknown signal' : anomalyDef(a.kind).name,

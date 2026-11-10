@@ -143,7 +143,11 @@
                   @if (z.comet) {
                     <span class="comet-tag">☄ COMET ×2</span>
                   }
+                  <span class="special-odds" title="Chance a rock here is a special asteroid or derelict">◆ SPECIALS {{ z.specialOdds }}%</span>
                 </div>
+                @if (z.site; as site) {
+                  <div class="site" [title]="site.desc">⌖ {{ site.name }} — {{ site.desc }}</div>
+                }
                 @for (m of z.anomalies; track m.a.id) {
                   <button type="button" class="signal-link" [style.color]="m.color" (click)="setTab('signals')">◈ {{ m.label }}</button>
                 }

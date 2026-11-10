@@ -78,6 +78,8 @@ export const MEDALS: readonly MedalDef[] = [
     [1000, 10000, 100000], (s) => s.stats.clicks, (n) => `Drill ${n} times by hand.`, D(0.02)),
   ...tiers('ingot', 'mining', ['Smelter', 'Foundry Hand', 'Forge Master'],
     [100, 1e4, 1e6], (s) => s.stats.ingotsRefined, (n) => `Refine ${n} ingots.`, S(0.01)),
+  ...tiers('special', 'exploration', ['Odd Rock', 'Wreck Diver', 'Salvage King'],
+    [1, 25, 250], (s) => Object.values(s.stats.specials ?? {}).reduce((a, b) => a + b, 0), (n) => (n === '1' ? 'Crack a special asteroid or derelict.' : `Crack ${n} special asteroids or derelicts.`), S(0.01)),
   ...tiers('alloy', 'mining', ['Metallurgist', 'Alloy Baron', 'Lattice Lord'],
     [50, 5000, 5e5], (s) => s.stats.alloysForged ?? 0, (n) => `Forge ${n} alloys.`, S(0.01)),
   // Fleet

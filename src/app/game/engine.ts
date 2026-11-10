@@ -33,6 +33,8 @@ import {
 } from './fleet-rules';
 import { RESEARCH, researchNode } from './research';
 import { CORES } from './core-data';
+import { applySalvage, crackSalvage, rollSpecial, specialComposition, specialName } from './special-rules';
+import { specialDef } from './special-data';
 import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
 import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
 import { generateSector, pulsarSurge, sectorMods, sectorZones, starLabel } from './sector-rules';
@@ -75,6 +77,7 @@ export * from './crew-rules';
 export * from './fleet-rules';
 export * from './alloy-rules';
 export * from './core-rules';
+export * from './special-rules';
 
 function emptyDrones(): Record<DroneType, number> {
   const d = {} as Record<DroneType, number>;
@@ -103,7 +106,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 11,
+    version: 12,
     commander,
     ship,
     createdAt: now,
@@ -120,6 +123,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     alloys: emptyAlloys(),
     forge: emptyForge(),
     cargoLevel: 0,
+    sensorArray: 0,
     drill: { powerLevel: 0, tier: 1, heat: 0, lockRemaining: 0, heatSinkLevel: 0, clamp: false },
     drones: emptyDrones(),
     dispatch: {},
@@ -187,7 +191,9 @@ export function spawnAsteroid(state: GameState): AsteroidState {
   const mass = Math.round(
     Math.max(a.baseMass * zone.massMult * growth, baseDrillPower(state) * a.minClicks) * wobble * sectorMods(state).asteroidMass,
   );
-  const rich = rng.next() < a.richChance;
+  // Now and then something better than plain rock drifts in.
+  const special = rollSpecial(state, rng, zone);
+  const rich = !special && rng.next() < a.richChance;
 
   // Wobble the zone's mix; rich rocks carry far more of the zone's top ore.
   const top = [...ORE_IDS].reverse().find((id) => (zone.composition[id] ?? 0) > 0)!;
@@ -200,14 +206,16 @@ export function spawnAsteroid(state: GameState): AsteroidState {
     total += w;
   }
   for (const id of ORE_IDS) composition[id] = total > 0 ? composition[id] / total : 0;
+  const size = special ? Math.round(mass * specialDef(special.kind).massMult) : mass;
 
   const asteroid: AsteroidState = {
     shapeSeed: (rng.next() * 4294967296) >>> 0,
-    mass,
-    maxMass: mass,
-    composition,
+    mass: size,
+    maxMass: size,
+    composition: special ? specialComposition(state, special, composition) : composition,
     rich,
     zone: zone.id,
+    special,
   };
   state.rng = rng.state;
   return asteroid;
@@ -478,10 +486,13 @@ export function click(state: GameState): ClickResult {
   const power = drillPower(state) * (result.overdrive ? overdriveMult(state) : 1);
   const mined = Math.min(power, asteroid.mass);
   asteroid.mass -= mined;
+  // Special rocks give more ore per tonne cut.
+  const spec = asteroid.special ? specialDef(asteroid.special.kind) : null;
+  const yieldMult = spec?.yieldMult ?? 1;
 
   const haul = emptyOre();
   for (const id of ORE_IDS) {
-    const amount = mined * asteroid.composition[id];
+    const amount = mined * yieldMult * asteroid.composition[id];
     if (oreReachable(state, id)) haul[id] = amount;
     else result.slag += amount;
   }
@@ -492,11 +503,20 @@ export function click(state: GameState): ClickResult {
     const bonusFrac =
       a.depletionBonusFrac *
       (1 + researchLevel(state, 'depletion_bonus') * CONFIG.bonuses.depletionPerLevel + salvagerDepletionBonus(state)) *
-      sectorMods(state).crackBonus;
+      sectorMods(state).crackBonus *
+      (spec?.crackMult ?? 1);
     for (const id of ORE_IDS) {
       if (oreReachable(state, id)) haul[id] += asteroid.maxMass * bonusFrac * asteroid.composition[id];
     }
     const rng = new Rng(state.rng);
+    if (asteroid.special) {
+      const salvage = crackSalvage(state, asteroid, currentZone(state), rng);
+      for (const id of ORE_IDS) if (oreReachable(state, id)) haul[id] += salvage.ore[id];
+      applySalvage(state, salvage);
+      const key = asteroid.special.derelict ? `derelict:${asteroid.special.derelict}` : asteroid.special.kind;
+      state.stats.specials = { ...(state.stats.specials ?? {}), [key]: (state.stats.specials?.[key] ?? 0) + 1 };
+      result.special = { name: specialName(asteroid.special), salvage: salvage.text, kind: asteroid.special.kind };
+    }
     const lattice = 1 + researchLevel(state, 'core_lattice') * CORES.latticePerLevel;
     if (rng.next() < a.dataCoreChance * lattice + salvagerDataCoreBonus(state)) {
       result.dataCore = true;

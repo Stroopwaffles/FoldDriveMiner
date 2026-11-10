@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
-import { holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult } from '../game/engine';
+import { holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult, specialName } from '../game/engine';
+import { specialDef } from '../game/special-data';
 import { MechPortrait } from '../ui/mech-portrait';
 import { DroneSprite } from '../ui/drone-sprite';
 import { DRONE_IDS, DroneType } from '../game/fleet-data';
@@ -111,6 +112,24 @@ export class AsteroidViewport {
     const a = this.asteroid();
     return a ? buildShape(a) : null;
   });
+
+  /** The special rock in view, if any. */
+  protected readonly special = computed(() => {
+    const sp = this.asteroid()?.special;
+    if (!sp) return null;
+    const def = specialDef(sp.kind);
+    return {
+      kind: sp.kind,
+      derelict: sp.derelict,
+      name: specialName(sp).toUpperCase(),
+      desc: def.desc,
+      color: def.color,
+      oreColor: sp.ore ? oreDef(sp.ore).color : null,
+    };
+  });
+  /** A derelict's hull outline (pointing right; the SVG tilts it per wreck). */
+  protected readonly hull = '-74,-18 38,-24 76,-8 84,4 40,24 -74,20';
+  protected readonly hullWindows = [-60, -46, -32, -18, -4, 10, 24];
 
   /** Reads state() directly so it updates on every tick. */
   protected readonly integrity = computed(() => {
@@ -303,6 +322,7 @@ export class AsteroidViewport {
     }
     if (r.lost > 0.0001 && shown === 0) this.addFloat(x, y, 'CARGO FULL', '#ffd23f', false);
     if (r.dataCore) this.addFloat(x, y - 50, '+1 DATA CORE', '#ff3d9a', true);
+    if (r.special) this.addFloat(x - 40, y - 80, `${r.special.name.toUpperCase()} SALVAGED`, '#ffd23f', true);
     if (r.surveyData > 0) this.addFloat(x - 20, y + 30, `+${this.game.fmt(r.surveyData)} SURVEY DATA`, '#4fe3ff', true);
 
     if (!this.settings.reducedMotion()) {

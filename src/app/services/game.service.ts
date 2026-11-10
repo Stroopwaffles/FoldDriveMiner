@@ -1,4 +1,5 @@
 import { AlloyId } from '../game/alloy-data';
+import { derelictDef, specialDef } from '../game/special-data';
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { CONFIG, OreId, ZoneId, zoneDef } from '../game/config';
 import * as E from '../game/engine';
@@ -340,9 +341,36 @@ export class GameService {
         s.flags['firstOverdrive'] = true;
         this.say('JUNO', "OVERDRIVE! A cool drill bites deeper — keep a steady rhythm and don't let it run hot!");
       }
+      if (r.special) {
+        this.audio.dataCore();
+        this.say('VESPER', `${r.special.name} cracked open: ${r.special.salvage || 'rich ore'}.`);
+      }
+      if (r.cracked) this.announceSpecial();
     }
     this.publish();
     return r;
+  }
+
+  /** A special rock just drifted in: VESPER calls it out. */
+  private announceSpecial(): void {
+    const s = this._state();
+    const sp = s?.asteroid.special;
+    if (!s || !sp) return;
+    const name = E.specialName(sp);
+    if (sp.kind === 'derelict') {
+      const d = derelictDef(sp.derelict!);
+      this.say('VESPER', `Sensor contact: a ${d.name}, dead in space. Cut through the hull and we salvage ${d.salvage}.`);
+    } else {
+      this.say('VESPER', `Sensor contact: ${name}. ${specialDef(sp.kind).desc}`);
+    }
+    if (!s.flags['firstSpecial']) {
+      s.flags['firstSpecial'] = true;
+      this.say('JUNO', "Ooh, something different! These don't show up often. Better sensors would find more of them.", 2500);
+    }
+  }
+
+  buySensorArray(): void {
+    this.act(E.buySensorArray, () => this.audio.buy());
   }
 
   sell(ore: OreId): void {
@@ -434,6 +462,7 @@ export class GameService {
         this.audio.select();
         const z = zoneDef(id);
         this.say('VESPER', `Course set: ${z.name}. ${z.desc}`);
+        this.announceSpecial();
       },
     );
   }

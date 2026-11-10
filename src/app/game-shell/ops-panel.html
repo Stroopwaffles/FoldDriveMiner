@@ -258,6 +258,22 @@
 
       <div class="upgrade">
         <div>
+          <div class="up-name">Long-Range Sensor Array <span class="lvl">LV {{ st.sensorArray ?? 0 }}/{{ arrayMax }}</span></div>
+          @if (arrayCost() !== null) {
+            <div class="up-desc">Special asteroids and derelicts here: {{ specialOdds() }}% → {{ nextOdds() }}% of rocks</div>
+          } @else {
+            <div class="up-desc">Special asteroids and derelicts here: {{ specialOdds() }}% of rocks</div>
+          }
+        </div>
+        @if (arrayCost(); as c) {
+          <button type="button" class="btn" [disabled]="st.credits < c" (click)="game.buySensorArray()">{{ game.fmt(c) }} cr</button>
+        } @else {
+          <span class="maxed">MAX</span>
+        }
+      </div>
+
+      <div class="upgrade">
+        <div>
           <div class="up-name">Trigger Clamp @if (st.drill.clamp) {<span class="lvl">FITTED</span>}</div>
           @if (st.drill.clamp) {
             <div class="up-desc">Hold the mouse button on the asteroid to keep drilling · {{ holdRate() }} hits/s</div>

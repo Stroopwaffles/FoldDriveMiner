@@ -3,6 +3,8 @@
  * Balance the game by editing this file, not the engine.
  */
 
+import type { SiteId } from './special-data';
+
 export type OreId = 'ferrite' | 'titanite' | 'iridium' | 'helium3' | 'voidglass';
 
 export interface OreDef {
@@ -45,6 +47,8 @@ export interface ZoneDef {
   /** Research that unlocks the zone (none = open from the start). */
   research?: string;
   color: string;
+  /** What this zone used to be: makes some special rocks more common here. */
+  site?: SiteId;
 }
 
 /** Survey zones of the home sector (procedural zones arrive with sector generation). */
@@ -69,6 +73,7 @@ export const ZONES: readonly ZoneDef[] = [
     surveyData: 2,
     research: 'survey_trojan',
     color: '#4fe3ff',
+    site: 'shipping_lane',
   },
   {
     id: 'ring',
@@ -80,6 +85,7 @@ export const ZONES: readonly ZoneDef[] = [
     surveyData: 4,
     research: 'survey_ring',
     color: '#c77dff',
+    site: 'battlefield',
   },
   {
     id: 'ice',
@@ -91,6 +97,7 @@ export const ZONES: readonly ZoneDef[] = [
     surveyData: 8,
     research: 'survey_ice',
     color: '#9dff8a',
+    site: 'comet_trail',
   },
   {
     id: 'deep',

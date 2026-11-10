@@ -417,3 +417,41 @@ Data Cores used to have no use. Now they have three, plus the core research node
   - Core Cache: +5% research speed per level
   - Core Sims: +5% pilot XP per level
 - **Save:** version 11.
+
+## Special asteroids
+
+Rare rocks and wrecks drift in now and then instead of an ordinary asteroid. Each pays better than plain rock.
+
+| Type | Size | Ore per hit | When it cracks |
+|---|---|---|---|
+| Dense Asteroid | 2.2× | 1.6× | Crack bonus ×3 |
+| Element Cluster | 1× | 2×, all one ore (sometimes the next ore up) | Crack bonus ×2 |
+| Crystal Geode | 0.6× | normal | Bursts with 4× its mass in the best ore you can cut; 20% chance of a Data Core |
+| Comet Ice Chunk | 1.3× | 1.4×, Helium-3-rich | Survey Data ×4 |
+| Derelict Ship | 1.5× hull, Ferrite/Titanite scrap | 1.2× | Salvage depends on the ship class (below) |
+
+**Derelict classes:**
+- Cargo Hauler: credits worth 4× its mass in local ore.
+- Mining Barge: an ore bay holding 2× its mass in local ore, plus 2–5 Prospector drones.
+- Survey Vessel: Survey Data ×12, 35% chance of a Data Core.
+- Warship Hulk: credits, a guaranteed Data Core, 35% chance of a mech part.
+- Precursor Wreck (depth 2+): 2–4 Data Cores, Survey Data ×20, 12% chance of a legendary part.
+
+**Odds:**
+- Base chance is 5% of rocks, capped at 35%.
+- Zone sites change the odds:
+  - Old Battlefield: warships
+  - Shipping Lane: haulers
+  - Ship Graveyard: any wreck
+  - Compression Belt: dense rock
+  - Crystal Bloom: geodes and clusters
+  - Comet Trail: ice
+- Home zones: Trojan Cluster is a Shipping Lane, Ring Debris is an Old Battlefield, and Ice Halo is a Comet Trail. Generated zones get a site 45% of the time, from a separate seed so existing sectors keep their layout.
+- Sector traits and stars tilt the odds too. For example, Dense Field means more dense rock, Trade Hub means more haulers, and a nebula means more clusters and geodes.
+
+**Sensors:**
+- Signature Scanner research (Survey branch, 3 levels): +30% per level.
+- Each Surveyor drone: +1%, up to +40%.
+- Long-Range Sensor Array (Ops, credits, 5 levels, resets on a Fold Jump): +10% per level.
+
+**Presentation:** VESPER calls out each contact and the salvage. The viewport shows a ◆ tag and a different look for each type; derelicts are drawn as tilted ship hulls. The Map shows each zone's site and special odds. Commendations: Odd Rock, Wreck Diver, Salvage King. Save version 12.

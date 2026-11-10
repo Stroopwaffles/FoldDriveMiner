@@ -1,4 +1,5 @@
 import type { AlloyId } from './alloy-data';
+import type { DerelictClass, SpecialKind } from './special-data';
 import { OreId, ZoneId } from './config';
 import { BackgroundId, PostId, StatId } from './crew-data';
 import { DroneType, FrameId, SlotId } from './fleet-data';
@@ -18,6 +19,16 @@ export interface AsteroidState {
   composition: OreAmounts;
   rich: boolean;
   zone: ZoneId;
+  /** A special rock (dense, cluster, geode, ice chunk or derelict), or null. */
+  special?: SpecialInfo | null;
+}
+
+export interface SpecialInfo {
+  kind: SpecialKind;
+  /** Derelicts: what kind of ship she was. */
+  derelict?: DerelictClass;
+  /** Element clusters: the one ore. */
+  ore?: OreId;
 }
 
 export interface DrillState {
@@ -41,6 +52,8 @@ export interface GameStats {
   creditsEarned: number;
   ingotsRefined: number;
   alloysForged: number;
+  /** Special rocks cracked, by kind ('derelict:military' for derelicts). Lifetime. */
+  specials?: Record<string, number>;
   researchCompleted: number;
   mechOre: number;
   mechsBuilt: number;
@@ -422,7 +435,7 @@ export interface FoldState {
 }
 
 export interface GameState {
-  version: 11;
+  version: 12;
   commander: string;
   ship: string;
   createdAt: number;
@@ -444,6 +457,8 @@ export interface GameState {
   alloys: Record<AlloyId, number>;
   forge: AlloyForge;
   cargoLevel: number;
+  /** Long-Range Sensor Array level (credits): finds special rocks more often. */
+  sensorArray: number;
 
   drill: DrillState;
   drones: Record<DroneType, number>;
@@ -493,6 +508,8 @@ export interface ClickResult {
   cracked: boolean;
   dataCore: boolean;
   surveyData: number;
+  /** A special rock cracked: its name and what was salvaged. */
+  special?: { name: string; salvage: string; kind: SpecialKind };
 }
 
 export interface ResearchDone {

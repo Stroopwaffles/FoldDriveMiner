@@ -754,3 +754,172 @@
     top: 40%;
   }
 }
+
+/* ---------------- special asteroids ---------------- */
+.special-tag {
+  color: #05060f;
+  background: var(--sc, var(--amber));
+  padding: 0 0.35rem;
+  letter-spacing: 0.1em;
+  margin-left: 0.3rem;
+  animation: pulse 1s ease-in-out infinite alternate;
+  cursor: help;
+}
+
+.asteroid.sp-dense {
+  filter: drop-shadow(0 0 24px rgba(255, 120, 60, 0.45));
+
+  .rock-dark {
+    fill: #241a24;
+  }
+
+  .rock-lit {
+    fill: #5a4440;
+  }
+
+  .rock-outline {
+    stroke-width: 5;
+  }
+}
+
+.asteroid.sp-cluster {
+  filter: drop-shadow(0 0 26px var(--oc, #4fe3ff));
+
+  .rock-lit {
+    fill: var(--oc, #4fe3ff);
+    opacity: 0.75;
+  }
+
+  .speck {
+    fill: #fff;
+  }
+}
+
+.asteroid.sp-geode {
+  filter: drop-shadow(0 0 26px rgba(199, 125, 255, 0.6));
+
+  .rock-dark {
+    fill: #2c2440;
+  }
+
+  .rock-lit {
+    fill: #6b5a7e;
+  }
+
+  .speck {
+    fill: #e6b8ff;
+    filter: drop-shadow(0 0 5px #c77dff);
+  }
+}
+
+.asteroid.sp-ice_chunk {
+  filter: drop-shadow(0 0 24px rgba(168, 240, 255, 0.55));
+
+  .rock-dark {
+    fill: #4a6a86;
+  }
+
+  .rock-lit {
+    fill: #bfeaff;
+  }
+
+  .crater {
+    fill: #7fa8c4;
+  }
+}
+
+/* Derelict ships: a tilted hull instead of a rock */
+.asteroid.derelict {
+  animation: drift-tilt 40s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 18px rgba(255, 210, 63, 0.3));
+}
+
+@keyframes drift-tilt {
+  from {
+    transform: rotate(var(--tilt, 0deg));
+  }
+
+  to {
+    transform: rotate(calc(var(--tilt, 0deg) + 14deg));
+  }
+}
+
+.hull {
+  fill: #3c4252;
+}
+
+.hull-engine,
+.hull-bridge,
+.hull-pod,
+.hull-gun,
+.hull-arm,
+.hull-drill,
+.hull-dish {
+  fill: #2a2f3c;
+  stroke: #0a0610;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.hull-spar {
+  stroke: #0a0610;
+  stroke-width: 3;
+}
+
+.hull-window {
+  fill: #ffd23f;
+  opacity: 0.35;
+  animation: flicker 2.4s steps(2) infinite;
+}
+
+.hull-outline {
+  fill: none;
+  stroke: #0a0610;
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+
+.hull-break {
+  fill: none;
+  stroke: #ff7a3d;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px #ff7a3d);
+}
+
+.dc-military .hull {
+  fill: #4a3a3a;
+}
+
+.dc-science .hull {
+  fill: #354a56;
+}
+
+.dc-hauler .hull {
+  fill: #4a4630;
+}
+
+.dc-ancient {
+  filter: drop-shadow(0 0 26px rgba(109, 255, 200, 0.5));
+
+  .hull {
+    fill: #1e3a36;
+  }
+
+  .hull-window {
+    fill: #6dffc8;
+    opacity: 0.7;
+  }
+
+  .hull-ring {
+    fill: none;
+    stroke: #6dffc8;
+    stroke-width: 3;
+    opacity: 0.7;
+  }
+}
+
+@keyframes flicker {
+  50% {
+    opacity: 0.1;
+  }
+}

@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { ALLOYS } from '../game/alloy-data';
+import { SPECIAL } from '../game/special-data';
 import { CONFIG, ORES, OreId } from '../game/config';
 import { DRONES, DRONE_IDS } from '../game/fleet-data';
 import { DroneSprite } from '../ui/drone-sprite';
@@ -136,6 +137,14 @@ export class OpsPanel {
   protected readonly sinkCost = computed(() => E.heatSinkCost(this.s()));
   protected readonly sinkMax = CONFIG.heat.sinkMaxLevel;
   protected readonly clampCost = CONFIG.hold.cost;
+  protected readonly arrayCost = computed(() => E.sensorArrayCost(this.s()));
+  protected readonly arrayMax = SPECIAL.arrayMaxLevel;
+  /** Chance the next rock in this zone is special. */
+  protected readonly specialOdds = computed(() => (E.specialChance(this.s(), E.currentZone(this.s())) * 100).toFixed(1));
+  protected readonly nextOdds = computed(() => {
+    const s = this.s();
+    return (E.specialChance({ ...s, sensorArray: (s.sensorArray ?? 0) + 1 }, E.currentZone(s)) * 100).toFixed(1);
+  });
   protected readonly holdRate = computed(() => (1 / E.holdInterval(this.s())).toFixed(1));
   protected readonly cargoMax = CONFIG.cargo.maxLevel;
   protected readonly furnaceMax = CONFIG.refinery.maxBatchLevel;
