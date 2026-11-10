@@ -15,6 +15,7 @@ import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
 import { researchNode } from '../game/research';
 import { AudioService } from '../services/audio.service';
+import { InventoryPanel } from './inventory-panel';
 import { CommMessage, GameService, SPEAKER_NAMES, Tab } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
 import { MusicToggle } from '../ui/music-toggle';
@@ -54,6 +55,7 @@ interface NavItem {
 @Component({
   selector: 'fdm-game-shell',
   imports: [
+    InventoryPanel,
     AsteroidViewport,
     OpsPanel,
     LabPanel,
@@ -153,6 +155,7 @@ export class GameShell {
     { id: 'fold', label: 'FOLD', kana: 'フォールド', icon: '⟐', locked: !this.foldOpen(), hint: 'Fold Drive offline. Research it in the LAB (Fold Science).' },
     { id: 'archive', label: 'ARCHIVE', kana: 'きろく', icon: '❖', locked: false, hint: '' },
     { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: !this.boardOpen(), hint: 'No contracts or traders yet. Earn a little first.' },
+    { id: 'inventory', label: 'INVENTORY', kana: 'もちもの', icon: '▣', locked: false, hint: '' },
   ]);
 
   protected readonly ticker = computed(() => {
@@ -305,7 +308,7 @@ export class GameShell {
 
   /** The hotkey list (shown in the menu). */
   protected readonly hotkeys = [
-    ['1–9', 'Switch tabs (in nav order)'],
+    ['1–9, 0', 'Switch tabs (in nav order; 0 = Inventory)'],
     ['D', 'Drill the asteroid'],
     ['S', 'Sell all ore'],
     ['M', 'Music on / off'],
@@ -319,8 +322,9 @@ export class GameShell {
     const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
     const plain = !typing && !e.ctrlKey && !e.metaKey && !e.altKey;
     const overlay = this.menuOpen() || !!this.game.episode() || !!this.game.offlineReport() || !!this.game.sortie() || !!this.game.jump();
-    if (plain && !overlay && /^[1-9]$/.test(e.key)) {
-      const item = this.nav()[Number(e.key) - 1];
+    if (plain && !overlay && /^[0-9]$/.test(e.key)) {
+      // 1–9 are the first nine tabs; 0 is the tenth.
+      const item = this.nav()[e.key === '0' ? 9 : Number(e.key) - 1];
       if (item) this.selectNav(item);
       return;
     }

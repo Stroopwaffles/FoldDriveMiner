@@ -27,7 +27,7 @@ import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
 
-export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board' | 'fold' | 'archive';
+export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board' | 'fold' | 'archive' | 'inventory';
 
 export type Speaker = StoryVoice | 'PILOT' | 'TRADER' | 'CORP';
 

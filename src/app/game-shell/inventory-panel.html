@@ -1,0 +1,105 @@
+@let st = s();
+<section class="panel inv">
+  <div class="panel-title">
+    <span class="led amber"></span>Inventory <span class="kana">もちもの</span>
+    <span class="head-info">{{ st.ship }} · CMDR {{ st.commander }}</span>
+  </div>
+
+  <div class="grid">
+    <!-- Resources -->
+    <div class="card">
+      <div class="sub">RESOURCES <span class="kana">しげん</span></div>
+      @for (r of resources(); track r.name) {
+        <div class="row">
+          <span class="name">{{ r.name }}</span>
+          <b class="val" [style.color]="r.color">{{ r.value }}</b>
+        </div>
+        <div class="note">{{ r.note }}</div>
+      }
+    </div>
+
+    <!-- Cargo hold -->
+    <div class="card">
+      <div class="sub">CARGO HOLD <span class="kana">カーゴ</span></div>
+      <div class="cap">
+        <span>{{ game.fmt(used()) }} / {{ game.fmt(capacity()) }} t</span>
+        <span class="dim">worth {{ game.fmt(holdValue()) }} cr</span>
+      </div>
+      <div class="cap-bar"><div [style.width.%]="Math.min(100, (used() / capacity()) * 100)"></div></div>
+      @for (r of hold(); track r.name) {
+        <div class="row">
+          <span class="name"><span class="swatch" [class]="'swatch ' + r.kind.toLowerCase()" [style.background]="r.color"></span>{{ r.name }}</span>
+          <span class="dim small">{{ r.kind }}</span>
+          <b class="val">{{ game.fmt(r.amount) }}</b>
+          <span class="dim small price">{{ game.fmt(r.value) }} cr</span>
+        </div>
+      } @empty {
+        <div class="note">The hold is empty.</div>
+      }
+      <button type="button" class="btn small link" (click)="go('ops')">Sell or refine in OPS</button>
+    </div>
+
+    <!-- Supplies and effects -->
+    <div class="card">
+      <div class="sub">SUPPLIES <span class="kana">ほきゅうひん</span></div>
+      @for (x of supplies(); track x.id) {
+        <div class="row" [class.none]="!x.count">
+          <span class="name">{{ x.name }}</span>
+          <b class="val">×{{ x.count }}</b>
+          @if (x.use && x.count) {
+            <button type="button" class="btn tiny" (click)="go(x.use)">{{ x.useLabel }}</button>
+          }
+          @if (x.id === 'fold_cell' && x.count) {
+            <button type="button" class="btn tiny" [disabled]="!canUseCell()" (click)="game.useFoldCell()" title="Load one into the Fold Drive">Load</button>
+          }
+        </div>
+        <div class="note">{{ x.desc }}</div>
+      }
+      <div class="sub sp">ACTIVE EFFECTS <span class="kana">こうか</span></div>
+      @for (e of effects(); track $index) {
+        <div class="row"><span class="name">{{ e.name }}</span></div>
+        <div class="note">{{ e.detail }}</div>
+      } @empty {
+        <div class="note">Nothing running. Merchants sell Overdrive cells, deterrents and sector contracts.</div>
+      }
+    </div>
+
+    <!-- Equipment -->
+    <div class="card">
+      <div class="sub">EQUIPMENT & PERKS <span class="kana">そうび</span></div>
+      @for (e of equipment(); track e.name) {
+        <div class="row"><span class="name">{{ e.name }}</span></div>
+        <div class="note">{{ e.detail }}</div>
+      } @empty {
+        <div class="note">No special fittings yet.</div>
+      }
+    </div>
+  </div>
+
+  <!-- Mech parts -->
+  <div class="parts">
+    <div class="sub">MECH PARTS <span class="kana">パーツ</span> <span class="dim">{{ partCount() }} total</span></div>
+    @for (g of parts(); track g.slot.id) {
+      <div class="slot">
+        <div class="slot-name">{{ g.slot.name }} <span class="kana">{{ g.slot.kana }}</span></div>
+        @for (r of g.rows; track r.p.id) {
+          <div class="part" [class]="'part ' + r.p.rarity">
+            <span class="p-name">{{ r.p.name }}</span>
+            <span class="tag" [class.empty]="r.p.rarity === 'standard'">{{ r.p.rarity === 'standard' ? '' : r.p.rarity.toUpperCase() }}</span>
+            <span class="p-stats">{{ r.stats }}</span>
+            <span class="p-count">
+              @if (r.stored) {
+                <b>{{ r.stored }}</b> in storage
+              }
+              @if (r.fittedOn.length) {
+                {{ r.stored ? ' · ' : '' }}fitted: {{ r.fittedOn.join(', ') }}
+              }
+            </span>
+          </div>
+        }
+      </div>
+    } @empty {
+      <div class="note">No parts yet. Buy them in the HANGAR, from merchants, or salvage them.</div>
+    }
+  </div>
+</section>
