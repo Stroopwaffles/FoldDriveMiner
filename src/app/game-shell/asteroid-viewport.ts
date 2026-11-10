@@ -1,0 +1,218 @@
+import { Component, computed, inject, signal } from '@angular/core';
+import { CONFIG, ORES, ORE_IDS, oreDef } from '../game/config';
+import { Rng } from '../game/rng';
+import { AsteroidState } from '../game/types';
+import { GameService } from '../services/game.service';
+import { SettingsService } from '../services/settings.service';
+import { Starfield } from '../ui/starfield';
+
+interface Shape {
+  outline: string;
+  shadow: string;
+  cracks: string[];
+  specks: { points: string; color: string }[];
+  craters: { cx: number; cy: number; r: number }[];
+}
+
+interface FloatText {
+  id: number;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  big: boolean;
+}
+
+interface Debris {
+  id: number;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  rot: number;
+  color: string;
+}
+
+let fxId = 0;
+
+/** Builds a cel-shaded asteroid from its seed. Coordinates are in a -100..100 box. */
+function buildShape(a: AsteroidState): Shape {
+  const rng = new Rng(a.shapeSeed);
+  const n = 14;
+  const pts: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * Math.PI * 2 + rng.range(-0.12, 0.12);
+    const r = 78 * rng.range(0.82, 1.08);
+    pts.push([Math.cos(ang) * r, Math.sin(ang) * r * 0.88]);
+  }
+  const outline = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  // Shadow: the outline shifted up-left, used as a mask cutout for the lit area.
+  const shadow = pts.map(([x, y]) => `${(x * 0.92 - 14).toFixed(1)},${(y * 0.92 - 12).toFixed(1)}`).join(' ');
+
+  const cracks: string[] = [];
+  for (let c = 0; c < 6; c++) {
+    let x = rng.range(-12, 12);
+    let y = rng.range(-12, 12);
+    const ang = (c / 6) * Math.PI * 2 + rng.range(-0.4, 0.4);
+    const segs = [`${x.toFixed(1)},${y.toFixed(1)}`];
+    for (let s = 0; s < 4; s++) {
+      const len = rng.range(12, 20);
+      const a2 = ang + rng.range(-0.6, 0.6);
+      x += Math.cos(a2) * len;
+      y += Math.sin(a2) * len;
+      segs.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    cracks.push(segs.join(' '));
+  }
+
+  const specks: Shape['specks'] = [];
+  for (const id of ORE_IDS) {
+    if (id === 'ferrite') continue;
+    const count = Math.round(a.composition[id] * 40);
+    for (let i = 0; i < count; i++) {
+      const ang = rng.range(0, Math.PI * 2);
+      const r = rng.range(0, 55);
+      const cx = Math.cos(ang) * r;
+      const cy = Math.sin(ang) * r * 0.88;
+      const s = rng.range(3, 7);
+      specks.push({
+        points: `${cx},${cy - s} ${cx + s * 0.7},${cy} ${cx},${cy + s} ${cx - s * 0.7},${cy}`,
+        color: oreDef(id).color,
+      });
+    }
+  }
+
+  const craters = Array.from({ length: 5 }, () => ({
+    cx: rng.range(-45, 45),
+    cy: rng.range(-40, 40),
+    r: rng.range(5, 13),
+  }));
+
+  return { outline, shadow, cracks, specks, craters };
+}
+
+@Component({
+  selector: 'fdm-asteroid-viewport',
+  imports: [Starfield],
+  templateUrl: './asteroid-viewport.html',
+  styleUrl: './asteroid-viewport.scss',
+})
+export class AsteroidViewport {
+  protected readonly game = inject(GameService);
+  protected readonly settings = inject(SettingsService);
+
+  /** Changes only when a new asteroid spawns (mass is mutated in place). */
+  protected readonly asteroid = computed(() => this.game.state()?.asteroid ?? null);
+  protected readonly asteroidShape = computed(() => {
+    const a = this.asteroid();
+    return a ? buildShape(a) : null;
+  });
+
+  /** Reads state() directly so it updates on every tick. */
+  protected readonly integrity = computed(() => {
+    const a = this.game.state()?.asteroid;
+    return a ? a.mass / a.maxMass : 1;
+  });
+  protected readonly massLeft = computed(() => this.game.state()?.asteroid.mass ?? 0);
+  protected readonly cracksShown = computed(() => Math.ceil((1 - this.integrity()) * 6));
+
+  protected readonly heat = computed(() => this.game.state()?.drill.heat ?? 0);
+  protected readonly locked = computed(() => (this.game.state()?.drill.lockRemaining ?? 0) > 0);
+  protected readonly heatMax = CONFIG.heat.max;
+  protected readonly odMin = CONFIG.heat.overdriveMin;
+  protected readonly odMult = CONFIG.heat.overdriveMult;
+  protected readonly Math = Math;
+
+  private readonly droneCount = computed(() => Math.min(this.game.state()?.drones.prospector ?? 0, 18));
+  protected readonly drones = computed(() => {
+    const n = this.droneCount();
+    return Array.from({ length: n }, (_, i) => ({
+      r: 120 + (i % 3) * 26,
+      dur: 9 + (i % 5) * 2.3,
+      delay: -i * 1.7,
+    }));
+  });
+
+  protected readonly composition = computed(() => {
+    const a = this.asteroid();
+    const tier = this.game.state()?.drill.tier ?? 1;
+    if (!a) return [];
+    return ORES.filter((o) => a.composition[o.id] > 0.001).map((o) => ({
+      ore: o,
+      pct: a.composition[o.id] * 100,
+      reachable: o.tier <= tier,
+    }));
+  });
+
+  protected readonly floats = signal<FloatText[]>([]);
+  protected readonly debris = signal<Debris[]>([]);
+  protected readonly shaking = signal(false);
+  protected readonly flash = signal(false);
+
+  protected onDrill(e: MouseEvent): void {
+    const r = this.game.drill();
+    if (!r) return;
+
+    // Effect origin: the click point, or the center for keyboard activation (no coordinates).
+    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const keyboard = e.detail === 0;
+    const x = keyboard ? box.width / 2 : e.clientX - box.left;
+    const y = keyboard ? box.height / 2 : e.clientY - box.top;
+
+    if (r.locked) return;
+    if (r.overheated) {
+      this.addFloat(x, y, 'OVERHEAT!', '#ff3b3b', true);
+      return;
+    }
+
+    let shown = 0;
+    for (const o of ORES) {
+      const amt = r.gained[o.id];
+      if (amt > 0.0001) {
+        this.addFloat(x + shown * 14, y - shown * 18, `+${this.game.fmt(amt)} ${o.code}`, o.color, r.overdrive);
+        shown++;
+      }
+    }
+    if (r.lost > 0.0001 && shown === 0) this.addFloat(x, y, 'CARGO FULL', '#ffd23f', false);
+    if (r.dataCore) this.addFloat(x, y - 50, '+1 DATA CORE', '#ff3d9a', true);
+
+    if (!this.settings.reducedMotion()) {
+      this.burst(x, y, r.cracked ? 22 : r.overdrive ? 8 : 5);
+      this.shaking.set(false);
+      requestAnimationFrame(() => this.shaking.set(true));
+    }
+    if (r.cracked) {
+      this.flash.set(true);
+      setTimeout(() => this.flash.set(false), 250);
+    }
+  }
+
+  private addFloat(x: number, y: number, text: string, color: string, big: boolean): void {
+    const f: FloatText = { id: ++fxId, x, y, text, color, big };
+    this.floats.update((l) => [...l.slice(-14), f]);
+    setTimeout(() => this.floats.update((l) => l.filter((i) => i.id !== f.id)), 1000);
+  }
+
+  private burst(x: number, y: number, count: number): void {
+    const a = this.asteroid();
+    const colors = a
+      ? ORES.filter((o) => a.composition[o.id] > 0.05).map((o) => o.color)
+      : ['#d98a4e'];
+    const parts: Debris[] = Array.from({ length: count }, () => {
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 30 + Math.random() * (count > 10 ? 160 : 70);
+      return {
+        id: ++fxId,
+        x,
+        y,
+        dx: Math.cos(ang) * dist,
+        dy: Math.sin(ang) * dist,
+        rot: Math.random() * 540 - 270,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      };
+    });
+    this.debris.update((l) => [...l.slice(-60), ...parts]);
+    const ids = new Set(parts.map((p) => p.id));
+    setTimeout(() => this.debris.update((l) => l.filter((p) => !ids.has(p.id))), 700);
+  }
+}

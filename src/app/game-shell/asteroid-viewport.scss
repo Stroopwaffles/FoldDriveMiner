@@ -1,0 +1,452 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.viewport {
+  position: relative;
+  height: 100%;
+  min-height: 320px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 85% 15%, #3a2a10 0%, #0b0e24 40%, #05060f 100%);
+  border: 2px solid var(--bezel);
+  border-radius: 4px;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8);
+  user-select: none;
+}
+
+.star-glow {
+  position: absolute;
+  right: -80px;
+  top: -80px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6d0 0%, #ffd23f 18%, rgba(255, 122, 61, 0.35) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.sector-label {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 3;
+
+  .dim {
+    color: var(--text-dim);
+  }
+}
+
+.asteroid-info {
+  position: absolute;
+  left: 12px;
+  top: 34px;
+  width: 200px;
+  z-index: 3;
+  font-size: 0.72rem;
+}
+
+.mass-label {
+  color: var(--amber);
+  letter-spacing: 0.15em;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rich {
+  color: #05060f;
+  background: var(--cyan);
+  padding: 0 0.35rem;
+  letter-spacing: 0.1em;
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+
+.mass-bar {
+  height: 6px;
+  margin: 4px 0 2px;
+  background: #1a1f45;
+  border: 1px solid var(--bezel);
+}
+
+.mass-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--amber));
+  transition: width 0.1s linear;
+}
+
+.mass-num {
+  color: var(--text-dim);
+}
+
+.comp {
+  margin-top: 6px;
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  border: 1px solid var(--c);
+  color: var(--c);
+  padding: 0 0.3rem;
+  font-size: 0.68rem;
+
+  &.slag {
+    opacity: 0.55;
+    border-style: dashed;
+  }
+}
+
+.slag-tag {
+  color: var(--text-dim);
+}
+
+/* ---------- asteroid ---------- */
+.asteroid-btn {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(44vh, 340px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: crosshair;
+  z-index: 2;
+  animation: drift-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &:focus-visible {
+    outline: 2px dashed var(--cyan);
+    outline-offset: -10px;
+    border-radius: 50%;
+  }
+
+  &.shake {
+    animation: shake 0.12s linear;
+  }
+}
+
+.asteroid {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: scale(var(--scale, 1));
+  animation: spin 90s linear infinite;
+  filter: drop-shadow(0 0 22px rgba(255, 181, 71, 0.18));
+}
+
+.rock-dark {
+  fill: #3a2c3c;
+}
+
+.rock-lit {
+  fill: #8a6a58;
+}
+
+.crater {
+  fill: #2c2030;
+  opacity: 0.75;
+}
+
+.crater-lip {
+  fill: #a07e68;
+  opacity: 0.35;
+}
+
+.speck {
+  stroke: #05060f;
+  stroke-width: 1;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.rock-outline {
+  fill: none;
+  stroke: #0a0610;
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+
+.crack {
+  fill: none;
+  stroke: #120812;
+  stroke-width: 4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.crack-glow {
+  fill: none;
+  stroke: #ff9a3d;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px #ff7a3d);
+  stroke-dasharray: 200;
+  animation: crack-draw 0.35s ease-out;
+}
+
+.crack-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 46%, rgba(255, 240, 200, 0.85), transparent 60%);
+  z-index: 4;
+  pointer-events: none;
+  animation: fade-out 0.25s ease-out forwards;
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes drift-in {
+  from {
+    transform: translate(40%, -60%) scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0% {
+    transform: translate(-50%, -50%);
+  }
+  25% {
+    transform: translate(calc(-50% + 3px), calc(-50% - 2px));
+  }
+  50% {
+    transform: translate(calc(-50% - 3px), calc(-50% + 2px));
+  }
+  75% {
+    transform: translate(calc(-50% + 2px), calc(-50% + 1px));
+  }
+  100% {
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes crack-draw {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.6;
+  }
+}
+
+/* ---------- drones ---------- */
+.orbit-center {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+
+.drone-orbit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: orbit var(--dur) linear infinite;
+  animation-delay: var(--delay);
+}
+
+.drone {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  transform: translate(var(--r), 0) translate(-50%, -50%);
+  filter: drop-shadow(0 0 4px #4fe3ff);
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) scaleY(1);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- fx ---------- */
+/* fx coordinates are relative to the asteroid button, so this layer matches its box */
+.fx-layer {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(44vh, 340px);
+  height: min(44vh, 340px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.debris {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 1px solid #05060f;
+  animation: debris 0.7s ease-out forwards;
+}
+
+@keyframes debris {
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.float {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-shadow:
+    2px 2px 0 #05060f,
+    0 0 8px currentColor;
+  transform: translate(-50%, -50%);
+  animation: float-up 1s ease-out forwards;
+
+  &.big {
+    font-size: 1.15rem;
+  }
+}
+
+@keyframes float-up {
+  to {
+    transform: translate(-50%, -260%);
+    opacity: 0;
+  }
+}
+
+/* ---------- heat gauge ---------- */
+.heat {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: min(420px, 80%);
+  transform: translateX(-50%);
+  z-index: 6;
+  font-size: 0.72rem;
+}
+
+.heat-head {
+  display: flex;
+  justify-content: space-between;
+  color: var(--amber);
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.heat-status {
+  color: var(--cyan);
+
+  &.od {
+    color: var(--magenta);
+    animation: pulse 0.25s ease-in-out infinite alternate;
+  }
+
+  &.bad {
+    color: var(--danger);
+    animation: pulse 0.3s steps(2) infinite;
+  }
+}
+
+.heat-bar {
+  position: relative;
+  height: 14px;
+  background: #0a0d22;
+  border: 2px solid var(--bezel-hi);
+  overflow: hidden;
+}
+
+.heat-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: repeating-linear-gradient(-45deg, rgba(255, 61, 154, 0.35) 0 6px, rgba(255, 61, 154, 0.12) 6px 12px);
+}
+
+.heat-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--cyan) 0%, var(--amber) 60%, var(--danger) 100%);
+  box-shadow: 0 0 10px rgba(255, 122, 61, 0.7);
+  transition: width 0.1s linear;
+}
+
+.heat-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.locked .heat-fill {
+  background: var(--danger);
+}
+
+.od-banner {
+  position: absolute;
+  right: 16px;
+  bottom: 70px;
+  z-index: 6;
+  font-family: var(--font-logo);
+  font-style: italic;
+  font-size: 1.6rem;
+  color: var(--magenta);
+  text-shadow:
+    3px 3px 0 #05060f,
+    0 0 14px var(--magenta);
+  transform: skewX(-10deg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  animation: pulse 0.25s ease-in-out infinite alternate;
+
+  .kana {
+    font-family: var(--font-kana);
+    font-size: 0.7rem;
+    color: var(--amber);
+    font-style: normal;
+  }
+}
+
+.od .viewport,
+.viewport.od {
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 2px rgba(255, 61, 154, 0.6);
+}
+
+.viewport.locked {
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.8),
+    inset 0 0 40px rgba(255, 59, 59, 0.35);
+}

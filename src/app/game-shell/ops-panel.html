@@ -1,0 +1,151 @@
+@let st = s();
+<div class="ops">
+  <!-- CARGO & MARKET -->
+  <section class="panel card">
+    <div class="panel-title"><span class="led" [class.red]="game.cargoFull()"></span>Cargo Hold <span class="kana">カーゴ</span></div>
+    <div class="card-body">
+      <div class="cap-row">
+        <span>{{ game.fmt(game.used()) }} / {{ game.fmt(game.capacity()) }} t</span>
+        @if (game.cargoFull()) {
+          <span class="full">⚠ FULL — OUTPUT LOST</span>
+        }
+      </div>
+      <div class="cap-bar" [class.full]="game.cargoFull()">
+        <div class="cap-fill" [style.width.%]="cargoPct()"></div>
+      </div>
+
+      <table class="ore-table">
+        <tbody>
+          @for (r of cargoRows(); track r.ore.id) {
+            <tr [class.locked]="r.locked">
+              <td><span class="swatch" [style.background]="r.ore.color"></span>{{ r.ore.name }}</td>
+              <td class="num">{{ r.locked ? '—' : game.fmt(r.amount) }}</td>
+              <td class="num price">
+                {{ game.fmt(r.price) }}<span class="cr">cr</span>
+                <span class="trend" [class.up]="r.trend > 0" [class.down]="r.trend < 0">{{ r.trend > 0 ? '▲' : r.trend < 0 ? '▼' : '■' }}</span>
+              </td>
+              <td>
+                @if (r.locked) {
+                  <span class="dim small">NEEDS MK.{{ r.ore.tier === 2 ? 'II' : r.ore.tier }}</span>
+                } @else {
+                  <button type="button" class="btn small" [disabled]="r.amount < 1" (click)="game.sell(r.ore.id)">Sell</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <div class="row-actions">
+        <button type="button" class="btn btn-amber" [disabled]="cargoValue() < 1" (click)="game.sellAll()">
+          Sell all · {{ game.fmt(cargoValue()) }} cr
+        </button>
+      </div>
+
+      <div class="upgrade">
+        <div>
+          <div class="up-name">Expand Hold <span class="lvl">LV {{ st.cargoLevel }}</span></div>
+          <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} → {{ game.fmt(nextCapacity()) }} t</div>
+        </div>
+        <button type="button" class="btn" [disabled]="st.credits < cargoCost()" (click)="game.buyCargo()">
+          {{ game.fmt(cargoCost()) }} cr
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DRILL -->
+  <section class="panel card">
+    <div class="panel-title"><span class="led amber"></span>Drill Rig <span class="kana">ドリル</span></div>
+    <div class="card-body">
+      <div class="stat-line">
+        <span>DRILL MK.{{ st.drill.tier === 1 ? 'I' : 'II' }}</span>
+        <span class="cyan">{{ game.fmt(game.power()) }} ore / click</span>
+      </div>
+
+      <div class="upgrade">
+        <div>
+          <div class="up-name">Drill Power <span class="lvl">LV {{ st.drill.powerLevel }}</span></div>
+          <div class="up-desc">{{ game.fmt(game.power()) }} → {{ game.fmt(nextPower()) }} per click</div>
+        </div>
+        <button type="button" class="btn" [disabled]="st.credits < powerCost()" (click)="game.buyDrillPower()">
+          {{ game.fmt(powerCost()) }} cr
+        </button>
+      </div>
+
+      <div class="upgrade">
+        <div>
+          <div class="up-name">Heat Sink <span class="lvl">LV {{ st.drill.heatSinkLevel }}/{{ sinkMax }}</span></div>
+          <div class="up-desc">Heat vents faster — easier to hold Overdrive</div>
+        </div>
+        @if (sinkCost(); as c) {
+          <button type="button" class="btn" [disabled]="st.credits < c" (click)="game.buyHeatSink()">{{ game.fmt(c) }} cr</button>
+        } @else {
+          <span class="maxed">MAX</span>
+        }
+      </div>
+
+      @if (tierUp(); as t) {
+        <div class="upgrade feature">
+          <div>
+            <div class="up-name">{{ t.name }}</div>
+            <div class="up-desc">Unlocks <span style="color: #4fe3ff">Titanite</span> (8× value) from rocks and drones</div>
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="st.credits < t.cost" (click)="game.buyDrillTier()">
+            {{ game.fmt(t.cost) }} cr
+          </button>
+        </div>
+      } @else {
+        <div class="upgrade locked-up">
+          <div>
+            <div class="up-name">Drill Mk.III</div>
+            <div class="up-desc">Requires research — LAB systems offline</div>
+          </div>
+          <span class="maxed">🔒</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- DRONES -->
+  <section class="panel card">
+    <div class="panel-title"><span class="led" [class.off]="droneCount() === 0"></span>Drone Bay <span class="kana">ドローン</span></div>
+    <div class="card-body">
+      <div class="drone-head">
+        <svg class="drone-icon" viewBox="-12 -12 24 24" aria-hidden="true">
+          <polygon points="0,-10 10,0 0,10 -10,0" fill="#1b2250" stroke="#4fe3ff" stroke-width="1.5" />
+          <polygon points="0,-5 5,0 0,5 -5,0" fill="#0b0e24" stroke="#4fe3ff" stroke-width="1" />
+          <circle r="2" fill="#ffb547" />
+        </svg>
+        <div>
+          <div class="up-name">{{ droneName }}</div>
+          <div class="up-desc">{{ game.fmt(perDrone()) }} ore/s each · mines the sector field</div>
+        </div>
+        <div class="count">×{{ droneCount() }}</div>
+      </div>
+
+      <div class="stat-line">
+        <span>FLEET OUTPUT</span>
+        <span class="cyan">{{ game.fmt(game.droneRate()) }} ore/s</span>
+      </div>
+      @if (nextMilestone(); as m) {
+        <div class="milestone">
+          <span>Output ×{{ droneMult() * 2 }} at {{ m }} drones</span>
+          <div class="ms-bar"><div class="ms-fill" [style.width.%]="(droneCount() / m) * 100"></div></div>
+        </div>
+      }
+
+      <div class="buy-row">
+        <button type="button" class="btn" [disabled]="st.credits < droneCost1()" (click)="game.buyDrones(1)">
+          +1 · {{ game.fmt(droneCost1()) }}
+        </button>
+        <button type="button" class="btn" [disabled]="st.credits < droneCost10()" (click)="game.buyDrones(10)">
+          +10 · {{ game.fmt(droneCost10()) }}
+        </button>
+        <button type="button" class="btn btn-amber" [disabled]="droneMax() < 1" (click)="game.buyDrones(droneMax())">
+          Max (+{{ droneMax() }})
+        </button>
+      </div>
+    </div>
+  </section>
+</div>

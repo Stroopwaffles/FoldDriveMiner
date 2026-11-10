@@ -1,0 +1,197 @@
+@if (stage() === 'boot') {
+  <div class="boot" (click)="endBoot()">
+    @for (line of bootLines.slice(0, bootShown()); track $index) {
+      <div class="boot-line">{{ line }}</div>
+    }
+    <span class="cursor">█</span>
+    <div class="boot-skip">CLICK OR PRESS ANY KEY TO SKIP</div>
+  </div>
+} @else {
+  <div class="scene">
+    <fdm-starfield [speed]="0.6" [still]="settings.reducedMotion()" tint="#ffd0f0" />
+
+    <div class="sun"></div>
+    <div class="horizon-glow"></div>
+    <div class="grid-wrap"><div class="grid"></div></div>
+
+    <!-- Original mining mech silhouette -->
+    <svg class="mech" viewBox="0 0 300 360" aria-hidden="true">
+      <defs>
+        <linearGradient id="rim" x1="0" x2="1">
+          <stop offset="0" stop-color="#ff3d9a" />
+          <stop offset="1" stop-color="#ffb547" />
+        </linearGradient>
+      </defs>
+      <g class="mech-body" fill="#070818" stroke="url(#rim)" stroke-width="1.6" stroke-linejoin="round">
+        <!-- legs -->
+        <polygon points="105,250 135,250 140,330 150,360 92,360 98,330" />
+        <polygon points="165,250 195,250 202,330 208,360 150,360 160,330" />
+        <!-- hips -->
+        <polygon points="100,228 200,228 206,258 94,258" />
+        <!-- torso -->
+        <polygon points="88,130 212,130 222,180 200,232 100,232 78,180" />
+        <!-- chest vent -->
+        <polygon points="128,160 172,160 166,196 134,196" fill="#0d1030" />
+        <!-- left shoulder + arm (down, holding a hauling claw) -->
+        <polygon points="50,120 92,116 98,160 56,170" />
+        <polygon points="58,170 88,165 92,230 64,236" />
+        <polygon points="56,236 96,232 100,262 84,272 70,272 52,262" />
+        <!-- right shoulder -->
+        <polygon points="208,116 252,120 246,170 204,160" />
+        <!-- right arm raised to the drill -->
+        <polygon points="226,124 252,112 266,62 244,54" />
+        <polygon points="244,54 270,62 274,40 248,32" />
+        <!-- drill cone -->
+        <polygon class="drill" points="244,34 278,44 270,-8" />
+        <line x1="252" y1="30" x2="273" y2="36" stroke-width="1" />
+        <line x1="257" y1="18" x2="272" y2="22" stroke-width="1" />
+        <!-- head -->
+        <polygon points="128,92 172,92 178,124 166,134 134,134 122,124" />
+        <!-- sensor crest -->
+        <polygon points="146,92 154,92 151,66" />
+        <!-- back thruster packs -->
+        <polygon points="96,118 116,108 118,130 92,132" />
+        <polygon points="184,108 204,118 208,132 182,130" />
+      </g>
+      <!-- visor eyes -->
+      <rect class="eye" x="134" y="108" width="12" height="5" rx="1" />
+      <rect class="eye" x="154" y="108" width="12" height="5" rx="1" />
+    </svg>
+
+    <div class="logo-block">
+      <div class="episode-tag">EPISODE 01</div>
+      <h1 class="logo">
+        <span class="logo-top">FOLD DRIVE</span>
+        <span class="logo-bottom">MINER</span>
+      </h1>
+      <div class="kana">フォールド・ドライブ・マイナー</div>
+    </div>
+
+    @switch (stage()) {
+      @case ('press') {
+        <button type="button" class="press-start" (click)="pressStart()">PRESS START</button>
+      }
+
+      @case ('menu') {
+        <nav class="menu" aria-label="Main menu">
+          @if (save(); as s) {
+            <button type="button" class="menu-item save-card" (click)="continueGame()" (mouseenter)="audio.blip()">
+              <span class="menu-label">CONTINUE</span>
+              <span class="save-meta">
+                <span>CMDR {{ s.commander }} · {{ s.ship }}</span>
+                <span>SECTOR {{ s.sector.code }} {{ s.sector.name }} · DEPTH {{ s.sector.depth }}</span>
+                <span>{{ fmt(s.credits) }} CR · PLAYED {{ duration(s.playtimeSec) }} · SAVED {{ ago(s.lastSeen) }}</span>
+              </span>
+            </button>
+          }
+          <button type="button" class="menu-item" (click)="go('new')" (mouseenter)="audio.blip()">
+            <span class="menu-label">NEW GAME</span>
+          </button>
+          <button type="button" class="menu-item" (click)="go('saves')" (mouseenter)="audio.blip()">
+            <span class="menu-label">IMPORT / EXPORT</span>
+          </button>
+          <button type="button" class="menu-item" (click)="go('settings')" (mouseenter)="audio.blip()">
+            <span class="menu-label">SETTINGS</span>
+          </button>
+          <button type="button" class="menu-item" (click)="go('credits')" (mouseenter)="audio.blip()">
+            <span class="menu-label">CREDITS</span>
+          </button>
+        </nav>
+      }
+
+      @case ('new') {
+        <form class="sub panel" (ngSubmit)="startNew()">
+          <div class="panel-title">New Game <span class="kana">しんき</span></div>
+          <div class="sub-body">
+            <label class="field">
+              <span>COMMANDER NAME</span>
+              <input name="commander" [(ngModel)]="commander" maxlength="20" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>SHIP NAME</span>
+              <input name="ship" [(ngModel)]="ship" maxlength="24" autocomplete="off" />
+            </label>
+            @if (hasSave()) {
+              <p class="warn">⚠ Starting a new game will overwrite your current save. Export it first if you want to keep it.</p>
+            }
+            @if (formError()) {
+              <p class="warn">{{ formError() }}</p>
+            }
+          </div>
+          <div class="sub-actions">
+            <button type="button" class="btn" (click)="go('menu')">Back</button>
+            <button type="submit" class="btn btn-primary">{{ hasSave() ? 'Overwrite & launch' : 'Launch' }}</button>
+          </div>
+        </form>
+      }
+
+      @case ('saves') {
+        <div class="sub panel">
+          <div class="panel-title">Import / Export <span class="kana">データ</span></div>
+          <div class="sub-body">
+            @if (exportText()) {
+              <label class="field">
+                <span>YOUR SAVE CODE</span>
+                <textarea readonly rows="3" [value]="exportText()"></textarea>
+              </label>
+              <div class="row-actions">
+                <button type="button" class="btn" (click)="copyExport()">Copy</button>
+                <button type="button" class="btn" (click)="downloadExport()">Download file</button>
+              </div>
+            } @else {
+              <p class="dim">No save on this browser yet.</p>
+            }
+            <label class="field">
+              <span>IMPORT A SAVE CODE</span>
+              <textarea rows="3" name="import" [(ngModel)]="importText" placeholder="FDM1:…"></textarea>
+            </label>
+            @if (hasSave()) {
+              <p class="warn">⚠ Importing replaces your current save.</p>
+            }
+            <div class="row-actions">
+              <button type="button" class="btn btn-amber" [disabled]="!importText.trim()" (click)="doImport()">Import code</button>
+              <label class="btn file-btn">
+                Load file
+                <input type="file" accept=".txt,text/plain" (change)="importFile($event)" />
+              </label>
+            </div>
+            @if (ioMessage()) {
+              <p [class.warn]="ioError()" [class.ok]="!ioError()">{{ ioMessage() }}</p>
+            }
+          </div>
+          <div class="sub-actions">
+            <button type="button" class="btn" (click)="go('menu')">Back</button>
+          </div>
+        </div>
+      }
+
+      @case ('settings') {
+        <div class="sub panel">
+          <div class="panel-title">Settings <span class="kana">せってい</span></div>
+          <fdm-settings-panel />
+          <div class="sub-actions">
+            <button type="button" class="btn" (click)="go('menu')">Back</button>
+          </div>
+        </div>
+      }
+
+      @case ('credits') {
+        <div class="sub panel">
+          <div class="panel-title">Credits <span class="kana">スタッフ</span></div>
+          <div class="sub-body credits">
+            <p><b>FOLD DRIVE MINER</b></p>
+            <p>An idle space-mining game in the spirit of 80s mecha anime.</p>
+            <p>Art, music and sound are generated in code.</p>
+            <p class="dim">Fonts: Russo One, Audiowide, Share Tech Mono, VT323, DotGothic16 (Google Fonts, SIL OFL).</p>
+            <p class="dim">Built with Angular.</p>
+          </div>
+          <div class="sub-actions">
+            <button type="button" class="btn" (click)="go('menu')">Back</button>
+          </div>
+        </div>
+      }
+    }
+
+    <div class="footer">© MERIDIAN HEAVY INDUSTRIES · FOLD-CLASS PROSPECTING PROGRAM</div>
+  </div>
+}

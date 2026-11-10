@@ -1,0 +1,128 @@
+@let st = game.state();
+<div class="viewport" [class.od]="game.overdrive()" [class.locked]="locked()">
+  <fdm-starfield [speed]="0.25" [still]="settings.reducedMotion()" tint="#fff1c2" />
+  <div class="star-glow"></div>
+
+  <div class="sector-label">
+    <span class="led"></span>
+    SECTOR {{ st?.sector?.code }} · {{ st?.sector?.name }}
+    <span class="dim">· {{ st?.sector?.star }}</span>
+  </div>
+
+  <div class="asteroid-info">
+    <div class="mass-label">
+      INTEGRITY
+      @if (asteroid()?.rich) {
+        <span class="rich">RICH VEIN</span>
+      }
+    </div>
+    <div class="mass-bar"><div class="mass-fill" [style.width.%]="integrity() * 100"></div></div>
+    <div class="mass-num">{{ game.fmt(massLeft()) }} t</div>
+    <div class="comp">
+      @for (c of composition(); track c.ore.id) {
+        <span class="chip" [class.slag]="!c.reachable" [style.--c]="c.ore.color">
+          {{ c.ore.code }} {{ c.pct.toFixed(0) }}%
+          @if (!c.reachable) {
+            <span class="slag-tag">SLAG</span>
+          }
+        </span>
+      }
+    </div>
+  </div>
+
+  <!-- Orbiting drones -->
+  <div class="orbit-center" aria-hidden="true">
+    @for (d of drones(); track $index) {
+      <div class="drone-orbit" [style.--r.px]="d.r" [style.--dur.s]="d.dur" [style.--delay.s]="d.delay">
+        <svg class="drone" viewBox="-6 -6 12 12">
+          <polygon points="0,-5 5,0 0,5 -5,0" fill="#1b2250" stroke="#4fe3ff" stroke-width="1" />
+          <circle r="1.5" fill="#ffb547" />
+        </svg>
+      </div>
+    }
+  </div>
+
+  @for (a of asteroid() ? [asteroid()!] : []; track a.shapeSeed) {
+    @let sh = asteroidShape()!;
+    <button
+      type="button"
+      class="asteroid-btn"
+      [class.shake]="shaking()"
+      (animationend)="shaking.set(false)"
+      (click)="onDrill($event)"
+      [attr.aria-label]="'Drill asteroid. Integrity ' + (integrity() * 100).toFixed(0) + ' percent.'"
+    >
+      <svg class="asteroid" viewBox="-100 -100 200 200" [style.--scale]="0.85 + Math.min(a.maxMass / 400, 0.35)">
+        <defs>
+          <clipPath [attr.id]="'ast-' + a.shapeSeed">
+            <polygon [attr.points]="sh.outline" />
+          </clipPath>
+        </defs>
+        <polygon class="rock-dark" [attr.points]="sh.outline" />
+        <g [attr.clip-path]="'url(#ast-' + a.shapeSeed + ')'">
+          <polygon class="rock-lit" [attr.points]="sh.shadow" />
+          @for (c of sh.craters; track $index) {
+            <ellipse class="crater" [attr.cx]="c.cx" [attr.cy]="c.cy" [attr.rx]="c.r" [attr.ry]="c.r * 0.8" />
+            <ellipse class="crater-lip" [attr.cx]="c.cx - c.r * 0.2" [attr.cy]="c.cy - c.r * 0.2" [attr.rx]="c.r * 0.7" [attr.ry]="c.r * 0.5" />
+          }
+          @for (s of sh.specks; track $index) {
+            <polygon class="speck" [attr.points]="s.points" [attr.fill]="s.color" />
+          }
+          @for (c of sh.cracks; track $index; let i = $index) {
+            @if (i < cracksShown()) {
+              <polyline class="crack" [attr.points]="c" />
+              <polyline class="crack-glow" [attr.points]="c" />
+            }
+          }
+        </g>
+        <polygon class="rock-outline" [attr.points]="sh.outline" />
+      </svg>
+    </button>
+  }
+
+  @if (flash()) {
+    <div class="crack-flash"></div>
+  }
+
+  <div class="fx-layer" aria-hidden="true">
+    @for (d of debris(); track d.id) {
+      <span
+        class="debris"
+        [style.left.px]="d.x"
+        [style.top.px]="d.y"
+        [style.--dx.px]="d.dx"
+        [style.--dy.px]="d.dy"
+        [style.--rot.deg]="d.rot"
+        [style.background]="d.color"
+      ></span>
+    }
+    @for (f of floats(); track f.id) {
+      <span class="float" [class.big]="f.big" [style.left.px]="f.x" [style.top.px]="f.y" [style.color]="f.color">{{ f.text }}</span>
+    }
+  </div>
+
+  <!-- Heat gauge -->
+  <div class="heat">
+    <div class="heat-head">
+      <span>DRILL HEAT</span>
+      @if (locked()) {
+        <span class="heat-status bad">⚠ OVERHEAT — VENTING</span>
+      } @else if (game.overdrive()) {
+        <span class="heat-status od">OVERDRIVE ×{{ odMult }}</span>
+      } @else {
+        <span class="heat-status">POWER {{ game.fmt(game.power()) }}/CLICK</span>
+      }
+    </div>
+    <div class="heat-bar">
+      <div class="heat-zone" [style.left.%]="(odMin / heatMax) * 100"></div>
+      <div class="heat-fill" [style.width.%]="(heat() / heatMax) * 100"></div>
+      @for (t of [25, 50, 75]; track t) {
+        <div class="heat-tick" [style.left.%]="t"></div>
+      }
+    </div>
+  </div>
+
+  @if (game.overdrive()) {
+    <div class="od-banner">OVERDRIVE<span class="kana">オーバードライブ</span></div>
+  }
+</div>

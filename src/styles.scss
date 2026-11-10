@@ -1,0 +1,219 @@
+/* Fold Drive Miner — global tokens and shared styles */
+
+:root {
+  --space-0: #05060f;
+  --space-1: #0b0e24;
+  --space-2: #141a3d;
+  --panel: #10142e;
+  --panel-hi: #1b2250;
+  --bezel: #2a3168;
+  --bezel-hi: #4a54a0;
+
+  --amber: #ffb547;
+  --amber-dim: #a8732a;
+  --cyan: #4fe3ff;
+  --cyan-dim: #2a7f94;
+  --magenta: #ff3d9a;
+  --orange: #ff7a3d;
+  --sun-1: #ffd23f;
+  --sun-2: #ff7a3d;
+  --sun-3: #ff3d9a;
+  --danger: #ff3b3b;
+  --warn: #ffd23f;
+  --ok: #6dff9b;
+  --text: #e8ecff;
+  --text-dim: #8d95c7;
+
+  --font-display: 'Russo One', 'Audiowide', system-ui, sans-serif;
+  --font-logo: 'Audiowide', 'Russo One', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', 'VT323', ui-monospace, monospace;
+  --font-kana: 'DotGothic16', 'Share Tech Mono', monospace;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--space-0);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* ---------- Chunky console button ---------- */
+.btn {
+  appearance: none;
+  border: 2px solid var(--bezel-hi);
+  background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+  color: var(--text);
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow:
+    0 3px 0 #070917,
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition:
+    transform 60ms,
+    box-shadow 60ms,
+    border-color 120ms;
+
+  &:hover:not(:disabled) {
+    border-color: var(--cyan);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 #070917;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &.btn-amber {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+
+  &.btn-primary {
+    background: linear-gradient(180deg, #ff5fae, #c41f6e);
+    border-color: #ff9ccc;
+    color: #fff;
+  }
+}
+
+/* ---------- Bezeled panel ---------- */
+.panel {
+  position: relative;
+  background: linear-gradient(180deg, var(--panel) 0%, #0c1029 100%);
+  border: 2px solid var(--bezel);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 1px #070917,
+    inset 0 2px 0 rgba(255, 255, 255, 0.05);
+
+  /* rivets */
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #8a93d6, #2a3168);
+  }
+
+  &::before {
+    left: 5px;
+  }
+
+  &::after {
+    right: 5px;
+  }
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  text-transform: uppercase;
+  padding: 0.5rem 0.9rem 0.4rem 1rem;
+  border-bottom: 1px solid var(--bezel);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .kana {
+    font-family: var(--font-kana);
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+  }
+}
+
+.led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+
+  &.amber {
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+  }
+
+  &.red {
+    background: var(--danger);
+    box-shadow: 0 0 6px var(--danger);
+  }
+
+  &.off {
+    background: #333a66;
+    box-shadow: none;
+  }
+}
+
+/* ---------- Modal ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 4, 12, 0.78);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+/* ---------- CRT overlay ---------- */
+.crt-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.55) 100%);
+  mix-blend-mode: multiply;
+}
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-overlay {
+    opacity: 0.6;
+  }
+}
