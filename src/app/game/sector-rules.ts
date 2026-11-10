@@ -5,6 +5,7 @@
 import { SITES, SPECIAL } from './special-data';
 import { ORES, ORE_IDS, OreId, ZONES, ZoneDef, oreDef, registerZones } from './config';
 import { Rng } from './rng';
+import { researchLevel } from './common';
 import {
   NEUTRAL_MODS,
   PROFILES,
@@ -18,7 +19,7 @@ import {
   StarId,
   ZONE_MASS,
   ZONE_NAMES,
-  ZONE_RESEARCH,
+  SCAN,
   ZONE_SURVEY,
   ZONE_TEMPLATES,
 } from './sector-data';
@@ -107,7 +108,9 @@ function buildSector(seed: number, depth: number): SectorDef {
     if (t) traits.push(t.id);
   }
 
-  const zoneCount = 3 + Math.floor(rng.next() * 3);
+  // At least 4 zones, so every sector has Helium-3 for the Fold Drive. (Same draw as before,
+  // so existing sectors keep their layout; 3-zone sectors gain a 4th.)
+  const zoneCount = Math.max(4, 3 + Math.floor(rng.next() * 3));
   // Fisher–Yates shuffle with the seeded RNG (deterministic, unlike sort with a random comparator).
   const names = [...ZONE_NAMES];
   for (let i = names.length - 1; i > 0; i--) {
@@ -139,7 +142,7 @@ function buildSector(seed: number, depth: number): SectorDef {
       composition: comp,
       massMult: ZONE_MASS[i] * scale,
       surveyData: ZONE_SURVEY[i] * scale,
-      research: ZONE_RESEARCH[i],
+      index: i,
       color: top.color,
     });
   }
@@ -249,4 +252,78 @@ export function destinationPreview(state: GameState, count = 3, revealed = 1): {
 
 export function oreName(ore: OreId): string {
   return oreDef(ore).name;
+}
+
+// ---------------------------------------------------------------- sector scans
+
+/** Zones charted so far in this sector (zone 0 always counts). */
+export function chartedZones(state: GameState): number {
+  return Math.max(1, state.sector.charted ?? 1);
+}
+
+/** The next zone a scan would chart, or null if the whole sector is charted. */
+export function nextChartZone(state: GameState): ZoneDef | null {
+  return sectorZones(state)[chartedZones(state)] ?? null;
+}
+
+export function scanCost(state: GameState, index: number): { sd: number; sec: number; tier: number } {
+  const i = Math.min(index, SCAN.cost.length - 1);
+  const speed = 1 + researchLevel(state, 'deep_scan') * SCAN.deepScanPerLevel;
+  return {
+    sd: Math.ceil(SCAN.cost[i] * (1 + state.sector.depth * SCAN.depthScale)),
+    sec: Math.ceil(SCAN.sec[i] / speed),
+    tier: SCAN.tier[i],
+  };
+}
+
+/** Why the next zone can't be scanned right now, or null if it can. */
+export function scanBlocker(state: GameState): string | null {
+  const z = nextChartZone(state);
+  if (!z) return 'Sector fully charted';
+  if (state.sector.scan) return 'Scan in progress';
+  const c = scanCost(state, z.index);
+  if (state.drill.tier < c.tier) return `Needs Drill Mk.${['I', 'II', 'III', 'IV', 'V'][c.tier - 1]} to reach it`;
+  if (state.surveyData < c.sd) return 'Not enough Survey Data';
+  return null;
+}
+
+export function startScan(state: GameState): boolean {
+  if (scanBlocker(state) !== null) return false;
+  const z = nextChartZone(state)!;
+  const c = scanCost(state, z.index);
+  state.surveyData -= c.sd;
+  state.sector.scan = { remaining: c.sec, duration: c.sec, paidSd: c.sd };
+  return true;
+}
+
+/** Stops a scan and refunds it. */
+export function cancelScan(state: GameState): boolean {
+  const scan = state.sector.scan;
+  if (!scan) return false;
+  state.surveyData += scan.paidSd;
+  state.sector.scan = null;
+  return true;
+}
+
+/** Runs the sector scan. Returns the zone it charted, if it finished. */
+export function advanceScan(state: GameState, dt: number): ZoneDef | null {
+  const scan = state.sector.scan;
+  if (!scan) return null;
+  scan.remaining -= dt;
+  if (scan.remaining > 0) return null;
+  const z = nextChartZone(state);
+  state.sector.scan = null;
+  if (!z) return null;
+  state.sector.charted = z.index + 1;
+  return z;
+}
+
+/** Does any zone in this sector carry this ore? */
+export function sectorHasOre(state: GameState, ore: OreId): boolean {
+  return sectorZones(state).some((z) => (z.composition[ore] ?? 0) > 0);
+}
+
+/** Has a charted zone got this ore? */
+export function oreCharted(state: GameState, ore: OreId): boolean {
+  return sectorZones(state).some((z) => z.index < chartedZones(state) && (z.composition[ore] ?? 0) > 0);
 }

@@ -1,9 +1,9 @@
+import { formatDuration } from '../game/format';
 import { siteDef } from '../game/special-data';
 import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ORES, ZoneDef, ZoneId } from '../game/config';
 import { RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
 import * as E from '../game/engine';
-import { researchNode } from '../game/research';
 import * as S from '../game/sector-rules';
 import * as F from '../game/fold-rules';
 import { GameService } from '../services/game.service';
@@ -95,7 +95,8 @@ export class MapPanel {
         def,
         unlocked: E.zoneUnlocked(s, def.id),
         current: s.zone === def.id,
-        researchName: def.research ? researchNode(def.research).name : '',
+        /** The zone the next sector scan would chart. */
+        next: !E.zoneUnlocked(s, def.id) && S.nextChartZone(s)?.id === def.id,
         comet: E.zoneBoost(s, def.id) > 1,
         site: def.site ? siteDef(def.site) : null,
         specialOdds: (E.specialChance(s, def) * 100).toFixed(1),
@@ -114,6 +115,25 @@ export class MapPanel {
         })),
       };
     });
+  });
+
+  // ---------------------------------------------------------------- sector scans
+  protected readonly scan = computed(() => {
+    const s = this.s();
+    const next = S.nextChartZone(s);
+    const cost = next ? S.scanCost(s, next.index) : null;
+    const run = s.sector.scan;
+    return {
+      next,
+      cost,
+      costLabel: cost ? `${this.game.fmt(cost.sd)} SD · ${formatDuration(cost.sec)}` : '',
+      blocker: S.scanBlocker(s),
+      running: run,
+      progress: run ? 1 - run.remaining / run.duration : 0,
+      eta: run ? formatDuration(Math.max(0, run.remaining)) : '',
+      charted: S.chartedZones(s),
+      total: S.sectorZones(s).length,
+    };
   });
 
   // ---------------------------------------------------------------- long-range scan

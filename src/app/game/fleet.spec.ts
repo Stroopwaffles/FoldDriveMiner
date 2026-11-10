@@ -41,7 +41,8 @@ describe('milestone 3: drones', () => {
 
   it('cutters favour the highest reachable ore', () => {
     const s = rich();
-    unlock(s, 'cutter_drones', 'survey_trojan');
+    unlock(s, 'cutter_drones');
+    s.sector.charted = 2;
     s.zone = 'trojan';
     s.drones.cutter = 10;
     const r = E.droneRates(s);
@@ -64,7 +65,8 @@ describe('milestone 3: drones', () => {
 
   it('Fleet Dispatch splits mining drones between zones', () => {
     const s = rich();
-    unlock(s, 'survey_trojan', 'fleet_dispatch');
+    unlock(s, 'fleet_dispatch');
+    s.sector.charted = 2;
     s.drones.prospector = 10;
     E.setDispatch(s, 'inner', 50);
     E.setDispatch(s, 'trojan', 50);

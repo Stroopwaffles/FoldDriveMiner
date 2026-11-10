@@ -301,7 +301,7 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.threats.clock = Math.max(old.threats.clock, THREAT.graceSec); // no grace period after the first run
 
   // New sector.
-  s.sector = { seed, depth, code: '', name: '', star: '' };
+  s.sector = { seed, depth, code: '', name: '', star: '', charted: 1, scan: null };
   s.research.levels = keep;
 
   // Fold state carries over, reset for the new run.

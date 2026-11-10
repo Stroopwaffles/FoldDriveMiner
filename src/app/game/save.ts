@@ -8,7 +8,7 @@ import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
 import { ensureStory } from './story-rules';
 
-export const CURRENT_VERSION = 12;
+export const CURRENT_VERSION = 13;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -72,6 +72,35 @@ export function migrate(raw: unknown): GameState {
   if (data['version'] === 11) {
     // v12 adds special asteroids and the Sensor Array; the current rock stays ordinary.
     data['version'] = 12;
+  }
+  if (data['version'] === 12) {
+    // v13 replaces the Survey Range research with sector scans: zones that
+    // research opened stay charted; Survey Range jobs in progress are refunded.
+    const SURVEY = ['survey_trojan', 'survey_ring', 'survey_ice', 'survey_deep'];
+    const research = (data['research'] ?? {}) as { levels?: Record<string, number>; active?: { id: string; paidSd: number; paidCr: number }[] };
+    const levels = research.levels ?? {};
+    let charted = 1;
+    for (const id of SURVEY) {
+      if (!levels[id]) break;
+      charted++;
+    }
+    for (const id of SURVEY) delete levels[id];
+    const keep = [];
+    for (const job of research.active ?? []) {
+      if (SURVEY.includes(job.id)) {
+        data['surveyData'] = Number(data['surveyData'] ?? 0) + job.paidSd;
+        data['credits'] = Number(data['credits'] ?? 0) + job.paidCr;
+      } else keep.push(job);
+    }
+    if (research.active) research.active = keep;
+    const sector = (data['sector'] ?? {}) as Record<string, unknown>;
+    sector['charted'] = charted;
+    sector['scan'] = null;
+    data['sector'] = sector;
+    const fold = data['fold'] as { archive?: string[]; qolCounts?: Record<string, number> } | undefined;
+    if (fold?.archive) fold.archive = fold.archive.filter((id) => !SURVEY.includes(id));
+    if (fold?.qolCounts) for (const id of SURVEY) delete fold.qolCounts[id];
+    data['version'] = 13;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);

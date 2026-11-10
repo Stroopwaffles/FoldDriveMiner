@@ -115,12 +115,36 @@
               </g>
             }
             <text class="band-label" [attr.x]="R(z.i) * 0.57 + 3" [attr.y]="-R(z.i) * 0.42 * 0.82 - 3" [attr.fill]="z.unlocked ? z.def.color : '#4a54a0'">
-              {{ z.unlocked ? z.def.name : 'UNSURVEYED' }}
+              {{ z.unlocked ? z.def.name : 'UNCHARTED' }}
             </text>
           }
         </svg>
 
         <div class="zone-list">
+          @let sc = scan();
+          <div class="scan-card">
+            <div class="scan-head">
+              <span class="scan-title">◎ SECTOR SCAN</span>
+              <span class="dim">{{ sc.charted }}/{{ sc.total }} zones charted</span>
+            </div>
+            @if (sc.running) {
+              <div class="scan-bar"><div [style.width.%]="sc.progress * 100"></div></div>
+              <div class="scan-foot">
+                <span class="scanning">SWEEPING {{ sc.next?.index! + 1 }}{{ ['st', 'nd', 'rd', 'th', 'th'][sc.next?.index ?? 0] }} ZONE… {{ sc.eta }}</span>
+                <button type="button" class="btn tiny" (click)="game.cancelScan()" title="Stop and refund">✕</button>
+              </div>
+            } @else if (sc.next) {
+              <div class="scan-foot">
+                <span>Chart the {{ sc.next.index + 1 }}{{ ['st', 'nd', 'rd', 'th', 'th'][sc.next.index] }} zone: {{ sc.costLabel }}</span>
+                <button type="button" class="btn btn-primary small" [disabled]="!!sc.blocker" [title]="sc.blocker ?? ''" (click)="game.startScan()">Scan</button>
+              </div>
+              @if (sc.blocker && sc.blocker !== 'Not enough Survey Data') {
+                <div class="dim small">{{ sc.blocker }}</div>
+              }
+            } @else {
+              <div class="ok small">Every zone in this sector is charted.</div>
+            }
+          </div>
           @for (z of zones(); track z.def.id) {
             <div class="zone" [class.current]="z.current" [class.locked]="!z.unlocked" [style.--zc]="z.def.color">
               <div class="zone-head">
@@ -165,7 +189,7 @@
                   <button type="button" class="btn btn-amber" (click)="game.setZone(z.def.id)">Set course</button>
                 }
               } @else {
-                <div class="zone-desc dim">Requires research: {{ z.researchName }}</div>
+                <div class="zone-desc dim">{{ z.next ? 'Uncharted. Run a sector scan to chart it.' : 'Uncharted. Chart the zones before it first.' }}</div>
               }
             </div>
           }

@@ -3,6 +3,8 @@
  * read by the engine through researchLevel().
  */
 
+import type { OreId } from './config';
+
 export type Branch = 'extraction' | 'logistics' | 'refinery' | 'survey' | 'station' | 'fleet' | 'fold';
 
 export const BRANCHES: { id: Branch; name: string; kana: string; color: string }[] = [
@@ -27,6 +29,10 @@ export interface ResearchNode {
   growth: number;
   /** Nodes that must be at least level 1. */
   requires: string[];
+  /** Zones the sector scans must have charted. */
+  requiresZones?: number;
+  /** A charted zone must hold this ore (and the sector must have it at all). */
+  requiresOre?: OreId;
   /** Minimum drill tier needed to start. */
   requiresTier?: number;
   /** Short effect text shown on the node. */
@@ -79,13 +85,13 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'drill_mk3', name: 'Drill Mk.III', branch: 'extraction', maxLevel: 1,
-    sd: 12, cr: 12000, sec: 180, requires: ['survey_trojan'], requiresTier: 2,
+    sd: 12, cr: 12000, sec: 180, requiresOre: 'iridium', requiresTier: 2,
     effect: 'Drill can cut Iridium (60 cr base)',
     flavor: 'Diamond-lattice cutting head. Iridium will no longer be slag.',
   }),
   N({
     id: 'cryo_hold', name: 'Cryo Hold', branch: 'extraction', maxLevel: 1,
-    sd: 40, cr: 250000, sec: 600, requires: ['drill_mk3', 'survey_ice'],
+    sd: 40, cr: 250000, sec: 600, requires: ['drill_mk3'], requiresOre: 'helium3',
     effect: 'Insulated storage for Helium-3',
     flavor: 'Helium-3 must be kept at 3 kelvin. The hold will be colder than space.',
   }),
@@ -97,7 +103,7 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'drill_mk5', name: 'Drill Mk.V', branch: 'extraction', maxLevel: 1,
-    sd: 300, cr: 25000000, sec: 2400, requires: ['survey_deep'], requiresTier: 4,
+    sd: 300, cr: 25000000, sec: 2400, requiresOre: 'voidglass', requiresTier: 4,
     effect: 'Drill can cut Voidglass (4,000 cr base)',
     flavor: 'Resonant cutting field. Voidglass does not break; it unravels.',
   }),
@@ -123,7 +129,7 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'fleet_dispatch', name: 'Fleet Dispatch', branch: 'logistics', maxLevel: 1,
-    sd: 25, cr: 50000, sec: 300, requires: ['survey_trojan', 'auto_sell'],
+    sd: 25, cr: 50000, sec: 300, requires: ['auto_sell'], requiresZones: 2,
     effect: 'Split mining drones across survey zones (MAP)',
     flavor: 'Why mine one field when you can mine all of them?',
   }),
@@ -192,33 +198,9 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Every rock is a library. We are learning to read faster.',
   }),
   N({
-    id: 'survey_trojan', name: 'Survey Range I', branch: 'survey', maxLevel: 1,
-    sd: 6, cr: 1500, sec: 120,
-    effect: "Unlock the sector's 2nd survey zone (Trojan Cluster at home)",
-    flavor: 'Gravitational anomaly at the L4 point. Worth a look.',
-  }),
-  N({
-    id: 'survey_ring', name: 'Survey Range II', branch: 'survey', maxLevel: 1,
-    sd: 25, cr: 60000, sec: 420, requires: ['survey_trojan', 'drill_mk3'],
-    effect: "Unlock the sector's 3rd survey zone (Ring Debris at home)",
-    flavor: 'Iridium signatures across the ring plane. Plotting a safe approach.',
-  }),
-  N({
-    id: 'survey_ice', name: 'Survey Range III', branch: 'survey', maxLevel: 1,
-    sd: 60, cr: 600000, sec: 900, requires: ['survey_ring'],
-    effect: "Unlock the sector's 4th survey zone (Ice Halo at home)",
-    flavor: 'Helium-3 detected in the outer ice. Cold, slow, and very valuable.',
-  }),
-  N({
-    id: 'survey_deep', name: 'Survey Range IV', branch: 'survey', maxLevel: 1,
-    sd: 150, cr: 6000000, sec: 1800, requires: ['survey_ice', 'drill_mk4'],
-    effect: "Unlock the sector's 5th survey zone (Deep Field at home)",
-    flavor: 'Something glitters out past the ice. My sensors call it "impossible".',
-  }),
-  N({
     id: 'deep_scan', name: 'Deep Scan Array', branch: 'survey', maxLevel: 3,
-    sd: 10, cr: 15000, sec: 180, growth: 2.6, requires: ['survey_trojan'],
-    effect: '+50% anomaly scan speed',
+    sd: 10, cr: 15000, sec: 180, growth: 2.6, requiresZones: 2,
+    effect: '+50% anomaly and sector scan speed',
     flavor: 'Longer antennae. More patience.',
   }),
 
@@ -361,7 +343,7 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'beacon_decoding', name: 'Beacon Cryptography', branch: 'fold', maxLevel: 2,
-    sd: 30, cr: 200000, sec: 480, growth: 2.5, requires: ['survey_ring'],
+    sd: 30, cr: 200000, sec: 480, growth: 2.5, requiresZones: 3,
     effect: '+50% Silent Beacon decoding speed',
     flavor: 'The cipher is… familiar. As if I wrote it.',
   }),

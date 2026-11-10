@@ -44,8 +44,8 @@ export interface ZoneDef {
   massMult: number;
   /** Survey Data per cracked asteroid, before bonuses. */
   surveyData: number;
-  /** Research that unlocks the zone (none = open from the start). */
-  research?: string;
+  /** Position in the sector, inner (0) to outer. Zone 0 is open; the rest are charted by sector scans. */
+  index: number;
   color: string;
   /** What this zone used to be: makes some special rocks more common here. */
   site?: SiteId;
@@ -55,6 +55,7 @@ export interface ZoneDef {
 export const ZONES: readonly ZoneDef[] = [
   {
     id: 'inner',
+    index: 0,
     name: 'Inner Belt',
     kana: 'ないそくたい',
     desc: 'Close, safe and Ferrite-heavy. Where every prospector starts.',
@@ -65,49 +66,49 @@ export const ZONES: readonly ZoneDef[] = [
   },
   {
     id: 'trojan',
+    index: 1,
     name: 'Trojan Cluster',
     kana: 'トロヤぐん',
     desc: 'Rocks trapped in a gravity well. Rich in Titanite, traces of Iridium.',
     composition: { ferrite: 0.55, titanite: 0.35, iridium: 0.1 },
     massMult: 2.5,
     surveyData: 2,
-    research: 'survey_trojan',
     color: '#4fe3ff',
     site: 'shipping_lane',
   },
   {
     id: 'ring',
+    index: 2,
     name: 'Ring Debris',
     kana: 'リングのはへん',
     desc: 'Shattered moonlets in a wide ring. Dense Iridium veins.',
     composition: { ferrite: 0.3, titanite: 0.4, iridium: 0.3 },
     massMult: 5,
     surveyData: 4,
-    research: 'survey_ring',
     color: '#c77dff',
     site: 'battlefield',
   },
   {
     id: 'ice',
+    index: 3,
     name: 'Ice Halo',
     kana: 'こおりのわ',
     desc: 'Frozen bodies at the edge of the system. Helium-3 locked in the ice.',
     composition: { titanite: 0.25, iridium: 0.35, helium3: 0.4 },
     massMult: 10,
     surveyData: 8,
-    research: 'survey_ice',
     color: '#9dff8a',
     site: 'comet_trail',
   },
   {
     id: 'deep',
+    index: 4,
     name: 'Deep Field',
     kana: 'しんえん',
     desc: 'The dark edge of the system. Voidglass glitters in the oldest rock.',
     composition: { iridium: 0.35, helium3: 0.45, voidglass: 0.2 },
     massMult: 20,
     surveyData: 16,
-    research: 'survey_deep',
     color: '#ff5fa2',
   },
 ];

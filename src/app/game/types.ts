@@ -67,6 +67,10 @@ export interface SectorInfo {
   /** Display label of the star (kept for the title screen's save card). */
   star: string;
   depth: number;
+  /** Zones charted by sector scans (zone 1 is always charted). */
+  charted: number;
+  /** A sector scan underway, charting the next zone. */
+  scan: { remaining: number; duration: number; paidSd: number } | null;
 }
 
 export interface AnomalyState {
@@ -435,7 +439,7 @@ export interface FoldState {
 }
 
 export interface GameState {
-  version: 12;
+  version: 13;
   commander: string;
   ship: string;
   createdAt: number;
@@ -534,6 +538,8 @@ export interface TickEvents {
   ingots: OreAmounts;
   /** Alloys the forge finished. */
   alloys: number;
+  /** Zones a sector scan charted. */
+  charted: string[];
   autoSoldCredits: number;
   /** Episodes that arrived and commendations earned. */
   story: { kind: 'episode' | 'medal'; id: string; text: string }[];

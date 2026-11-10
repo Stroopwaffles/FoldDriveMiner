@@ -1,3 +1,4 @@
+import { formatDuration } from '../game/format';
 import { AlloyId } from '../game/alloy-data';
 import { derelictDef, specialDef } from '../game/special-data';
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
@@ -369,6 +370,20 @@ export class GameService {
     }
   }
 
+  /** Starts a sector scan to chart the next zone (Survey Data). */
+  startScan(): void {
+    this.act(S.startScan, () => {
+      this.audio.select();
+      const s = this._state()!;
+      const sec = s.sector.scan?.duration ?? 0;
+      this.say('VESPER', `Sector scan underway. Sweeping the outer field — about ${formatDuration(sec)}.`);
+    });
+  }
+
+  cancelScan(): void {
+    this.act(S.cancelScan, () => this.audio.blip());
+  }
+
   buySensorArray(): void {
     this.act(E.buySensorArray, () => this.audio.buy());
   }
@@ -564,6 +579,10 @@ export class GameService {
       const m = s.mechs.find((x) => x.id === id);
       if (m) this.say('VESPER', `${m.designation} "${m.name}" returning to the repair bay for maintenance.`);
     }
+    for (const name of ev.charted) {
+      this.audio.dataCore();
+      this.say('VESPER', `Sector scan complete: ${name} charted. Open the MAP to set course.`);
+    }
     for (const r of ev.research) {
       const node = researchNode(r.id);
       const lvl = node.maxLevel > 1 ? ` (level ${r.level})` : '';
@@ -578,9 +597,6 @@ export class GameService {
     switch (id) {
       case 'refinery':
         this.say('JUNO', 'A refinery! Ten rocks in, one shiny bar out. Check the OPS panel, Commander.', 1500);
-        break;
-      case 'survey_trojan':
-        this.say('VESPER', 'New survey zone charted. Open the MAP to change course.', 1500);
         break;
       case 'drill_mk3':
         this.say('JUNO', "Mk.III is in! That purple stuff is Iridium — and it's worth a fortune.", 1500);
@@ -1127,6 +1143,7 @@ export class GameService {
       trade: [],
       ingots: E.emptyOre(),
       alloys: 0,
+      charted: [],
       autoSoldCredits: 0,
       story: [],
     };
@@ -1331,6 +1348,9 @@ export class GameService {
     }
     if (s.surveyData > 0) {
       once('hintLab', 'VESPER', 'Survey Data recovered from the cracked asteroid. The LAB is now online — spend it on research.');
+    }
+    if (s.surveyData >= S.scanCost(s, 1).sd && S.chartedZones(s) === 1 && !s.sector.scan) {
+      once('hintScan', 'VESPER', 'Enough Survey Data for a sector scan. Open the MAP to chart the next zone.');
     }
   }
 }

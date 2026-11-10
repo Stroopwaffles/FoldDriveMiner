@@ -401,3 +401,56 @@
   font-size: 0.72rem;
   color: var(--amber);
 }
+
+/* Sector scan: charts the next zone for Survey Data */
+.scan-card {
+  border: 1px solid var(--cyan);
+  background: rgba(79, 227, 255, 0.06);
+  padding: 0.5rem 0.6rem;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.scan-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scan-title {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  color: var(--cyan);
+}
+
+.scan-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scan-bar {
+  height: 6px;
+  background: #0a0d22;
+  border: 1px solid #23305a;
+
+  div {
+    height: 100%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+}
+
+.scanning {
+  color: var(--cyan);
+  animation: flicker 1.2s steps(2) infinite;
+}
+
+@keyframes flicker {
+  50% {
+    opacity: 0.55;
+  }
+}

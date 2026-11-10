@@ -216,7 +216,7 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     expect(E.startResearch(s, 'refinery')).toBe(true);
     expect(s.surveyData).toBeLessThan(sd);
     expect(s.research.active.length).toBe(1);
-    expect(E.researchBlocker(s, 'survey_trojan')).toBe('All lab benches busy');
+    expect(E.researchBlocker(s, 'core_sampling')).toBe('All lab benches busy');
     const ev = finishAll(s);
     expect(ev.research.map((r) => r.id)).toEqual(['refinery']);
     expect(E.hasResearch(s, 'refinery')).toBe(true);
@@ -226,8 +226,9 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
   it('enforces prerequisites and drill tier', () => {
     const s = rich();
     expect(E.researchStatus(s, 'drill_mk3')).toBe('locked');
-    E.startResearch(s, 'survey_trojan');
-    finishAll(s);
+    // Drill Mk.III needs a charted zone with Iridium: chart the 2nd zone.
+    expect(E.researchBlocker(s, 'drill_mk3')).toMatch(/Iridium/);
+    s.sector.charted = 2;
     expect(E.researchBlocker(s, 'drill_mk3')).toMatch(/Mk\.II/);
     E.buyDrillTier(s);
     expect(E.startResearch(s, 'drill_mk3')).toBe(true);
@@ -254,14 +255,14 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     const s = rich();
     s.research.levels['lab_slot_2'] = 1;
     expect(E.startResearch(s, 'refinery')).toBe(true);
-    expect(E.startResearch(s, 'survey_trojan')).toBe(true);
-    expect(E.startResearch(s, 'core_sampling')).toBe(false);
+    expect(E.startResearch(s, 'core_sampling')).toBe(true);
+    expect(E.startResearch(s, 'cargo_compression')).toBe(false);
   });
 
-  it('zones change the asteroid mix and need research', () => {
+  it('zones change the asteroid mix and need charting', () => {
     const s = rich();
     expect(E.setZone(s, 'trojan')).toBe(false);
-    s.research.levels['survey_trojan'] = 1;
+    s.sector.charted = 2;
     expect(E.setZone(s, 'trojan')).toBe(true);
     expect(s.asteroid.zone).toBe('trojan');
     expect(s.asteroid.composition.iridium).toBeGreaterThan(0);
@@ -379,9 +380,9 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     E.syncRefinerySlots(s);
     s.cargo.ferrite = 25;
     E.startBatch(s, 0, 'ferrite');
-    E.startResearch(s, 'survey_trojan');
+    E.startResearch(s, 'core_sampling');
     const r = E.simulateOffline(s, 3600);
-    expect(r.research.map((d) => d.id)).toContain('survey_trojan');
+    expect(r.research.map((d) => d.id)).toContain('core_sampling');
     expect(r.ingots.ferrite).toBeGreaterThan(0);
     expect(r.efficiency).toBe(0.5);
   });

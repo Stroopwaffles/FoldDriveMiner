@@ -51,8 +51,7 @@ describe('special asteroids: odds', () => {
 
   it('a battlefield turns up more derelicts, mostly warships', () => {
     const s = fresh();
-    s.research.levels['survey_trojan'] = 1;
-    s.research.levels['survey_ring'] = 1;
+    s.sector.charted = 3;
     const ring = zoneDef('ring');
     expect(ring.site).toBe('battlefield');
     expect(E.specialChance(s, ring)).toBeGreaterThan(E.specialChance(s, zoneDef('inner')));

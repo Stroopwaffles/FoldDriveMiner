@@ -18,6 +18,7 @@ function ev(): TickEvents {
     anomaly: [], trade: [],
     ingots: E.emptyOre(),
     alloys: 0,
+    charted: [],
     autoSoldCredits: 0,
     story: [],
   };
@@ -56,7 +57,7 @@ describe('milestone 5a: sector generation', () => {
         const a = S.generateSector(seed * 7919, depth);
         const b = S.generateSector(seed * 7919, depth);
         expect(a).toBe(b); // cached
-        expect(a.zones.length).toBeGreaterThanOrEqual(3);
+        expect(a.zones.length).toBeGreaterThanOrEqual(4);
         expect(a.zones.length).toBeLessThanOrEqual(5);
         expect(a.traits.length).toBeGreaterThanOrEqual(1);
         expect(a.traits.length).toBeLessThanOrEqual(3);
@@ -65,8 +66,9 @@ describe('milestone 5a: sector generation', () => {
         for (const st of a.stars) expect(STARS.find((x) => x.id === st)!.minDepth).toBeLessThanOrEqual(depth);
         // Zones are registered so ids resolve anywhere in the game.
         for (const z of a.zones) expect(zoneDef(z.id)).toBe(z);
-        expect(a.zones[0].research).toBeUndefined();
-        expect(a.zones[1].research).toBe('survey_trojan');
+        expect(a.zones.map((z) => z.index)).toEqual(a.zones.map((_, i) => i));
+        // Every sector has Helium-3 somewhere, for the Fold Drive.
+        expect(a.zones.some((z) => (z.composition.helium3 ?? 0) > 0)).toBe(true);
         const sum = Object.values(a.zones[0].composition).reduce((x, y) => x + (y ?? 0), 0);
         expect(sum).toBeCloseTo(1, 6);
       }
@@ -189,7 +191,7 @@ describe('milestone 5a: anomalies', () => {
 
   it('derelict salvage runs pay out and return the drones', () => {
     const s = rich();
-    s.research.levels['survey_trojan'] = 1;
+    s.sector.charted = 2;
     s.drones.prospector = 100;
     run(s, 1);
     const d = s.anomalies.list.find((a) => a.kind === 'derelict')!;
@@ -208,7 +210,7 @@ describe('milestone 5a: anomalies', () => {
   it('mech missions take the mech away and bring it back', () => {
     const s = rich();
     s.research.levels['hangar'] = 1;
-    s.research.levels['survey_trojan'] = 1;
+    s.sector.charted = 2;
     E.ensureCrew(s);
     const m = E.buildMech(s, 'kestrel')!;
     E.buyPart(s, 'fusion_cell');
@@ -238,8 +240,7 @@ describe('milestone 5a: anomalies', () => {
 
   it('decoding the Silent Beacon reveals lore with the ship\'s name', () => {
     const s = rich();
-    s.research.levels['survey_trojan'] = 1;
-    s.research.levels['survey_ring'] = 1;
+    s.sector.charted = 3;
     run(s, 1);
     const b = s.anomalies.list.find((a) => a.kind === 'silent_beacon')!;
     b.status = 'scanned';

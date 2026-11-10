@@ -37,7 +37,7 @@ import { applySalvage, crackSalvage, rollSpecial, specialComposition, specialNam
 import { specialDef } from './special-data';
 import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
 import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
-import { generateSector, pulsarSurge, sectorMods, sectorZones, starLabel } from './sector-rules';
+import { advanceScan, generateSector, oreCharted, pulsarSurge, sectorHasOre, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
   advanceTrade,
   emptyContracts,
@@ -97,6 +97,7 @@ export function emptyEvents(): TickEvents {
     trade: [],
     ingots: emptyOre(),
     alloys: 0,
+    charted: [],
     autoSoldCredits: 0,
     story: [],
   };
@@ -106,7 +107,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 12,
+    version: 13,
     commander,
     ship,
     createdAt: now,
@@ -143,7 +144,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     fold: emptyFold(),
     story: emptyStory(),
     asteroid: null as unknown as AsteroidState,
-    sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
+    sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0, charted: 1, scan: null },
     zone: 'inner',
     research: { levels: {}, active: [] },
     refinery: { slots: [], capacityLevel: 0 },
@@ -687,7 +688,9 @@ export function researchStatus(state: GameState, id: string): ResearchStatus {
   if (state.research.active.some((j) => j.id === id)) return 'active';
   const prereqs = n.requires.every((r) => hasResearch(state, r));
   const tier = !n.requiresTier || state.drill.tier >= n.requiresTier;
-  return prereqs && tier ? 'available' : 'locked';
+  const zones = !n.requiresZones || sectorZones(state).filter((z) => zoneUnlocked(state, z.id)).length >= n.requiresZones;
+  const ore = !n.requiresOre || oreCharted(state, n.requiresOre);
+  return prereqs && tier && zones && ore ? 'available' : 'locked';
 }
 
 /** Why a node can't be started right now, or null if it can. */
@@ -699,6 +702,10 @@ export function researchBlocker(state: GameState, id: string): string | null {
   if (status === 'active') return 'In progress';
   const missing = n.requires.filter((r) => !hasResearch(state, r)).map((r) => researchNode(r).name);
   if (missing.length) return `Requires ${missing.join(', ')}`;
+  if (n.requiresOre && !sectorHasOre(state, n.requiresOre)) return `No ${oreDef(n.requiresOre).name} in this sector`;
+  if (n.requiresOre && !oreCharted(state, n.requiresOre)) return `Scan the sector until a zone with ${oreDef(n.requiresOre).name} is charted (MAP)`;
+  if (n.requiresZones && sectorZones(state).filter((z) => zoneUnlocked(state, z.id)).length < n.requiresZones)
+    return `Chart ${n.requiresZones} zones with sector scans (MAP)`;
   if (n.requiresTier && state.drill.tier < n.requiresTier) return `Requires Drill Mk.${['I', 'II', 'III', 'IV', 'V'][n.requiresTier - 1]}`;
   if (state.research.active.length >= labSlots(state)) return 'All lab benches busy';
   const cost = researchCost(state, id);
@@ -921,6 +928,8 @@ function advance(
   advanceCrew(state, dt, events);
   events.ingots = advanceRefinery(state, dt);
   events.alloys = advanceForge(state, dt);
+  const charted = advanceScan(state, dt);
+  if (charted) events.charted.push(charted.name);
   events.research = advanceResearch(state, dt);
   advanceTrade(state, dt, events, ctx.offline);
   advanceFold(state);

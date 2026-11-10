@@ -24,6 +24,7 @@ function ev(): TickEvents {
     anomaly: [], trade: [],
     ingots: E.emptyOre(),
     alloys: 0,
+    charted: [],
     autoSoldCredits: 0,
     story: [],
   };
@@ -310,12 +311,12 @@ describe('rogue reward with a full hold', () => {
     s.cargo.ferrite = E.cargoCapacity(s); // full
     const credits = s.credits;
     const rogue = T.startEvent(s, 'rogue', {
-      research: [], levelUps: [], syncUps: [], autoRepairs: [], threatStarted: [], threatResolved: [], anomaly: [], trade: [], ingots: E.emptyOre(), alloys: 0, autoSoldCredits: 0,
+      research: [], levelUps: [], syncUps: [], autoRepairs: [], threatStarted: [], threatResolved: [], anomaly: [], trade: [], ingots: E.emptyOre(), alloys: 0, charted: [], autoSoldCredits: 0,
     story: [],
     });
     rogue.rogueHp = 1;
     T.rogueClick(s, {
-      research: [], levelUps: [], syncUps: [], autoRepairs: [], threatStarted: [], threatResolved: [], anomaly: [], trade: [], ingots: E.emptyOre(), alloys: 0, autoSoldCredits: 0,
+      research: [], levelUps: [], syncUps: [], autoRepairs: [], threatStarted: [], threatResolved: [], anomaly: [], trade: [], ingots: E.emptyOre(), alloys: 0, charted: [], autoSoldCredits: 0,
     story: [],
     });
     expect(s.credits).toBeGreaterThan(credits);

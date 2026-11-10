@@ -97,7 +97,10 @@ export class GameShell {
     const s = this.s();
     return s.surveyData > 0 || s.stats.asteroidsCracked > 0 || Object.keys(s.research.levels).length > 0;
   });
-  private readonly mapOpen = computed(() => E.unlockedZones(this.s()).length > 1 || this.s().anomalies.list.some((a) => a.status !== 'hidden'));
+  /** The Map opens with the Lab: it's where Survey Data charts new zones. */
+  private readonly mapOpen = computed(
+    () => this.labOpen() || E.unlockedZones(this.s()).length > 1 || this.s().anomalies.list.some((a) => a.status !== 'hidden'),
+  );
   private readonly hangarOpen = computed(() => E.hasResearch(this.s(), 'hangar'));
   /** Defense opens once the quiet grace period ends (or anything has happened). */
   private readonly defenseOpen = computed(() => !T.inGrace(this.s()) || this.s().threats.log.length > 0 || this.s().threats.events.length > 0);
@@ -145,7 +148,7 @@ export class GameShell {
     { id: 'hangar', label: 'HANGAR', kana: 'かくのうこ', icon: '⬢', locked: !this.hangarOpen(), hint: 'Mech hangar sealed. Research Mech Hangar in the LAB.' },
     { id: 'crew', label: 'CREW', kana: 'クルー', icon: '☺', locked: !this.hangarOpen(), hint: 'No crew aboard yet. Research Mech Hangar in the LAB.' },
     { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: !this.labOpen(), hint: 'Research lab offline. Crack an asteroid to recover Survey Data.' },
-    { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
+    { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No survey data yet. Crack an asteroid to start charting the sector.' },
     { id: 'defense', label: 'DEFENSE', kana: 'ぼうえい', icon: '⚔', locked: !this.defenseOpen(), hint: 'Sector is quiet. Defense command opens when trouble starts.' },
     { id: 'fold', label: 'FOLD', kana: 'フォールド', icon: '⟐', locked: !this.foldOpen(), hint: 'Fold Drive offline. Research it in the LAB (Fold Science).' },
     { id: 'archive', label: 'ARCHIVE', kana: 'きろく', icon: '❖', locked: false, hint: '' },

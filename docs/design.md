@@ -455,3 +455,24 @@ Rare rocks and wrecks drift in now and then instead of an ordinary asteroid. Eac
 - Long-Range Sensor Array (Ops, credits, 5 levels, resets on a Fold Jump): +10% per level.
 
 **Presentation:** VESPER calls out each contact and the salvage. The viewport shows a ◆ tag and a different look for each type; derelicts are drawn as tilted ship hulls. The Map shows each zone's site and special odds. Commendations: Odd Rock, Wreck Diver, Salvage King. Save version 12.
+
+## Sector scans (replacing Survey Range research)
+
+- **Zone count:** every generated sector has at least 4 zones, so Helium-3 (Fold Drive fuel) is always present. The zone-count roll is unchanged, so 4- and 5-zone sectors keep their layout and 3-zone sectors gain a 4th zone.
+- **Charting zones:** the four Survey Range research nodes are gone. Outer zones are charted from the MAP with a **Sector Scan**: Survey Data plus time, one zone at a time, inner to outer. Scans run offline, can be cancelled for a refund, and reset on a Fold Jump (new sector, new chart).
+
+| Zone | Survey Data | Time | Drill needed |
+|---|---|---|---|
+| 2nd | 15 | 45 s | — |
+| 3rd | 60 | 2 m | Mk.III |
+| 4th | 200 | 5 m | Mk.III |
+| 5th | 600 | 10 m | Mk.IV |
+
+  Survey Data costs rise 25% per sector depth. Deep Scan Array research now speeds sector scans as well as anomaly scans (+50% per level).
+- **Research that needed a Survey Range** now checks the sector:
+  - Drill Mk.III needs a charted zone with Iridium.
+  - Cryo Hold needs a charted zone with Helium-3.
+  - Drill Mk.V needs a charted zone with Voidglass. Where the sector has none, it says "No Voidglass in this sector".
+  - Fleet Dispatch and Deep Scan Array need 2 charted zones; Beacon Cryptography needs 3.
+- **Map tab:** it now opens with the Lab, after the first cracked asteroid. VESPER prompts the first scan.
+- **Save:** version 13. Zones opened by Survey Range research stay charted; Survey Range projects in progress are refunded.

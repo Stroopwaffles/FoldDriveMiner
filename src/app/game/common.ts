@@ -32,8 +32,8 @@ export function currentZone(state: GameState): ZoneDef {
 }
 
 export function zoneUnlocked(state: GameState, id: ZoneId): boolean {
-  const z = zoneDef(id);
-  return !z.research || hasResearch(state, z.research);
+  // Zones open as sector scans chart them, inner to outer.
+  return zoneDef(id).index < Math.max(1, state.sector?.charted ?? 1);
 }
 
 /** Can the drill (and drones and mechs) collect this ore? */

@@ -116,8 +116,22 @@ export const ZONE_NAMES = [
   ['Kuiper Drift', 'カイパーりゅう'], ['Ashen Arc', 'はいのこ'], ['Hollow Spires', 'うつろのとう'], ['Frost Lanes', 'しもじ'],
 ] as const;
 
-/** Survey research that unlocks a sector's 2nd–5th zone. */
-export const ZONE_RESEARCH = [undefined, 'survey_trojan', 'survey_ring', 'survey_ice', 'survey_deep'] as const;
+/**
+ * Sector scans chart a sector's outer zones, one at a time, for Survey Data.
+ * Index = the zone being charted (zone 0 is always open).
+ */
+export const SCAN = {
+  /** Survey Data, before the depth scaling. */
+  cost: [0, 15, 60, 200, 600],
+  /** Seconds the scan takes. */
+  sec: [0, 45, 120, 300, 600],
+  /** Drill tier the ship needs to reach the zone safely. */
+  tier: [1, 1, 3, 3, 4],
+  /** Deeper sectors cost more: +25% per depth. */
+  depthScale: 0.25,
+  /** Deep Scan Array research: +50% scan speed per level. */
+  deepScanPerLevel: 0.5,
+};
 
 /** Base ore mix for zones by depth index, before profile shifts. */
 export const ZONE_TEMPLATES: Partial<Record<OreId, number>>[] = [
