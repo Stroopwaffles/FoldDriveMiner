@@ -194,3 +194,13 @@
   color: var(--amber);
   letter-spacing: 0.08em;
 }
+
+.exhaust {
+  animation: exhaust 0.2s steps(2) infinite;
+}
+
+@keyframes exhaust {
+  50% {
+    opacity: 0.3;
+  }
+}

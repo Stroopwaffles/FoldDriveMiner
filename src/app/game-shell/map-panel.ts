@@ -1,8 +1,9 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject } from '@angular/core';
 import { ORES, ZONES, ZoneDef, ZoneId } from '../game/config';
 import * as E from '../game/engine';
 import { researchNode } from '../game/research';
 import { GameService } from '../services/game.service';
+import { SettingsService } from '../services/settings.service';
 
 /** The MAP tab: the home sector's survey zones as orbital bands. */
 @Component({
@@ -35,11 +36,20 @@ import { GameService } from '../services/game.service';
               [attr.stroke]="z.def.color"
             />
             @if (z.current) {
-              <!-- Ship marker on the left edge of the current band -->
-              <g class="ship-marker" [attr.transform]="'translate(' + -(62 + i * 36) + ',0)'">
-                <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
-                <polygon points="-4,5 0,-6 4,5 0,2" fill="#ffb547" />
-              </g>
+              <!-- The ship orbits the star along its zone's band (outer bands are slower).
+                   With reduced motion it sits still on the left edge. -->
+              @if (still()) {
+                <g class="ship-marker" [attr.transform]="'translate(' + -(62 + i * 36) + ',0) rotate(90)'">
+                  <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
+                  <polygon points="6,0 -5,-4 -2,0 -5,4" fill="#ffb547" />
+                </g>
+              } @else {
+                <g class="ship-marker moving" [attr.data-rx]="62 + i * 36" [attr.data-period]="14 + i * 8">
+                  <circle r="7" fill="none" stroke="#ffb547" stroke-width="1" class="ping" />
+                  <polygon points="6,0 -5,-4 -2,0 -5,4" fill="#ffb547" />
+                  <circle cx="-6" r="1.6" fill="#ff7a3d" class="exhaust" />
+                </g>
+              }
             }
             <!-- Labels sit at -55° on each ellipse so they fan out instead of stacking -->
             <text
@@ -111,7 +121,36 @@ import { GameService } from '../services/game.service';
 })
 export class MapPanel {
   protected readonly game = inject(GameService);
+  private readonly settings = inject(SettingsService);
   protected readonly s = computed(() => this.game.state()!);
+
+  protected readonly still = computed(() => this.settings.reducedMotion());
+
+  constructor() {
+    // Fly the ship around its band every frame. Done in script rather than SVG
+    // <animateMotion>, which Chrome doesn't reliably start on elements added later.
+    const host = inject(ElementRef<HTMLElement>).nativeElement;
+    let raf = 0;
+    afterNextRender(() => {
+      const frame = (now: number) => {
+        const ship = host.querySelector('.ship-marker.moving') as SVGGElement | null;
+        if (ship) {
+          const rx = Number(ship.dataset['rx']);
+          const ry = rx * 0.42;
+          const period = Number(ship.dataset['period']) * 1000;
+          const a = ((now % period) / period) * Math.PI * 2;
+          const x = -rx * Math.cos(a);
+          const y = ry * Math.sin(a);
+          // Nose along the direction of travel (derivative of the position).
+          const heading = (Math.atan2(ry * Math.cos(a), rx * Math.sin(a)) * 180) / Math.PI;
+          ship.setAttribute('transform', `translate(${x.toFixed(2)},${y.toFixed(2)}) rotate(${heading.toFixed(1)})`);
+        }
+        raf = requestAnimationFrame(frame);
+      };
+      raf = requestAnimationFrame(frame);
+    });
+    inject(DestroyRef).onDestroy(() => cancelAnimationFrame(raf));
+  }
 
   protected readonly hasDispatch = computed(() => E.hasResearch(this.s(), 'fleet_dispatch'));
 
