@@ -5,7 +5,7 @@
 import { ensureCrew, newGame, syncRefinerySlots } from './engine';
 import { GameState } from './types';
 
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -23,6 +23,11 @@ export function migrate(raw: unknown): GameState {
     // v3 adds drone types, Fleet Dispatch, mechs, parts and pilots. They start
     // empty (fillDefaults), and prospector counts carry over unchanged.
     data['version'] = 3;
+  }
+  if (data['version'] === 3) {
+    // v4 adds threats (events, Pirate Heat, standing orders) and drone wrecks.
+    // Both start empty; existing saves get a fresh grace period.
+    data['version'] = 4;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);

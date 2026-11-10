@@ -19,6 +19,7 @@ const SUITS = ['#ff7a3d', '#4fe3ff', '#ff3d9a', '#ffd23f', '#6dff9b', '#c77dff',
 const STORY_LOOKS: Record<string, Look> = {
   juno: { skin: '#ffd8b8', hair: '#ff5a2b', eyes: '#1a3a8f', suit: '#ff7a3d', style: 0, accessory: 0 },
   kit: { skin: '#5e3b27', hair: '#1a1a2e', eyes: '#7a3b12', suit: '#6dff9b', style: 3, accessory: 2 },
+  jackal: { skin: '#d9a07a', hair: '#c0c8d8', eyes: '#8a1f4a', suit: '#ff3b3b', style: 4, accessory: 4 },
 };
 
 /** Cel-shaded 80s anime-style head-and-shoulders, generated from a seed. */
@@ -150,6 +151,7 @@ export class PilotPortrait {
     const story = this.story();
     if (story === 'juno') return '#2a0f3d';
     if (story === 'kit') return '#0f2a24';
+    if (story === 'jackal') return '#3a0510';
     return '#141a3d';
   });
 }

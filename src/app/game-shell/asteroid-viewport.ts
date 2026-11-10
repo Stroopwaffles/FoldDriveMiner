@@ -121,6 +121,22 @@ export class AsteroidViewport {
     const s = this.game.state();
     return s ? zoneDef(s.zone).name : '';
   });
+  /** Threats shown in the viewport. */
+  protected readonly rogue = computed(() => this.game.state()?.threats.events.find((e) => e.kind === 'rogue' && e.phase === 'warning') ?? null);
+  protected readonly flare = computed(() => this.game.state()?.threats.events.find((e) => e.kind === 'flare') ?? null);
+  protected readonly meteors = computed(() => !!this.game.state()?.threats.events.some((e) => e.kind === 'micrometeor' && e.phase === 'active'));
+  protected readonly meteorLines = Array.from({ length: 14 }, (_, i) => ({ top: (i * 37) % 100, delay: -(i * 0.31) % 1.2, len: 40 + ((i * 23) % 60) }));
+  protected readonly rogueFloats = signal<{ id: number; text: string; x: number; y: number }[]>([]);
+
+  protected onRogue(e: MouseEvent): void {
+    const r = this.game.rogueClick();
+    if (!r || r.locked) return;
+    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const f = { id: ++fxId, text: r.overheated ? 'OVERHEAT!' : `-${this.game.fmt(r.damage)}`, x: e.clientX - box.left, y: e.clientY - box.top };
+    this.rogueFloats.update((l) => [...l.slice(-8), f]);
+    setTimeout(() => this.rogueFloats.update((l) => l.filter((x) => x.id !== f.id)), 800);
+  }
+
   protected readonly massLeft = computed(() => this.game.state()?.asteroid.mass ?? 0);
 
   /** Mechs mining the zone the ship is in, drawn beside the asteroid. */

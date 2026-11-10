@@ -16,7 +16,7 @@
           <div class="bay-frame">{{ c.frame.name }} frame</div>
           <div class="bay-status">
             <span class="led" [style.background]="c.cond.color" [style.boxShadow]="'0 0 6px ' + c.cond.color"></span>
-            {{ c.stats.overloaded ? 'OVERLOADED' : c.mech.job === 'mining' ? 'MINING · ' + c.zoneName : c.mech.job === 'repair' ? 'IN REPAIR' : 'STANDBY' }}
+            {{ c.stats.overloaded ? 'OVERLOADED' : c.mech.job === 'mining' ? 'MINING · ' + c.zoneName : c.mech.job === 'repair' ? 'IN REPAIR' : c.mech.job === 'defense' ? 'DEFENSE STANDBY' : c.cond.id === 'disabled' ? 'DISABLED' : 'IDLE' }}
           </div>
           <div class="armor-bar"><div [style.width.%]="c.cond.frac * 100" [style.background]="c.cond.color"></div></div>
           <div class="bay-pilot">
@@ -139,7 +139,8 @@
         <div class="sub-title">ORDERS <span class="kana">めいれい</span></div>
         <div class="jobs">
           <button type="button" class="btn small" [class.on]="v.mech.job === 'mining'" [disabled]="v.stats.overloaded" (click)="setJob(v.mech.id, 'mining')">Mine</button>
-          <button type="button" class="btn small" [class.on]="v.mech.job === 'idle'" (click)="setJob(v.mech.id, 'idle')">Standby</button>
+          <button type="button" class="btn small" [class.on]="v.mech.job === 'defense'" [disabled]="v.stats.overloaded" (click)="setJob(v.mech.id, 'defense')" title="Wait on standby to defend against raids">Defend</button>
+          <button type="button" class="btn small" [class.on]="v.mech.job === 'idle'" (click)="setJob(v.mech.id, 'idle')">Idle</button>
           <button type="button" class="btn small" [class.on]="v.mech.job === 'repair'" [disabled]="!hasRepair()" (click)="setJob(v.mech.id, 'repair')" [title]="hasRepair() ? '' : 'Research Repair Bay'">Repair</button>
         </div>
         <label class="zone-pick">

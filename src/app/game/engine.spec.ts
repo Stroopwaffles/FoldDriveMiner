@@ -1,7 +1,7 @@
 import { CONFIG, ZONES } from './config';
 import * as E from './engine';
 import { formatNumber } from './format';
-import { fromExportString, migrate, toExportString } from './save';
+import { CURRENT_VERSION, fromExportString, migrate, toExportString } from './save';
 import { GameState } from './types';
 
 function fresh(): GameState {
@@ -149,6 +149,7 @@ describe('engine', () => {
     const s = fresh();
     s.drones.prospector = 1;
     s.cargoLevel = 30; // huge hold
+    s.threats.nextIn = Infinity; // no events, to measure production alone
     const r = E.simulateOffline(s, 24 * 3600);
     const cap = CONFIG.offline.capHours * 3600;
     expect(r.cappedSeconds).toBe(cap);
@@ -393,7 +394,7 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     delete v1['autoSell'];
     delete v1['zone'];
     const m = migrate(v1);
-    expect(m.version).toBe(3);
+    expect(m.version).toBe(CURRENT_VERSION);
     expect(m.zone).toBe('inner');
     expect(m.research.levels).toEqual({});
     expect(m.ingots.ferrite).toBe(0);

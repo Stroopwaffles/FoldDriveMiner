@@ -89,6 +89,32 @@
     }
   </div>
 
+  <!-- Hazards -->
+  @if (flare(); as f) {
+    <div class="flare" [class.warning]="f.phase === 'warning'" aria-hidden="true"></div>
+  }
+  @if (meteors()) {
+    <div class="meteors" aria-hidden="true">
+      @for (m of meteorLines; track $index) {
+        <span [style.top.%]="m.top" [style.width.px]="m.len" [style.animation-delay.s]="m.delay"></span>
+      }
+    </div>
+  }
+  @if (rogue(); as r) {
+    <button type="button" class="rogue" (click)="onRogue($event)" aria-label="Crack the rogue asteroid">
+      <svg viewBox="-50 -50 100 100" aria-hidden="true">
+        <polygon class="rogue-rock" points="0,-44 30,-34 44,-6 36,26 8,44 -26,38 -44,10 -38,-24" />
+        <polygon class="rogue-lit" points="-6,-40 24,-30 34,-8 10,-4 -14,-18" />
+        <path class="rogue-crack" d="M-20,-10 L0,4 L18,-2 M0,4 L6,26" />
+      </svg>
+      <span class="rogue-label">ROGUE · {{ r.remaining.toFixed(0) }}s</span>
+      <span class="rogue-hp"><span [style.width.%]="((r.rogueHp ?? 0) / (r.rogueMax ?? 1)) * 100"></span></span>
+      @for (f of rogueFloats(); track f.id) {
+        <span class="rogue-float" [style.left.px]="f.x" [style.top.px]="f.y">{{ f.text }}</span>
+      }
+    </button>
+  }
+
   @if (flash()) {
     <div class="crack-flash"></div>
   }

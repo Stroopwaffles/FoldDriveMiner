@@ -1,0 +1,132 @@
+@if (view(); as v) {
+  <div class="modal-backdrop">
+    <div class="panel sortie" role="dialog" [attr.aria-label]="v.strike ? 'Strike sortie' : 'Sortie'">
+      @if (v.mode === 'prep') {
+        <div class="panel-title">
+          {{ v.strike ? 'Strike on the Pirate Base' : 'Raid Defense — Sortie Prep' }} <span class="kana">しゅつげき</span>
+          @if (event(); as ev) {
+            <span class="count">IMPACT IN {{ ev.remaining.toFixed(0) }}s</span>
+          }
+        </div>
+        <div class="prep">
+          <div class="intel">
+            <div class="sub">ENEMY INTEL</div>
+            <div class="enemy">
+              @if (event()?.jackal) {
+                <fdm-pilot-portrait story="jackal" [size]="48" />
+              }
+              <div>
+                <div class="enemy-name">{{ event()?.jackal ? 'The Vermilion Jackal + raiders' : v.strike ? 'Fortified pirate base' : 'Pirate raiders' }}</div>
+                <div class="strength">STRENGTH {{ game.fmt(strength()) }} / round · HP {{ game.fmt(strength() * 6) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="squad">
+            <div class="sub">SQUAD — choose who launches</div>
+            @for (c of candidates(); track c.mech.id) {
+              <label class="cand" [class.off]="!c.ok" [class.on]="selected().has(c.mech.id)">
+                <input type="checkbox" [checked]="selected().has(c.mech.id)" [disabled]="!c.ok" (change)="toggle(c.mech.id)" />
+                <fdm-mech-portrait [frame]="c.mech.frame" [parts]="c.mech.parts" [size]="30" />
+                <span class="cand-name">{{ c.mech.designation }} "{{ c.mech.name }}"</span>
+                <span class="cand-pilot">{{ c.pilot ? c.pilot.callsign : 'autopilot' }}</span>
+                <span class="cand-stats">
+                  @if (c.ok) {
+                    PWR {{ game.fmt(c.power) }} · ARMOR {{ (c.cond.frac * 100).toFixed(0) }}%
+                  } @else {
+                    {{ c.cond.id === 'disabled' ? 'DISABLED' : c.mech.job === 'repair' ? 'IN REPAIR' : 'TOO DAMAGED / OVERLOADED' }}
+                  }
+                </span>
+              </label>
+            } @empty {
+              <p class="dim">No mechs. Build some in the HANGAR — or rely on Guardian drones.</p>
+            }
+            <label class="cand guard" [class.on]="useGuardians()" [class.off]="!s().drones.guardian">
+              <input type="checkbox" [checked]="useGuardians()" [disabled]="!s().drones.guardian" (change)="useGuardians.set(!useGuardians())" />
+              <span class="cand-name">Guardian drones ×{{ s().drones.guardian }}</span>
+              <span class="cand-stats">PWR {{ game.fmt(guardianPower()) }} · soak 40% of fire</span>
+            </label>
+          </div>
+
+          <div class="odds">
+            <div class="sub">RISK PREVIEW</div>
+            @if (odds(); as o) {
+              <div class="odds-row">
+                <div class="big" [class.good]="o.win >= 0.7" [class.bad]="o.win < 0.4">{{ pct(o.win) }}</div>
+                <div>chance of victory</div>
+              </div>
+              <div class="dim small">{{ pct(o.costly) }} costly · ~{{ o.avgDisabled.toFixed(1) }} mechs disabled on average</div>
+            } @else {
+              <div class="dim">Select at least one mech or Guardians.</div>
+            }
+          </div>
+        </div>
+        <div class="actions">
+          @if (!v.strike && event()) {
+            <button type="button" class="btn" (click)="game.surrender(event()!.id)">Surrender cargo</button>
+          }
+          <button type="button" class="btn" (click)="close()">{{ v.strike ? 'Cancel' : 'Decide later' }}</button>
+          <button type="button" class="btn btn-primary" [disabled]="!odds()" (click)="launch()">LAUNCH!</button>
+        </div>
+      } @else if (report(); as r) {
+        <div class="panel-title">
+          {{ r.title }} <span class="kana">せんとう</span>
+          @if (!done()) {
+            <button type="button" class="btn tiny skip" (click)="skip()">Skip ▸▸</button>
+          }
+        </div>
+        <div class="play">
+          <!-- Tactical radar -->
+          <svg class="radar" viewBox="-120 -90 240 180" aria-hidden="true">
+            <circle r="80" class="ring" />
+            <circle r="55" class="ring" />
+            <circle r="30" class="ring" />
+            <line x1="-110" y1="0" x2="110" y2="0" class="ring" />
+            <line x1="0" y1="-85" x2="0" y2="85" class="ring" />
+            <g class="sweep"><path d="M0,0 L80,0 A80,80 0 0,0 69,-40 Z" /></g>
+            @for (m of radarMechs(); track m.id) {
+              <polygon class="ally" [attr.transform]="'translate(' + m.x + ',' + m.y + ')'" points="-5,4 6,0 -5,-4" />
+            }
+            @for (i of guardianDots(); track i) {
+              <circle class="ally g" [attr.cx]="-35 - (i % 2) * 8" [attr.cy]="-36 + i * 10" r="2.2" />
+            }
+            @for (e of radarEnemies(); track $index) {
+              <polygon class="enemy" [class.dead]="e.dead" [attr.transform]="'translate(' + e.x + ',' + e.y + ')'" points="5,4 -6,0 5,-4" />
+            }
+            @if (shown() > 0 && !done()) {
+              <line class="tracer" x1="-55" y1="0" x2="55" y2="0" />
+            }
+          </svg>
+          <div class="log">
+            <div class="enemy-bar"><span>{{ r.enemy }}</span><div class="bar"><div [style.width.%]="enemyFrac() * 100"></div></div></div>
+            @for (round of r.rounds.slice(0, shown()); track $index; let i = $index) {
+              <div class="round">
+                <b>ROUND {{ i + 1 }}</b>
+                @for (line of round.lines; track $index) {
+                  <div [class.warn]="line.startsWith('⚠')" [class.tech]="line.startsWith('★')">{{ line }}</div>
+                }
+              </div>
+            }
+            @if (!done()) {
+              <div class="dim blink">Engaging…</div>
+            }
+          </div>
+        </div>
+        @if (done()) {
+          <div class="result" [class.win]="r.outcome === 'victory' || r.outcome === 'costly'">
+            <div class="outcome">{{ outcomeText() }}</div>
+            @for (x of r.rewards; track $index) {
+              <div class="good">+ {{ x }}</div>
+            }
+            @for (x of r.losses; track $index) {
+              <div class="warn">− {{ x }}</div>
+            }
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" (click)="close()">Debrief complete</button>
+          </div>
+        }
+      }
+    </div>
+  </div>
+}

@@ -22,6 +22,10 @@ import { SettingsPanel } from '../ui/settings-panel';
 import { MusicService } from '../services/music.service';
 import { AsteroidViewport } from './asteroid-viewport';
 import { CrewPanel } from './crew-panel';
+import { DefensePanel } from './defense-panel';
+import { SortieModal } from './sortie-modal';
+import { ThreatBanner } from './threat-banner';
+import * as T from '../game/threat-rules';
 import { HangarPanel } from './hangar-panel';
 import { CutIn } from '../ui/cut-in';
 import { PilotPortrait } from '../ui/pilot-portrait';
@@ -30,7 +34,7 @@ import { MapPanel } from './map-panel';
 import { OpsPanel } from './ops-panel';
 
 interface NavItem {
-  id: Tab | 'hangar' | 'crew' | 'board';
+  id: Tab | 'board';
   label: string;
   kana: string;
   icon: string;
@@ -40,7 +44,21 @@ interface NavItem {
 
 @Component({
   selector: 'fdm-game-shell',
-  imports: [AsteroidViewport, OpsPanel, LabPanel, MapPanel, HangarPanel, CrewPanel, SettingsPanel, MusicToggle, CutIn, PilotPortrait],
+  imports: [
+    AsteroidViewport,
+    OpsPanel,
+    LabPanel,
+    MapPanel,
+    HangarPanel,
+    CrewPanel,
+    DefensePanel,
+    ThreatBanner,
+    SortieModal,
+    SettingsPanel,
+    MusicToggle,
+    CutIn,
+    PilotPortrait,
+  ],
   templateUrl: './game-shell.html',
   styleUrl: './game-shell.scss',
   host: {
@@ -63,6 +81,10 @@ export class GameShell {
   });
   private readonly mapOpen = computed(() => E.unlockedZones(this.s()).length > 1);
   private readonly hangarOpen = computed(() => E.hasResearch(this.s(), 'hangar'));
+  /** Defense opens once the quiet grace period ends (or anything has happened). */
+  private readonly defenseOpen = computed(() => !T.inGrace(this.s()) || this.s().threats.log.length > 0 || this.s().threats.events.length > 0);
+  protected readonly hostileWarning = computed(() => this.s().threats.events.some((e) => e.phase === 'warning'));
+  protected readonly blackout = computed(() => T.marketBlocked(this.s()));
   /** Crew badge: someone has a trait to choose. */
   protected readonly crewReady = computed(() => this.s().pilots.some((p) => p.traitChoice));
   /** Lab badge: a bench is free and something can be started. */
@@ -78,6 +100,7 @@ export class GameShell {
     { id: 'crew', label: 'CREW', kana: 'クルー', icon: '☺', locked: !this.hangarOpen(), hint: 'No crew aboard yet. Research Mech Hangar in the LAB.' },
     { id: 'lab', label: 'LAB', kana: 'けんきゅう', icon: '⚗', locked: !this.labOpen(), hint: 'Research lab offline. Crack an asteroid to recover Survey Data.' },
     { id: 'map', label: 'MAP', kana: 'ちず', icon: '✦', locked: !this.mapOpen(), hint: 'No other zones charted. Research a survey in the LAB.' },
+    { id: 'defense', label: 'DEFENSE', kana: 'ぼうえい', icon: '⚔', locked: !this.defenseOpen(), hint: 'Sector is quiet. Defense command opens when trouble starts.' },
     { id: 'board', label: 'BOARD', kana: 'けいやく', icon: '▤', locked: true, hint: 'Contract board unavailable.' },
   ]);
 
@@ -124,6 +147,8 @@ export class GameShell {
       }
     }
     if (r.credits > 0) lines.push(`+ ${this.game.fmt(r.credits)} CR FROM AUTO-SELL`);
+    for (const t of r.threats.slice(0, 6)) lines.push(`▸ ${t.toUpperCase()}`);
+    if (r.threats.length > 6) lines.push(`▸ …AND ${r.threats.length - 6} MORE INCIDENTS (SEE DEFENSE LOG)`);
     for (const done of r.research) {
       const n = researchNode(done.id);
       lines.push(`RESEARCH COMPLETE: ${n.name.toUpperCase()}${n.maxLevel > 1 ? ` LV ${done.level}` : ''}${done.eureka ? ' — EUREKA!' : ''}`);

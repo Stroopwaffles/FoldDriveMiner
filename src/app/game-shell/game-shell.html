@@ -25,6 +25,12 @@
         <span class="r-val">{{ game.fmt(game.mechRate()) }}<small>ore/s</small></span>
       </div>
     }
+    @if (st.threats.heat >= 1) {
+      <div class="readout">
+        <span class="r-label">PIRATE HEAT</span>
+        <span class="r-val" [class.warn]="st.threats.heat >= 50">{{ st.threats.heat.toFixed(0) }}</span>
+      </div>
+    }
     <div class="readout">
       <span class="r-label">SURVEY DATA</span>
       <span class="r-val cyan">{{ game.fmt(st.surveyData) }}</span>
@@ -75,7 +81,8 @@
   </nav>
 
   <!-- MAIN -->
-  <main class="main">
+  <main class="main" [class.alarm]="hostileWarning()">
+    <fdm-threat-banner />
     <div class="view-wrap">
       <fdm-asteroid-viewport />
     </div>
@@ -92,6 +99,9 @@
         }
         @case ('crew') {
           <fdm-crew-panel />
+        }
+        @case ('defense') {
+          <fdm-defense-panel />
         }
         @default {
           <fdm-ops-panel />
@@ -117,6 +127,9 @@
               @case ('PILOT') {
                 <fdm-pilot-portrait [seed]="m.seed ?? 0" [size]="40" />
               }
+              @case ('JACKAL') {
+                <fdm-pilot-portrait story="jackal" [size]="40" />
+              }
               @case ('VESPER') {
                 <svg viewBox="0 0 40 40">
                   <rect width="40" height="40" fill="#061522" />
@@ -131,7 +144,7 @@
             }
           </div>
           <div class="msg-body">
-            <div class="msg-from">{{ m.from === 'JUNO' ? 'JUNO HART' : m.from === 'KIT' ? 'KIT OKAFOR' : m.from === 'PILOT' ? m.name : m.from }}</div>
+            <div class="msg-from">{{ m.from === 'JUNO' ? 'JUNO HART' : m.from === 'KIT' ? 'KIT OKAFOR' : m.from === 'JACKAL' ? '??? — UNKNOWN FRAME' : m.from === 'PILOT' ? m.name : m.from }}</div>
             <div class="msg-text">{{ m.text }}</div>
           </div>
         </div>
@@ -149,7 +162,9 @@
           @for (t of ticker(); track t.ore.id) {
             <span class="tick-item" [attr.aria-hidden]="pass === 1">
               <span [style.color]="t.ore.color">{{ t.ore.code }}</span>
-              @if (t.known) {
+              @if (blackout()) {
+                <span class="tick-price dim">-- BLACKOUT --</span>
+              } @else if (t.known) {
                 <span class="tick-price">{{ game.fmt(t.price) }}</span>
                 <span class="trend" [class.up]="t.trend > 0" [class.down]="t.trend < 0">{{ t.trend > 0 ? '▲' : t.trend < 0 ? '▼' : '■' }}</span>
               } @else {
@@ -211,3 +226,4 @@
 }
 
 <fdm-cut-in />
+<fdm-sortie-modal />

@@ -241,11 +241,12 @@ export function advanceCrew(state: GameState, dt: number, events: TickEvents): v
   const rng = new Rng(state.rng);
 
   for (const p of state.pilots) {
-    if (p.injuredRemaining > 0) p.injuredRemaining = Math.max(0, p.injuredRemaining - dt);
+    // The Medbay speeds recovery (+100% per level).
+    if (p.injuredRemaining > 0) p.injuredRemaining = Math.max(0, p.injuredRemaining - dt * (1 + researchLevel(state, 'medbay')));
+    if (p.level >= CREW.levelCap) continue;
     const mech = pilotMech(state, p);
     const post = pilotPost(state, p);
     let rate = mech && mech.job === 'mining' ? CREW.xpMining : post ? CREW.xpPost : CREW.xpIdle;
-    if (rate <= 0 || p.level >= CREW.levelCap) continue;
     if (hasTrait(p, 'quick_learner')) rate *= 1.25;
     if (p.id !== instructorId) rate *= 1 + instructor;
     p.xp += rate * dt;

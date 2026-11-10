@@ -1,7 +1,7 @@
 import { CREW, xpForLevel } from './crew-data';
 import * as E from './engine';
 import { MECH } from './fleet-data';
-import { migrate } from './save';
+import { CURRENT_VERSION, migrate } from './save';
 import { GameState } from './types';
 
 function rich(): GameState {
@@ -270,7 +270,7 @@ describe('milestone 3: crew', () => {
     v2['drones'] = { prospector: 12 };
     for (const k of ['dispatch', 'mechs', 'parts', 'pilots', 'recruits', 'posts', 'nextId', 'recruitRefresh']) delete v2[k];
     const m = migrate(v2);
-    expect(m.version).toBe(3);
+    expect(m.version).toBe(CURRENT_VERSION);
     expect(m.drones.prospector).toBe(12);
     expect(m.drones.cutter).toBe(0);
     expect(m.mechs).toEqual([]);

@@ -44,8 +44,8 @@ export const DRONES: readonly DroneDef[] = [
     baseCost: 800, costGrowth: 1.15, orePerSec: 0, research: 'salvager_drones', color: '#c77dff',
   },
   {
-    id: 'guardian', name: 'Guardian', role: 'Defends the operation during pirate raids.',
-    baseCost: 0, costGrowth: 1.15, orePerSec: 0, teaser: 'Milestone 4', color: '#ff3b3b',
+    id: 'guardian', name: 'Guardian', role: 'Does not mine. Fights in raids, soaks fire and shields the swarm from micrometeors.',
+    baseCost: 300, costGrowth: 1.15, orePerSec: 0, research: 'guardian_drones', color: '#ff3b3b',
   },
 ];
 
@@ -161,6 +161,9 @@ export const PARTS: readonly PartDef[] = [
   // Armor
   { id: 'plate_mk1', name: 'Plate Mk.I', slot: 'armor', cost: 3000, stats: { armor: 40, speed: -1 }, draw: 0, rarity: 'standard' },
   { id: 'composite_plate', name: 'Composite Plate', slot: 'armor', cost: 30000, stats: { armor: 100 }, draw: 1, rarity: 'standard' },
+  // Unique parts: never sold; recovered from the Jackal and pirate bases.
+  { id: 'crimson_lance', name: 'Crimson Fang Lance', slot: 'drill', cost: 0, stats: { mining: 40, combat: 15 }, draw: 9, rarity: 'unique' },
+  { id: 'vermilion_plating', name: 'Vermilion Plating', slot: 'armor', cost: 0, stats: { armor: 160, speed: 2 }, draw: 1, rarity: 'unique' },
 ];
 
 export function partDef(id: string): PartDef {

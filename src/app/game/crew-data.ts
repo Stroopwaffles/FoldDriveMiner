@@ -9,11 +9,11 @@ export type PostId = 'refinery' | 'repair' | 'sensor' | 'quartermaster' | 'instr
 export type BackgroundId = 'ace' | 'rookie' | 'engineer' | 'prospector' | 'ex_pirate' | 'scholar' | 'trader';
 
 export const STATS: { id: StatId; name: string; short: string; desc: string }[] = [
-  { id: 'piloting', name: 'Piloting', short: 'PIL', desc: 'Combat and evasion in sorties (Milestone 4)' },
+  { id: 'piloting', name: 'Piloting', short: 'PIL', desc: '+3% sortie damage per point' },
   { id: 'prospecting', name: 'Prospecting', short: 'PRO', desc: '+2% mech mining output per point' },
   { id: 'engineering', name: 'Engineering', short: 'ENG', desc: 'Lowers part power draw and mech wear' },
   { id: 'instinct', name: 'Instinct', short: 'INS', desc: 'Survey Data, research and scanning' },
-  { id: 'nerve', name: 'Nerve', short: 'NRV', desc: 'Haggling now; mission risk later' },
+  { id: 'nerve', name: 'Nerve', short: 'NRV', desc: 'Quartermaster haggling; shorter injuries' },
 ];
 
 export const STAT_IDS: readonly StatId[] = STATS.map((s) => s.id);
@@ -38,7 +38,7 @@ export const BACKGROUNDS: readonly BackgroundDef[] = [
   { id: 'rookie', name: 'Rookie', base: S(6, 6, 6, 6, 6), growth: S(1.2, 1.2, 1.2, 1.2, 1.2), traitBias: ['green', 'quick_learner'] },
   { id: 'engineer', name: 'Engineer', base: S(6, 7, 16, 9, 7), growth: S(0.5, 0.6, 1.4, 0.8, 0.6), traitBias: ['grease_monkey'] },
   { id: 'prospector', name: 'Prospector', base: S(7, 16, 8, 9, 7), growth: S(0.6, 1.4, 0.6, 0.8, 0.6), traitBias: ['steady_hands', 'night_owl'] },
-  { id: 'ex_pirate', name: 'Ex-Pirate', base: S(13, 7, 8, 8, 14), growth: S(1.1, 0.6, 0.6, 0.7, 1.1), traitBias: ['reckless', 'hot_blooded'] },
+  { id: 'ex_pirate', name: 'Ex-Pirate', base: S(13, 7, 8, 8, 14), growth: S(1.1, 0.6, 0.6, 0.7, 1.1), traitBias: ['reckless', 'grudge'] },
   { id: 'scholar', name: 'Scholar', base: S(5, 7, 9, 16, 6), growth: S(0.5, 0.6, 0.8, 1.4, 0.5), traitBias: ['bookworm'] },
   { id: 'trader', name: 'Trader', base: S(6, 8, 7, 10, 14), growth: S(0.5, 0.7, 0.6, 0.9, 1.3), traitBias: ['silver_tongued'] },
 ];
@@ -64,9 +64,10 @@ export const TRAITS: readonly TraitDef[] = [
   { id: 'quick_learner', name: 'Quick Learner', desc: '+25% XP' },
   { id: 'grease_monkey', name: 'Grease Monkey', desc: '+25% Repair Chief bonus, −25% mech wear' },
   { id: 'bookworm', name: 'Bookworm', desc: 'Science Officer bonus ×1.5' },
-  { id: 'hot_blooded', name: 'Hot-Blooded', desc: '+15% mech mining, +20% mech wear', later: 'Combat bonus in sorties (Milestone 4)' },
-  { id: 'reckless', name: 'Reckless', desc: 'Bigger mission rewards, higher risk', later: 'Milestone 4' },
-  { id: 'lucky', name: 'Lucky', desc: 'Small chance to turn a failed mission into a success', later: 'Milestone 4' },
+  { id: 'hot_blooded', name: 'Hot-Blooded', desc: '+15% mech mining, +20% mech wear, +20% sortie damage (takes 10% more)' },
+  { id: 'reckless', name: 'Reckless', desc: '+30% sortie bounty, but the squad takes 15% more damage' },
+  { id: 'lucky', name: 'Lucky', desc: '15% chance to turn a lost sortie into a costly win' },
+  { id: 'grudge', name: 'Grudge (Pirates)', desc: '+50% sortie damage against pirates' },
   { id: 'green', name: 'Green', desc: '−20% to all stats. Fades at level 10.', removedAt: 10 },
 ];
 

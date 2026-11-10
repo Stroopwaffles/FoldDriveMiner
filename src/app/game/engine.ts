@@ -31,6 +31,16 @@ import {
   salvagerDepletionBonus,
 } from './fleet-rules';
 import { RESEARCH, researchNode } from './research';
+import {
+  LossContext,
+  ONLINE,
+  advanceThreats,
+  emptyThreats,
+  eventPriceMult,
+  marketBlocked,
+  offlineContext,
+  productionMult,
+} from './threat-rules';
 import { Rng } from './rng';
 import {
   AsteroidState,
@@ -54,14 +64,23 @@ function emptyDrones(): Record<DroneType, number> {
 }
 
 function emptyEvents(): TickEvents {
-  return { research: [], levelUps: [], syncUps: [], autoRepairs: [], ingots: emptyOre(), autoSoldCredits: 0 };
+  return {
+    research: [],
+    levelUps: [],
+    syncUps: [],
+    autoRepairs: [],
+    threatStarted: [],
+    threatResolved: [],
+    ingots: emptyOre(),
+    autoSoldCredits: 0,
+  };
 }
 
 // ---------------------------------------------------------------- setup
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 3,
+    version: 4,
     commander,
     ship,
     createdAt: now,
@@ -85,6 +104,8 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     recruitRefresh: 0,
     posts: {},
     nextId: 1,
+    wrecks: emptyDrones(),
+    threats: emptyThreats(),
     asteroid: null as unknown as AsteroidState,
     sector: { code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0 },
     zone: 'inner',
@@ -253,7 +274,12 @@ export function marketMultiplier(clock: number, ore: OreId): number {
 
 /** Sell price including the Quartermaster's haggling. */
 export function orePrice(state: GameState, ore: OreId): number {
-  return oreDef(ore).baseValue * marketMultiplier(state.marketClock, ore) * (1 + postBonus(state, 'quartermaster'));
+  return (
+    oreDef(ore).baseValue *
+    marketMultiplier(state.marketClock, ore) *
+    eventPriceMult(state, ore) *
+    (1 + postBonus(state, 'quartermaster'))
+  );
 }
 
 export function ingotPrice(state: GameState, ore: OreId): number {
@@ -404,6 +430,7 @@ export function click(state: GameState): ClickResult {
 // ---------------------------------------------------------------- selling
 
 export function sell(state: GameState, ore: OreId): number {
+  if (marketBlocked(state)) return 0;
   const amount = Math.floor(state.cargo[ore]);
   if (amount <= 0) return 0;
   const credits = amount * orePrice(state, ore);
@@ -413,6 +440,7 @@ export function sell(state: GameState, ore: OreId): number {
 }
 
 export function sellIngots(state: GameState, ore: OreId): number {
+  if (marketBlocked(state)) return 0;
   const amount = Math.floor(state.ingots[ore]);
   if (amount <= 0) return 0;
   const credits = amount * ingotPrice(state, ore);
@@ -721,13 +749,20 @@ function advanceRefinery(state: GameState, dt: number): OreAmounts {
 // ---------------------------------------------------------------- time
 
 /** Everything that runs over time: drones, mechs, crew, refinery, research, auto-sell. */
-function advance(state: GameState, dt: number, efficiency: number): TickEvents & { added: OreAmounts; lost: number } {
+function advance(
+  state: GameState,
+  dt: number,
+  efficiency: number,
+  ctx: LossContext = ONLINE,
+): TickEvents & { added: OreAmounts; lost: number } {
   const events = emptyEvents();
   state.marketClock += dt;
 
-  const amounts = miningDroneRates(state, efficiency);
+  // Hazards: sheltering from a flare stops drones; a reactor fault slows everything.
+  const hazard = productionMult(state);
+  const amounts = miningDroneRates(state, efficiency * hazard.drones * hazard.all);
   for (const id of ORE_IDS) amounts[id] *= dt;
-  addOre(amounts, advanceFleet(state, dt, efficiency, events));
+  addOre(amounts, advanceFleet(state, dt, efficiency * hazard.all, events));
   const { added, lost } = addToCargo(state, amounts);
   state.surveyData += passiveSdRate(state) * dt * efficiency;
 
@@ -735,6 +770,7 @@ function advance(state: GameState, dt: number, efficiency: number): TickEvents &
   events.ingots = advanceRefinery(state, dt);
   events.research = advanceResearch(state, dt);
   events.autoSoldCredits = runAutoSell(state);
+  advanceThreats(state, dt, events, ctx);
   return { ...events, added, lost };
 }
 
@@ -776,11 +812,14 @@ export function simulateOffline(state: GameState, seconds: number): OfflineRepor
     research: [],
     lost: 0,
     cargoFull: false,
+    threats: [],
   };
+  const ctx = offlineContext(state);
   const steps = Math.min(600, Math.max(1, Math.ceil(capped / 10)));
   const dt = capped / steps;
   for (let i = 0; i < steps; i++) {
-    const r = advance(state, dt, efficiency);
+    const r = advance(state, dt, efficiency, ctx);
+    for (const t of r.threatResolved) report.threats.push(t.text);
     addOre(report.gained, r.added);
     addOre(report.ingots, r.ingots);
     report.credits += r.autoSoldCredits;

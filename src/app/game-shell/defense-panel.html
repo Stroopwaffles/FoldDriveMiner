@@ -1,0 +1,144 @@
+@let st = s();
+@let th = t();
+<section class="panel defense">
+  <div class="panel-title">
+    <span class="led" [class.red]="th.heat >= 50" [class.amber]="th.heat >= 25 && th.heat < 50"></span>Defense Command <span class="kana">ぼうえい</span>
+    <span class="head-info">RAIDS WON {{ th.raidsWon }} · LOST {{ th.raidsLost }}</span>
+  </div>
+
+  <div class="grid">
+    <!-- Pirate Heat -->
+    <div class="card heat">
+      <div class="sub">PIRATE HEAT <span class="kana">けいかいど</span></div>
+      <div class="heat-row">
+        <div class="heat-val" [class.hot]="th.heat >= 50">{{ th.heat.toFixed(0) }}</div>
+        <div class="heat-meta">
+          <div class="heat-level">{{ heatLevel() }}</div>
+          <div class="dim small">Rises as you get richer. Raids get more frequent and stronger. Victories cool it down.</div>
+        </div>
+      </div>
+      <div class="heat-bar"><div [style.width.%]="th.heat"></div></div>
+      @if (graceLeft() > 0) {
+        <div class="ok small">Quiet sector: no hostile events for another {{ duration(graceLeft()) }}.</div>
+      }
+      <div class="dim small">Expected raid strength now: <b>{{ game.fmt(expected()) }}</b> · your standing defense: <b>{{ game.fmt(standby()) }}</b></div>
+      @if (odds(); as o) {
+        <div class="small">Estimated chance to repel a raid right now: <b [class.ok]="o.win >= 0.7" [class.warn]="o.win < 0.7">{{ pct(o.win) }}</b></div>
+      } @else {
+        <div class="warn small">No defenders: raids will take {{ pct(0.2) }} of your hold.</div>
+      }
+    </div>
+
+    <!-- Standing orders -->
+    <div class="card">
+      <div class="sub">STANDING ORDERS <span class="kana">じょうびめいれい</span></div>
+      <div class="dim small">What happens automatically when you're busy or away.</div>
+      <div class="order">
+        <span class="o-name">Pirate raid</span>
+        <div class="seg">
+          @for (o of raidOrders; track o.id) {
+            <button type="button" class="btn" [class.on]="th.orders.raid === o.id" [title]="o.hint" (click)="game.setOrder('raid', o.id)">{{ o.label }}</button>
+          }
+        </div>
+      </div>
+      <div class="order">
+        <span class="o-name">Solar flare</span>
+        <div class="seg">
+          @for (o of flareOrders; track o.id) {
+            <button type="button" class="btn" [class.on]="th.orders.flare === o.id" [title]="o.hint" (click)="game.setOrder('flare', o.id)">{{ o.label }}</button>
+          }
+        </div>
+      </div>
+      <div class="order">
+        <span class="o-name">Rogue asteroid</span>
+        <div class="seg">
+          @for (o of rogueOrders; track o.id) {
+            <button type="button" class="btn" [class.on]="th.orders.rogue === o.id" [title]="o.hint" (click)="game.setOrder('rogue', o.id)">{{ o.label }}</button>
+          }
+        </div>
+      </div>
+      <div class="dim small">While away you never lose more than 10% of drones or 25% of the hold per absence.</div>
+    </div>
+
+    <!-- Defense roster -->
+    <div class="card roster">
+      <div class="sub">DEFENSE ROSTER <span class="kana">ぼうえいたい</span></div>
+      @for (r of roster(); track r.mech.id) {
+        <div class="mech" [class.off]="!r.ok">
+          <fdm-mech-portrait [frame]="r.mech.frame" [parts]="r.mech.parts" [size]="28" />
+          <div class="m-info">
+            <div class="m-name">{{ r.mech.designation }} "{{ r.mech.name }}"</div>
+            <div class="dim small">
+              {{ r.pilot ? r.pilot.callsign : 'autopilot' }} · PWR {{ game.fmt(r.power) }} · {{ r.cond.name }} ·
+              {{ r.mech.job === 'defense' ? 'ON STANDBY' : r.mech.job.toUpperCase() }}
+            </div>
+          </div>
+          <button type="button" class="btn small" [class.on]="r.mech.job === 'defense'" [disabled]="!r.ok && r.mech.job !== 'defense'"
+            (click)="game.setMechJob(r.mech.id, r.mech.job === 'defense' ? 'mining' : 'defense')">
+            {{ r.mech.job === 'defense' ? 'Standby ✓' : 'Set standby' }}
+          </button>
+        </div>
+      } @empty {
+        <div class="dim small">No mechs yet. Combat-fitted Bulwarks (shield + rifle) make the best defenders.</div>
+      }
+      <div class="guard">
+        <fdm-drone-sprite type="guardian" [size]="26" />
+        @if (guardians().unlocked) {
+          <span>Guardian drones ×{{ guardians().count }} · PWR {{ game.fmt(guardians().power) }} — buy them in the OPS Drone Bay</span>
+        } @else {
+          <span class="dim">Guardian drones: research them in the LAB (Fleet Engineering).</span>
+        }
+      </div>
+    </div>
+
+    <!-- Pirate base / Jackal -->
+    <div class="card">
+      <div class="sub">PIRATE ACTIVITY <span class="kana">かいぞく</span></div>
+      @if (th.baseFound) {
+        <div class="base">
+          <div class="base-title">⚠ PIRATE BASE LOCATED</div>
+          <div class="dim small">A strike pays a huge bounty, a Data Core and a unique part, and resets Pirate Heat to zero. Strength {{ game.fmt(expected() * 2.5) }}.</div>
+          <button type="button" class="btn btn-primary small" (click)="game.openSortiePrep(undefined, true)">Plan strike</button>
+        </div>
+      } @else {
+        <div class="dim small">Repel {{ th.strikesWon === 0 ? 3 : 5 }} raids to trace the pirates' base ({{ th.winsSinceBase }} so far).</div>
+      }
+      @if (th.jackalEncounters > 0) {
+        <div class="wanted">
+          <fdm-pilot-portrait story="jackal" [size]="56" />
+          <div>
+            <div class="wanted-title">WANTED</div>
+            <div class="wanted-name">{{ jackalName }}</div>
+            <div class="dim small">Encounters {{ th.jackalEncounters }} · driven off {{ th.jackalDefeats }} · gets stronger every time</div>
+          </div>
+        </div>
+      }
+      @if (th.lastSortie; as ls) {
+        <button type="button" class="btn small" (click)="game.sortie.set({ mode: 'play', report: ls })">Replay last sortie</button>
+      }
+      @if (wrecks().length) {
+        <div class="sub wr">DRONE WRECKS</div>
+        @for (w of wrecks(); track w.def.id) {
+          <div class="wreck">
+            <fdm-drone-sprite [type]="w.def.id" [size]="20" />
+            <span>{{ w.count }} {{ w.def.name }}</span>
+            <button type="button" class="btn small" [disabled]="st.credits < w.cost" (click)="game.rebuildWrecks(w.def.id)">Rebuild · {{ game.fmt(w.cost) }} each</button>
+          </div>
+        }
+        <div class="dim small">Wrecks drift away over time. Salvager drones bring some home for free.</div>
+      }
+    </div>
+
+    <!-- Log -->
+    <div class="card log">
+      <div class="sub">INCIDENT LOG <span class="kana">きろく</span></div>
+      @for (e of th.log; track $index) {
+        <div class="entry" [class.good]="e.good" [class.bad]="!e.good">
+          <span class="when">{{ ago(e.at) }}</span> {{ e.text }}
+        </div>
+      } @empty {
+        <div class="dim small">All quiet. For now.</div>
+      }
+    </div>
+  </div>
+</section>

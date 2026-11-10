@@ -88,6 +88,28 @@ export class AudioService {
     [1047, 1319, 1568, 2093].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.14, i * 0.07));
   }
 
+  /** Two-tone alarm for incoming threats. */
+  klaxon(): void {
+    for (let i = 0; i < 3; i++) {
+      this.tone(660, 0.22, 'sawtooth', 0.12, i * 0.5, 440);
+      this.tone(440, 0.22, 'sawtooth', 0.12, i * 0.5 + 0.25, 660);
+    }
+  }
+
+  /** Weapons fire / impact for sorties. */
+  explosion(): void {
+    this.noise(0.6, 900, 0.3);
+    this.tone(70, 0.5, 'triangle', 0.25, 0, 30);
+  }
+
+  victory(): void {
+    [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.18, 'square', 0.12, i * 0.12));
+  }
+
+  defeat(): void {
+    [392, 330, 262].forEach((f, i) => this.tone(f, 0.3, 'sawtooth', 0.1, i * 0.22));
+  }
+
   /** Comm "voice" bleeps — a pitch per speaker. */
   comm(pitch = 600): void {
     for (let i = 0; i < 4; i++) {

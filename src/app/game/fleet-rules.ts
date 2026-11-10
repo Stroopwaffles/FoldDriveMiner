@@ -286,7 +286,7 @@ export function setMechJob(state: GameState, mechId: number, job: MechJob): bool
   const mech = mechById(state, mechId);
   if (!mech) return false;
   if (job === 'repair' && !hasResearch(state, 'repair_bay')) return false;
-  if (job === 'mining' && !mechOperable(state, mech)) return false;
+  if ((job === 'mining' || job === 'defense') && !mechOperable(state, mech)) return false;
   mech.job = job;
   mech.returnJob = null;
   return true;

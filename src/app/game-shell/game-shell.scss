@@ -24,7 +24,9 @@
   grid-area: status;
   display: flex;
   align-items: center;
-  /* Tighter spacing on narrower desktops so the bar doesn't need to scroll */
+  /* Tighter spacing on narrower desktops; wraps rather than scrolling if it must */
+  flex-wrap: wrap;
+  row-gap: 0.3rem;
   gap: clamp(0.7rem, 1.4vw, 1.4rem);
   padding: 0.45rem clamp(0.7rem, 1.2vw, 1.2rem);
   overflow-x: auto;
@@ -223,7 +225,7 @@
   display: grid;
   /* minmax(0, …) stops wide content (the research tree) from stretching the column */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(320px, 1fr) auto;
+  grid-template-rows: auto minmax(320px, 1fr) auto;
   gap: 8px;
   min-height: 0;
   overflow-y: auto;
@@ -548,5 +550,36 @@
 
   .main {
     overflow: visible;
+  }
+}
+
+/* Red screen edges while a hostile warning counts down */
+.main.alarm {
+  box-shadow: inset 0 0 40px rgba(255, 59, 59, 0.35);
+  animation: alarm 1s ease-in-out infinite alternate;
+}
+
+@keyframes alarm {
+  to {
+    box-shadow: inset 0 0 12px rgba(255, 59, 59, 0.15);
+  }
+}
+
+.from-jackal .msg-body {
+  border-left-color: var(--danger);
+}
+
+.from-jackal .msg-from {
+  color: var(--danger);
+}
+
+/* The Fold Drive gauge is only a teaser until Milestone 6: drop it on narrower screens. */
+@media (max-width: 1280px) {
+  .fold {
+    display: none;
+  }
+
+  .menu-btn {
+    margin-left: auto;
   }
 }

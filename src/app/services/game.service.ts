@@ -4,16 +4,19 @@ import * as E from '../game/engine';
 import { formatNumber } from '../game/format';
 import { researchNode } from '../game/research';
 import { randomSeed } from '../game/rng';
-import { ClickResult, GameState, MechJob, OfflineReport, PilotState, TickEvents } from '../game/types';
+import { ClickResult, GameState, MechJob, OfflineReport, PilotState, SortieReport, TickEvents } from '../game/types';
+import * as T from '../game/threat-rules';
+import { JACKAL, StandingOrders, eventDef } from '../game/threat-data';
+import { DroneType as DT } from '../game/fleet-data';
 import { PostId, postDef } from '../game/crew-data';
 import { DroneType, FrameId, SlotId, frameDef } from '../game/fleet-data';
 import { AudioService } from './audio.service';
 import { SaveService } from './save.service';
 import { SettingsService } from './settings.service';
 
-export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew';
+export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense';
 
-export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT';
+export type Speaker = 'VESPER' | 'JUNO' | 'KIT' | 'SYSTEM' | 'PILOT' | 'JACKAL';
 
 export interface CommMessage {
   id: number;
@@ -24,6 +27,15 @@ export interface CommMessage {
   seed?: number;
   text: string;
   at: number;
+}
+
+/** The sortie screen: choosing a squad, or watching a battle play out. */
+export interface SortieView {
+  mode: 'prep' | 'play';
+  /** The raid being defended (prep), or a strike on the pirate base. */
+  eventId?: number;
+  strike?: boolean;
+  report?: SortieReport;
 }
 
 /** A Special Technique cut-in waiting to play full screen. */
@@ -42,7 +54,7 @@ export interface EpisodeCard {
   subtitle: string;
 }
 
-const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560 };
+const SPEAKER_PITCH: Record<Speaker, number> = { VESPER: 420, JUNO: 760, KIT: 640, SYSTEM: 300, PILOT: 560, JACKAL: 330 };
 
 /** Owns the live game state, the tick loop, saving and player actions. */
 @Injectable({ providedIn: 'root' })
@@ -61,6 +73,7 @@ export class GameService {
   readonly comms = signal<CommMessage[]>([]);
   readonly lastSaved = signal<number | null>(null);
   readonly cutIn = signal<CutIn | null>(null);
+  readonly sortie = signal<SortieView | null>(null);
 
   // Derived values used across the HUD.
   readonly power = computed(() => this.withState(E.drillPower, 0));
@@ -369,6 +382,11 @@ export class GameService {
 
   private handleEvents(ev: TickEvents): void {
     const s = this._state()!;
+    for (const t of ev.threatStarted) this.announceThreat(t);
+    for (const r of ev.threatResolved) {
+      this.say('VESPER', r.text);
+      if (r.sortie) this.afterSortie(r.sortie, false);
+    }
     for (const up of ev.levelUps) {
       const p = s.pilots.find((x) => x.id === up.pilotId);
       // Only announce every fifth level so the comm log doesn't fill with level-ups.
@@ -573,6 +591,150 @@ export class GameService {
   pilotSay(p: PilotState, text: string): void {
     const from: Speaker = p.story === 'juno' ? 'JUNO' : p.story === 'kit' ? 'KIT' : 'PILOT';
     this.say(from, text, 0, p);
+  }
+
+  // ------------------------------------------------------------ threats
+
+  private announceThreat(e: { id: number; kind: string; jackal?: boolean; ore?: OreId; phase: string }): void {
+    const def = eventDef(e.kind as never);
+    if (def.hostile) this.audio.klaxon();
+    switch (e.kind) {
+      case 'raid':
+        this.say('VESPER', `WARNING: pirate signal on approach. Raid in ${def.warning} seconds. Ready a sortie or check your standing orders.`);
+        if (e.jackal) {
+          const s = this._state()!;
+          const line = JACKAL.arrive[Math.min(s.threats.jackalEncounters, JACKAL.arrive.length - 1)];
+          this.say('JACKAL', line, 1200);
+          if (s.threats.jackalEncounters === 0) this.say('JUNO', 'That voice... who IS that? Commander, that frame is no ordinary pirate.', 4000);
+        }
+        break;
+      case 'flare':
+        this.say('VESPER', `WARNING: solar flare in ${def.warning} seconds. Shelter the drones or ride it out.`);
+        break;
+      case 'rogue':
+        this.say('VESPER', `WARNING: rogue asteroid on collision course! Impact in ${def.warning} seconds. Crack it with the drill — or let a mech intercept.`);
+        break;
+      case 'micrometeor':
+        this.say('VESPER', 'Micrometeor storm! Drones are taking hits. Guardians will shield the swarm.');
+        break;
+      case 'reactor':
+        this.say('KIT', 'Reactor fault! Everything\'s running at 70% until I — or the Repair Chief — get it patched.');
+        break;
+      case 'blackout':
+        this.say('VESPER', 'Comms blackout. The exchange is unreachable — no selling until the signal returns.');
+        break;
+      case 'boom':
+        this.say('VESPER', `Market boom: ${e.ore ? T.oreName(e.ore) : 'ore'} is selling at double price for five minutes!`);
+        break;
+      case 'crash':
+        this.say('VESPER', `Market crash: ${e.ore ? T.oreName(e.ore) : 'ore'} prices have halved. Hold or refine it for now.`);
+        break;
+    }
+  }
+
+  /** After any sortie: comms, sounds, and the replay screen if the player is here. */
+  private afterSortie(report: SortieReport, manual: boolean): void {
+    const s = this._state()!;
+    if (report.outcome === 'victory' || report.outcome === 'costly') this.audio.victory();
+    else this.audio.defeat();
+    if (report.jackal) {
+      const lines = report.outcome === 'defeat' || report.outcome === 'surrender' ? JACKAL.win : JACKAL.lose;
+      this.say('JACKAL', lines[s.threats.jackalEncounters % lines.length], 1500);
+    }
+    if (s.threats.baseFound && !s.flags['baseFound']) {
+      s.flags['baseFound'] = true;
+      this.say('VESPER', 'Pirate transmissions traced to a hidden base. A strike is possible from the DEFENSE screen.', 3000);
+    }
+    if (report.outcome !== 'surrender' && (manual || this.view() === 'game')) {
+      this.sortie.set({ mode: 'play', report });
+    }
+  }
+
+  respond(eventId: number, response: string): void {
+    this.act((s) => T.respondToEvent(s, eventId, response), () => this.audio.select());
+  }
+
+  setOrder<K extends keyof StandingOrders>(key: K, value: StandingOrders[K]): void {
+    const s = this._state();
+    if (!s) return;
+    T.setStandingOrder(s, key, value);
+    this.audio.blip();
+    this.publish();
+  }
+
+  openSortiePrep(eventId?: number, strike = false): void {
+    this.audio.select();
+    this.sortie.set({ mode: 'prep', eventId, strike });
+  }
+
+  closeSortie(): void {
+    this.sortie.set(null);
+  }
+
+  launchSortie(mechIds: number[], useGuardians: boolean): void {
+    const s = this._state();
+    const view = this.sortie();
+    if (!s || !view) return;
+    const events = this.blankEvents();
+    const report = view.strike
+      ? T.launchStrike(s, mechIds, useGuardians, events)
+      : T.launchDefense(s, view.eventId ?? -1, mechIds, useGuardians, events);
+    if (!report) {
+      this.audio.denied();
+      return;
+    }
+    this.audio.explosion();
+    for (const r of events.threatResolved) this.say('VESPER', r.text);
+    this.afterSortie(report, true);
+    this.publish();
+  }
+
+  surrender(eventId: number): void {
+    const s = this._state();
+    if (!s) return;
+    const events = this.blankEvents();
+    if (T.surrenderRaid(s, eventId, events)) {
+      for (const r of events.threatResolved) this.say('VESPER', r.text);
+      this.sortie.set(null);
+      this.audio.denied();
+    }
+    this.publish();
+  }
+
+  rogueClick(): T.RogueClick | null {
+    const s = this._state();
+    if (!s) return null;
+    const events = this.blankEvents();
+    const r = T.rogueClick(s, events);
+    if (r) {
+      if (r.locked) this.audio.denied();
+      else if (r.overheated) this.audio.overheat();
+      else this.audio.drill(r.overdrive);
+      if (r.cracked) {
+        this.audio.crack();
+        this.audio.victory();
+      }
+      for (const x of events.threatResolved) this.say('VESPER', x.text);
+    }
+    this.publish();
+    return r;
+  }
+
+  rebuildWrecks(type: DT): void {
+    this.act((s) => T.rebuildWrecks(s, type) > 0, () => this.audio.buy());
+  }
+
+  private blankEvents(): TickEvents {
+    return {
+      research: [],
+      levelUps: [],
+      syncUps: [],
+      autoRepairs: [],
+      threatStarted: [],
+      threatResolved: [],
+      ingots: E.emptyOre(),
+      autoSoldCredits: 0,
+    };
   }
 
   // ------------------------------------------------------------ comms

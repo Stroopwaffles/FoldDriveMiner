@@ -1,0 +1,329 @@
+.sortie {
+  width: min(900px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+}
+
+.count {
+  margin-left: auto;
+  color: var(--warn);
+  font-family: var(--font-display);
+}
+
+.sub {
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  margin-bottom: 0.35rem;
+}
+
+.dim {
+  color: var(--text-dim);
+}
+
+.small {
+  font-size: 0.72rem;
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.good {
+  color: var(--ok);
+}
+
+.prep {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 0.8rem 1.2rem;
+  padding: 0.8rem 1rem;
+}
+
+.intel,
+.odds {
+  grid-column: 1;
+}
+
+.squad {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.enemy {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid var(--danger);
+  background: rgba(255, 59, 59, 0.07);
+}
+
+.enemy-name {
+  font-family: var(--font-display);
+  color: var(--danger);
+}
+
+.strength {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.cand {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas:
+    'chk pic name pilot'
+    'chk pic stats stats';
+  gap: 0 0.5rem;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #232a5c;
+  background: rgba(10, 13, 34, 0.6);
+  cursor: pointer;
+  font-size: 0.75rem;
+
+  input {
+    grid-area: chk;
+    accent-color: var(--magenta);
+  }
+
+  fdm-mech-portrait {
+    grid-area: pic;
+  }
+
+  &.on {
+    border-color: var(--ok);
+  }
+
+  &.off {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &.guard {
+    grid-template-areas: 'chk name name name' 'chk stats stats stats';
+  }
+}
+
+.cand-name {
+  grid-area: name;
+  font-family: var(--font-display);
+}
+
+.cand-pilot {
+  grid-area: pilot;
+  color: var(--cyan);
+}
+
+.cand-stats {
+  grid-area: stats;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+}
+
+.odds-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.big {
+  font-family: var(--font-logo);
+  font-size: 2.2rem;
+  color: var(--warn);
+
+  &.good {
+    color: var(--ok);
+  }
+
+  &.bad {
+    color: var(--danger);
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+
+.btn.tiny {
+  font-size: 0.6rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.skip {
+  margin-left: auto;
+}
+
+/* ---------------- battle ---------------- */
+.play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+}
+
+.radar {
+  width: 100%;
+  background: radial-gradient(circle, #06221a 0%, #020a08 75%);
+  border: 1px solid #1f6b4a;
+  border-radius: 4px;
+}
+
+.ring {
+  fill: none;
+  stroke: rgba(109, 255, 155, 0.25);
+  stroke-width: 0.8;
+}
+
+.sweep {
+  transform-origin: 0 0;
+  animation: sweep 2.4s linear infinite;
+
+  path {
+    fill: rgba(109, 255, 155, 0.18);
+  }
+}
+
+@keyframes sweep {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.ally {
+  fill: var(--ok);
+  filter: drop-shadow(0 0 3px var(--ok));
+
+  &.g {
+    fill: #ff9a9a;
+  }
+}
+
+.enemy {
+  fill: var(--danger);
+  filter: drop-shadow(0 0 3px var(--danger));
+  transition: opacity 0.6s;
+
+  &.dead {
+    opacity: 0.12;
+  }
+}
+
+.tracer {
+  stroke: var(--amber);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 6;
+  animation: tracer 0.3s linear infinite;
+}
+
+@keyframes tracer {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.log {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  font-size: 0.75rem;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.enemy-bar {
+  display: grid;
+  gap: 3px;
+  color: var(--danger);
+  font-size: 0.7rem;
+
+  .bar {
+    height: 8px;
+    background: #1a0508;
+    border: 1px solid var(--danger);
+
+    div {
+      height: 100%;
+      background: var(--danger);
+      transition: width 0.6s;
+    }
+  }
+}
+
+.round {
+  border-left: 2px solid #2a3168;
+  padding-left: 0.5rem;
+  animation: in 0.3s ease-out;
+
+  b {
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    font-weight: normal;
+  }
+
+  .tech {
+    color: var(--magenta);
+    font-family: var(--font-display);
+  }
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+.blink {
+  animation: blink 0.8s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.result {
+  margin: 0 1rem 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--danger);
+  background: rgba(255, 59, 59, 0.08);
+  display: grid;
+  gap: 2px;
+  font-size: 0.8rem;
+
+  &.win {
+    border-color: var(--ok);
+    background: rgba(109, 255, 155, 0.06);
+  }
+}
+
+.outcome {
+  font-family: var(--font-logo);
+  font-style: italic;
+  font-size: 1.6rem;
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 760px) {
+  .prep,
+  .play {
+    grid-template-columns: 1fr;
+  }
+
+  .squad {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

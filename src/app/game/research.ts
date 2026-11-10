@@ -180,6 +180,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Three. Now we are cooking. — Kit Okafor (pending recruitment)',
   }),
   N({
+    id: 'medbay', name: 'Medbay', branch: 'station', maxLevel: 2,
+    sd: 15, cr: 25000, sec: 240, growth: 3, requires: ['hangar'],
+    effect: 'Injured pilots recover faster (+100% per level)',
+    flavor: 'Bandages, a scanner and a very firm bed.',
+  }),
+  N({
     id: 'crew_quarters', name: 'Crew Quarters', branch: 'station', maxLevel: 2,
     sd: 20, cr: 50000, sec: 300, growth: 3, requires: ['hangar'],
     effect: '+2 pilot roster slots',
@@ -231,9 +237,9 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'guardian_drones', name: 'Guardian Drones', branch: 'fleet', maxLevel: 1,
-    sd: 0, cr: 0, sec: 0, teaser: 'Milestone 4',
-    effect: 'Defend the operation during raids',
-    flavor: 'Threat assessment pending.',
+    sd: 12, cr: 8000, sec: 180, requires: ['drone_efficiency'],
+    effect: 'Guardians: fight raids and shield drones',
+    flavor: 'Pirate signals are increasing. Recommend armed escorts.',
   }),
   N({
     id: 'hangar', name: 'Mech Hangar', branch: 'fleet', maxLevel: 1,
