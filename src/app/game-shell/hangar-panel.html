@@ -205,6 +205,17 @@
           }
         </div>
       }
+      @for (u of uniques(); track u.part.id) {
+        <div class="shop-item unique">
+          <div>
+            <div class="part-name">★ {{ u.part.name }} <span class="owned">×{{ u.owned }} in storage</span></div>
+            <div class="dim small">
+              {{ u.part.supply ? '+' + u.part.supply + ' power supply' : partStats(u.part.stats) + ' · draws ' + u.part.draw + ' power' }}
+            </div>
+          </div>
+          <span class="dim small">UNIQUE · not for sale</span>
+        </div>
+      }
     </div>
   </div>
 </section>

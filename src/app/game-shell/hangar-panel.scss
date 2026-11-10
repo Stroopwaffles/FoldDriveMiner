@@ -490,3 +490,12 @@ select {
   color: var(--cyan);
   margin-left: 0.3rem;
 }
+
+.shop-item.unique {
+  border-color: var(--amber-dim);
+  background: rgba(255, 181, 71, 0.05);
+
+  .part-name {
+    color: var(--amber);
+  }
+}

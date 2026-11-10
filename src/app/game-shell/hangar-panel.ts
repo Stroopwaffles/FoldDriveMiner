@@ -74,7 +74,11 @@ export class HangarPanel {
       parts: SLOTS.map((slot) => ({
         slot,
         part: m.parts[slot.id] ? partDef(m.parts[slot.id]!) : null,
-        owned: PARTS.filter((p) => p.slot === slot.id && (s.parts[p.id] ?? 0) > 0),
+        // Everything in storage for this slot, including generated sector-unique parts.
+        owned: Object.keys(s.parts)
+          .filter((id) => (s.parts[id] ?? 0) > 0)
+          .map((id) => partDef(id))
+          .filter((p) => p.slot === slot.id),
       })),
     };
   }
@@ -90,14 +94,24 @@ export class HangarPanel {
     });
   });
 
+  /** The depot only sells standard parts; unique ones are earned. */
   protected readonly shop = computed(() => {
     const s = this.s();
-    return PARTS.filter((p) => p.slot === this.shopSlot()).map((p) => ({
+    return PARTS.filter((p) => p.slot === this.shopSlot() && p.rarity === 'standard').map((p) => ({
       part: p,
       owned: s.parts[p.id] ?? 0,
       locked: !!p.research && !E.hasResearch(s, p.research),
       lockName: p.research ? 'Mech Engineering' : '',
     }));
+  });
+
+  /** Unique parts you own for this slot (not for sale, shown for reference). */
+  protected readonly uniques = computed(() => {
+    const s = this.s();
+    return Object.keys(s.parts)
+      .filter((id) => (s.parts[id] ?? 0) > 0)
+      .map((id) => ({ part: partDef(id), owned: s.parts[id] }))
+      .filter((x) => x.part.slot === this.shopSlot() && x.part.rarity !== 'standard');
   });
 
   /** Power the selected mech would use if this part replaced the current one. */

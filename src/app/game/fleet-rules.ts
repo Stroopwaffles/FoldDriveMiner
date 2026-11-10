@@ -317,6 +317,8 @@ export function seatPilot(state: GameState, mechId: number, pilotId: number | nu
 
 export function buyPart(state: GameState, partId: string): boolean {
   const part = partDef(partId);
+  // Only standard parts are sold at the depot; unique parts are earned (or bought from merchants).
+  if (part.rarity !== 'standard') return false;
   if (part.research && !hasResearch(state, part.research)) return false;
   if (state.credits < part.cost) return false;
   state.credits -= part.cost;

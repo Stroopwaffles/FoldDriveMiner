@@ -277,3 +277,22 @@ describe('milestone 3: crew', () => {
     expect(m.nextId).toBe(1);
   });
 });
+
+describe('parts depot', () => {
+  it("never sells unique parts, so they can't be had for free", () => {
+    const s = rich();
+    for (const id of ['crimson_lance', 'vermilion_plating', 'meridian_core', 'sx:123:breaker']) {
+      expect(E.buyPart(s, id)).toBe(false);
+      expect(s.parts[id] ?? 0).toBe(0);
+    }
+  });
+
+  it('owned sector-unique parts can be equipped', () => {
+    const s = rich();
+    s.research.levels['hangar'] = 1;
+    const m = E.buildMech(s, 'pickaxe')!;
+    s.parts['sx:123:hand_drill'] = 1;
+    expect(E.equipPart(s, m.id, 'drill', 'sx:123:hand_drill')).toBe(true);
+    expect(m.parts.drill).toBe('sx:123:hand_drill');
+  });
+});
