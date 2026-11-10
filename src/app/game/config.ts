@@ -120,8 +120,13 @@ export const CONFIG = {
     perClick: 7,
     decayPerSec: 30,
     max: 100,
-    /** Heat at or above this (but below max) triggers OVERDRIVE. */
-    overdriveMin: 70,
+    /**
+     * OVERDRIVE is the cool zone: a click that leaves heat at or below this
+     * hits at the Overdrive multiplier. Click too fast, heat climbs past it and
+     * Overdrive is lost; at max the drill locks out. Heat sinks vent faster,
+     * so you can click faster and still stay cool.
+     */
+    overdriveMax: 40,
     overdriveMult: 3,
     lockSec: 3,
     sinkDecayBonus: 0.15,

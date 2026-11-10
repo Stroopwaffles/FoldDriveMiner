@@ -159,7 +159,7 @@
       <div class="upgrade">
         <div>
           <div class="up-name">Heat Sink <span class="lvl">LV {{ st.drill.heatSinkLevel }}/{{ sinkMax }}</span></div>
-          <div class="up-desc">Heat vents faster — easier to hold Overdrive</div>
+          <div class="up-desc">Heat vents faster — stay in Overdrive at a faster click rate</div>
         </div>
         @if (sinkCost(); as c) {
           <button type="button" class="btn" [disabled]="st.credits < c" (click)="game.buyHeatSink()">{{ game.fmt(c) }} cr</button>

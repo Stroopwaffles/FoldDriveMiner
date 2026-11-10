@@ -41,15 +41,44 @@ describe('engine', () => {
     expect(E.click(s).locked).toBe(false);
   });
 
-  it('enters overdrive in the red band and triples output', () => {
+  it('overdrive is the cool zone: a cool drill triples output', () => {
     const s = fresh();
     s.asteroid.mass = 1e9;
     s.asteroid.maxMass = 1e9;
-    s.drill.heat = CONFIG.heat.overdriveMin;
-    const r = E.click(s);
+    const r = E.click(s); // from cold
     expect(r.overdrive).toBe(true);
     const mined = r.gained.ferrite + r.slag;
     expect(mined).toBeCloseTo(E.drillPower(s) * CONFIG.heat.overdriveMult, 6);
+  });
+
+  it('clicking too fast heats the drill out of overdrive', () => {
+    const s = fresh();
+    s.asteroid.mass = 1e9;
+    s.asteroid.maxMass = 1e9;
+    s.drill.heat = CONFIG.heat.overdriveMax;
+    const r = E.click(s);
+    expect(r.overdrive).toBe(false);
+    expect(E.isHot(s)).toBe(true);
+    const mined = r.gained.ferrite + r.slag;
+    expect(mined).toBeCloseTo(E.drillPower(s), 6);
+  });
+
+  it('a steady rhythm stays in overdrive, and heat sinks allow a faster rhythm', () => {
+    const rhythm = (sinkLevel: number, clicksPerSec: number) => {
+      const s = fresh();
+      s.asteroid.mass = 1e12;
+      s.asteroid.maxMass = 1e12;
+      s.drill.heatSinkLevel = sinkLevel;
+      let od = 0;
+      for (let i = 0; i < 100; i++) {
+        if (E.click(s).overdrive) od++;
+        E.tick(s, 1 / clicksPerSec);
+      }
+      return od;
+    };
+    expect(rhythm(0, 4)).toBe(100); // 28 heat/s in, 30/s out
+    expect(rhythm(0, 6)).toBeLessThan(100); // too fast without sinks
+    expect(rhythm(5, 6)).toBe(100); // sinks vent 52.5/s: 6 clicks/s stays cool
   });
 
   it('cracks an asteroid, pays a bonus and spawns a new one', () => {

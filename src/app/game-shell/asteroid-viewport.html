@@ -117,13 +117,16 @@
       @if (locked()) {
         <span class="heat-status bad">⚠ OVERHEAT — VENTING</span>
       } @else if (game.overdrive()) {
-        <span class="heat-status od">OVERDRIVE ×{{ odMult() }}</span>
+        <span class="heat-status od">OVERDRIVE ×{{ odMult() }} — KEEP IT COOL</span>
+      } @else if (hot()) {
+        <span class="heat-status warm">TOO HOT — OVERDRIVE LOST</span>
       } @else {
         <span class="heat-status">POWER {{ game.fmt(game.power()) }}/CLICK</span>
       }
     </div>
     <div class="heat-bar">
-      <div class="heat-zone" [style.left.%]="(odMin / heatMax) * 100"></div>
+      <div class="heat-zone" [style.width.%]="(odMax / heatMax) * 100"><span>OVERDRIVE</span></div>
+      <div class="heat-danger"></div>
       <div class="heat-fill" [style.width.%]="(heat() / heatMax) * 100"></div>
       @for (t of [25, 50, 75]; track t) {
         <div class="heat-tick" [style.left.%]="t"></div>

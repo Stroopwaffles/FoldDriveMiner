@@ -24,8 +24,9 @@
   grid-area: status;
   display: flex;
   align-items: center;
-  gap: 1.4rem;
-  padding: 0.45rem 1.2rem;
+  /* Tighter spacing on narrower desktops so the bar doesn't need to scroll */
+  gap: clamp(0.7rem, 1.4vw, 1.4rem);
+  padding: 0.45rem clamp(0.7rem, 1.2vw, 1.2rem);
   overflow-x: auto;
 }
 

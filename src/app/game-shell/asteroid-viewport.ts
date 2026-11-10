@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
-import { mechOperable, overdriveMult } from '../game/engine';
+import { isHot, mechOperable, overdriveMult } from '../game/engine';
 import { MechPortrait } from '../ui/mech-portrait';
 import { DroneSprite } from '../ui/drone-sprite';
 import { DRONE_IDS, DroneType } from '../game/fleet-data';
@@ -134,7 +134,11 @@ export class AsteroidViewport {
   protected readonly heat = computed(() => this.game.state()?.drill.heat ?? 0);
   protected readonly locked = computed(() => (this.game.state()?.drill.lockRemaining ?? 0) > 0);
   protected readonly heatMax = CONFIG.heat.max;
-  protected readonly odMin = CONFIG.heat.overdriveMin;
+  protected readonly odMax = CONFIG.heat.overdriveMax;
+  protected readonly hot = computed(() => {
+    const s = this.game.state();
+    return s ? isHot(s) : false;
+  });
   protected readonly odMult = computed(() => {
     const s = this.game.state();
     return s ? overdriveMult(s) : CONFIG.heat.overdriveMult;

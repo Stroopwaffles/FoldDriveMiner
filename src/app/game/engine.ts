@@ -175,8 +175,15 @@ export function heatDecay(state: GameState): number {
   return h.decayPerSec * (1 + state.drill.heatSinkLevel * h.sinkDecayBonus);
 }
 
+/** True while the drill is warm from use but still in the cool Overdrive band. */
 export function isOverdrive(state: GameState): boolean {
-  return state.drill.lockRemaining <= 0 && state.drill.heat >= CONFIG.heat.overdriveMin;
+  const heat = state.drill.heat;
+  return state.drill.lockRemaining <= 0 && heat > 0 && heat <= CONFIG.heat.overdriveMax;
+}
+
+/** Warm enough to be out of Overdrive, not yet locked out. */
+export function isHot(state: GameState): boolean {
+  return state.drill.lockRemaining <= 0 && state.drill.heat > CONFIG.heat.overdriveMax;
 }
 
 export function cargoCapacity(state: GameState, level = state.cargoLevel): number {
@@ -342,7 +349,7 @@ export function click(state: GameState): ClickResult {
     result.overheated = true;
     return result;
   }
-  result.overdrive = drill.heat >= h.overdriveMin;
+  result.overdrive = drill.heat <= h.overdriveMax;
   if (result.overdrive) state.stats.overdriveClicks++;
 
   const asteroid = state.asteroid;

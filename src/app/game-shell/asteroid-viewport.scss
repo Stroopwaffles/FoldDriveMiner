@@ -372,6 +372,10 @@
     color: var(--danger);
     animation: pulse 0.3s steps(2) infinite;
   }
+
+  &.warm {
+    color: var(--orange);
+  }
 }
 
 .heat-bar {
@@ -382,12 +386,36 @@
   overflow: hidden;
 }
 
+/* The cool band on the left is the Overdrive zone. */
 .heat-zone {
   position: absolute;
   top: 0;
   bottom: 0;
+  left: 0;
+  background: repeating-linear-gradient(-45deg, rgba(79, 227, 255, 0.35) 0 6px, rgba(79, 227, 255, 0.1) 6px 12px);
+  border-right: 2px solid var(--cyan);
+  z-index: 1;
+
+  span {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.5rem;
+    letter-spacing: 0.15em;
+    color: var(--cyan);
+    opacity: 0.8;
+  }
+}
+
+/* The last stretch before an overheat lockout. */
+.heat-danger {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   right: 0;
-  background: repeating-linear-gradient(-45deg, rgba(255, 61, 154, 0.35) 0 6px, rgba(255, 61, 154, 0.12) 6px 12px);
+  width: 15%;
+  background: repeating-linear-gradient(-45deg, rgba(255, 59, 59, 0.35) 0 6px, rgba(255, 59, 59, 0.1) 6px 12px);
 }
 
 .heat-fill {

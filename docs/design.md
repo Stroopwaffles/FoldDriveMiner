@@ -39,7 +39,7 @@ Mine ore → sell / refine → buy upgrades → mine faster → unlock deeper su
 - One asteroid on screen; has **mass** and **composition** (e.g. 70% Ferrite / 25% Titanite / 5% Iridium).
 - Each click removes ore equal to **drill power**, split by composition; ores above the drill's tier become slag.
 - Depletion: bonus ore, chance of Data Core, small Survey Data, new asteroid drifts in.
-- **Drill heat / Overdrive:** rapid clicks build heat; the red zone triggers OVERDRIVE (3× power); overheating locks the drill briefly.
+- **Drill heat / Overdrive:** every click adds heat, which vents over time. While the drill stays in the **cool band** (≤ 40 heat), clicks hit at OVERDRIVE (3× power). Click too fast and heat climbs out of the band (Overdrive lost); at max the drill locks out briefly. Heat sinks vent faster, so a faster rhythm stays in Overdrive. *(Changed after playtesting: originally Overdrive was the hot band, which made heat sinks counter-productive.)*
 
 ### Idle production
 - **Prospector Drone Mk.I** is the first generator. Drones mine the sector/zone field average, not the on-screen asteroid.

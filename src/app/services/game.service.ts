@@ -236,7 +236,7 @@ export class GameService {
       this.audio.overheat();
       if (!s.flags['firstOverheat']) {
         s.flags['firstOverheat'] = true;
-        this.say('VESPER', 'Drill overheated. Venting — lockout three seconds. Keep heat in the red band, not over it.');
+        this.say('VESPER', 'Drill overheated. Venting — lockout three seconds. Click in a steady rhythm to keep the drill cool and in Overdrive.');
       }
     } else {
       this.audio.drill(r.overdrive);
@@ -248,7 +248,7 @@ export class GameService {
       }
       if (r.overdrive && !s.flags['firstOverdrive']) {
         s.flags['firstOverdrive'] = true;
-        this.say('JUNO', "OVERDRIVE! Now we're talking! Ride the red, but don't cook the drill!");
+        this.say('JUNO', "OVERDRIVE! A cool drill bites deeper — keep a steady rhythm and don't let it run hot!");
       }
     }
     this.publish();
