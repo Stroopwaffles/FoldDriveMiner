@@ -16,6 +16,9 @@
       @if (hasRefinery()) {
         <div class="cap-split">
           ORE {{ game.fmt(load().ore) }} t · INGOTS {{ game.fmt(load().ingots) }} t
+          @if (hasForge()) {
+            · ALLOYS {{ game.fmt(load().alloys) }} t
+          }
           @if (load().reserved > 0) {
             · FURNACES {{ game.fmt(load().reserved) }} t reserved
           }
@@ -64,6 +67,21 @@
                     <button type="button" class="auto" [class.on]="r.autoIngot" (click)="game.toggleAutoSell('ingot', r.ore.id)" title="Auto-sell these ingots">AUTO</button>
                   }
                   <button type="button" class="btn small" [disabled]="r.ingots < 1" (click)="game.sellIngots(r.ore.id)">Sell</button>
+                </td>
+              </tr>
+            }
+          }
+          @for (a of alloyRows(); track a.alloy.id) {
+            @if (a.amount >= 1 || a.auto) {
+              <tr class="ingot-row alloy-row">
+                <td><span class="ingot alloy" [style.background]="a.alloy.color"></span>{{ a.alloy.name }}</td>
+                <td class="num">{{ game.fmt(a.amount) }}</td>
+                <td class="num price">{{ game.fmt(a.price) }}<span class="cr">cr</span></td>
+                <td class="actions">
+                  @if (hasAutoSell()) {
+                    <button type="button" class="auto" [class.on]="a.auto" (click)="game.toggleAutoSellAlloy(a.alloy.id)" title="Auto-sell this alloy">AUTO</button>
+                  }
+                  <button type="button" class="btn small" [disabled]="a.amount < 1" (click)="game.sellAlloy(a.alloy.id)">Sell</button>
                 </td>
               </tr>
             }
@@ -135,6 +153,47 @@
                 }
                 @if (x.ore && !x.slot.repeat) {
                   <button type="button" class="btn small" (click)="game.clearSlot(x.i)" title="Clear assignment">✕</button>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (hasForge()) {
+          @let fg = forge();
+          <div class="furnace forge" [class.running]="fg.running" [style.--c]="fg.alloy?.color ?? '#4a54a0'">
+            <div class="furnace-head">
+              <span class="furnace-label">ALLOY FORGE</span>
+              @if (fg.alloy) {
+                <span class="furnace-ore">{{ fg.alloy.name }}</span>
+              }
+              @if (hasAutoRefine() && fg.alloy) {
+                <button type="button" class="auto" [class.on]="fg.f.repeat" (click)="game.setForgeRepeat(!fg.f.repeat)" title="Repeat batches automatically">REPEAT</button>
+              }
+            </div>
+            @if (fg.running) {
+              <div class="furnace-bar"><div class="furnace-fill" [style.width.%]="fg.progress * 100"></div></div>
+              <div class="furnace-foot">{{ game.fmt(fg.f.batch) }} {{ fg.alloy?.name }} · {{ fg.eta }}</div>
+            } @else {
+              @if (fg.waiting) {
+                <div class="furnace-foot warn">Waiting for {{ fg.inputs }} ingots…</div>
+              } @else {
+                <div class="furnace-foot">1 ingot + 1 ingot → 1 alloy (×{{ alloyMult() }} the pair) · up to {{ game.fmt(forgeCap()) }} / batch · {{ forgeTime() }}</div>
+              }
+              <div class="furnace-pick">
+                @for (a of alloyRows(); track a.alloy.id) {
+                  <button
+                    type="button"
+                    class="btn small recipe"
+                    [style.borderColor]="a.alloy.color"
+                    [disabled]="a.ready < 1"
+                    (click)="game.startForge(a.alloy.id)"
+                    [title]="a.alloy.name + ': ' + a.inputs[0].name + ' + ' + a.inputs[1].name + ' ingots. ' + a.alloy.flavor"
+                  >
+                    {{ a.alloy.code }} <span class="recipe-in">{{ a.inputs[0].code }}+{{ a.inputs[1].code }}</span>
+                  </button>
+                }
+                @if (fg.alloy && !fg.f.repeat) {
+                  <button type="button" class="btn small" (click)="game.clearForge()" title="Clear recipe">✕</button>
                 }
               </div>
             }

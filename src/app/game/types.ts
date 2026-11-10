@@ -1,3 +1,4 @@
+import type { AlloyId } from './alloy-data';
 import { OreId, ZoneId } from './config';
 import { BackgroundId, PostId, StatId } from './crew-data';
 import { DroneType, FrameId, SlotId } from './fleet-data';
@@ -39,6 +40,7 @@ export interface GameStats {
   overheats: number;
   creditsEarned: number;
   ingotsRefined: number;
+  alloysForged: number;
   researchCompleted: number;
   mechOre: number;
   mechsBuilt: number;
@@ -107,6 +109,16 @@ export interface ResearchJob {
   /** What was paid, so cancelling can refund it. */
   paidSd: number;
   paidCr: number;
+}
+
+/** The Alloy Forge: one batch at a time, like a furnace. */
+export interface AlloyForge {
+  alloy: AlloyId | null;
+  /** Alloys being made (0 = idle or waiting for ingots). */
+  batch: number;
+  remaining: number;
+  duration: number;
+  repeat: boolean;
 }
 
 export interface RefinerySlot {
@@ -409,7 +421,7 @@ export interface FoldState {
 }
 
 export interface GameState {
-  version: 9;
+  version: 10;
   commander: string;
   ship: string;
   createdAt: number;
@@ -425,6 +437,9 @@ export interface GameState {
   surveyData: number;
   cargo: OreAmounts;
   ingots: OreAmounts;
+  /** Finished alloys (1 t each). */
+  alloys: Record<AlloyId, number>;
+  forge: AlloyForge;
   cargoLevel: number;
 
   drill: DrillState;
@@ -458,7 +473,7 @@ export interface GameState {
   };
   /** capacityLevel: Furnace Capacity upgrades bought (bigger batches). */
   refinery: { slots: RefinerySlot[]; capacityLevel: number };
-  autoSell: { ore: OreFlags; ingot: OreFlags; smart: boolean };
+  autoSell: { ore: OreFlags; ingot: OreFlags; alloy: Record<AlloyId, boolean>; smart: boolean };
 
   stats: GameStats;
   /** One-time tutorial / story flags. */
@@ -497,6 +512,8 @@ export interface TickEvents {
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
   ingots: OreAmounts;
+  /** Alloys the forge finished. */
+  alloys: number;
   autoSoldCredits: number;
   /** Episodes that arrived and commendations earned. */
   story: { kind: 'episode' | 'medal'; id: string; text: string }[];
@@ -508,6 +525,7 @@ export interface OfflineReport {
   efficiency: number;
   gained: OreAmounts;
   ingots: OreAmounts;
+  alloys: number;
   credits: number;
   research: ResearchDone[];
   lost: number;

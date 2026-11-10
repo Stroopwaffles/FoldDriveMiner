@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { ALLOYS } from '../game/alloy-data';
 import { CONFIG, ORES, OreId } from '../game/config';
 import { DRONES, DRONE_IDS } from '../game/fleet-data';
 import { DroneSprite } from '../ui/drone-sprite';
@@ -45,15 +46,54 @@ export class OpsPanel {
     });
   });
 
-  protected readonly cargoValue = computed(() =>
-    this.cargoRows().reduce((sum, r) => sum + Math.floor(r.amount) * r.price + Math.floor(r.ingots) * r.ingotPrice, 0),
+  protected readonly cargoValue = computed(
+    () =>
+      this.cargoRows().reduce((sum, r) => sum + Math.floor(r.amount) * r.price + Math.floor(r.ingots) * r.ingotPrice, 0) +
+      this.alloyRows().reduce((sum, r) => sum + Math.floor(r.amount) * r.price, 0),
   );
+
+  // ---------------------------------------------------------------- alloys
+  protected readonly hasForge = computed(() => E.hasForge(this.s()));
+  /** Alloy stock and prices, for every recipe the drill can reach. */
+  protected readonly alloyRows = computed(() => {
+    const s = this.s();
+    if (!E.hasForge(s)) return [];
+    return ALLOYS.filter((a) => E.recipeOpen(s, a) || s.alloys[a.id] > 0).map((a) => ({
+      alloy: a,
+      amount: s.alloys[a.id],
+      price: E.alloyPrice(s, a.id),
+      auto: s.autoSell.alloy[a.id],
+      inputs: a.inputs.map((o) => ORES.find((x) => x.id === o)!),
+      ready: E.forgeable(s, a.id),
+    }));
+  });
+  protected readonly forge = computed(() => {
+    const f = this.s().forge;
+    const alloy = f.alloy ? ALLOYS.find((a) => a.id === f.alloy)! : null;
+    return {
+      f,
+      alloy,
+      inputs: alloy ? alloy.inputs.map((o) => ORES.find((x) => x.id === o)!.name).join(' and ') : '',
+      running: f.batch > 0,
+      progress: f.batch > 0 ? 1 - f.remaining / f.duration : 0,
+      eta: formatDuration(f.remaining),
+      waiting: f.batch === 0 && f.repeat && !!f.alloy,
+    };
+  });
+  protected readonly forgeCap = computed(() => E.forgeCapacity(this.s()));
+  protected readonly forgeTime = computed(() => formatDuration(E.forgeDuration(this.s())));
+  protected readonly alloyMult = computed(() => E.alloyValueMult(this.s()));
 
   /** What's taking up the hold: ore, finished ingots (1 t each) and furnace output reserved. */
   protected readonly load = computed(() => {
     const s = this.s();
     const sum = (a: Record<string, number>) => Object.values(a).reduce((x, y) => x + y, 0);
-    return { ore: sum(s.cargo), ingots: sum(s.ingots), reserved: E.refineryReserved(s) };
+    return {
+      ore: sum(s.cargo),
+      ingots: sum(s.ingots),
+      alloys: sum(s.alloys),
+      reserved: E.refineryReserved(s) + E.forgeReserved(s),
+    };
   });
 
   protected readonly cargoPct = computed(() => Math.min(100, (this.game.used() / this.game.capacity()) * 100));

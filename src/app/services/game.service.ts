@@ -1,3 +1,4 @@
+import { AlloyId } from '../game/alloy-data';
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { CONFIG, OreId, ZoneId, zoneDef } from '../game/config';
 import * as E from '../game/engine';
@@ -394,6 +395,26 @@ export class GameService {
 
   sellIngots(ore: OreId): void {
     this.act((s) => E.sellIngots(s, ore) > 0, () => this.audio.sell());
+  }
+
+  sellAlloy(id: AlloyId): void {
+    this.act((s) => E.sellAlloy(s, id) > 0, () => this.audio.sell());
+  }
+
+  toggleAutoSellAlloy(id: AlloyId): void {
+    this.act((s) => E.toggleAutoSellAlloy(s, id), () => this.audio.blip());
+  }
+
+  startForge(id: AlloyId): void {
+    this.act((s) => E.startForge(s, id), () => this.audio.buy());
+  }
+
+  setForgeRepeat(repeat: boolean): void {
+    this.act((s) => E.setForgeRepeat(s, repeat), () => this.audio.blip());
+  }
+
+  clearForge(): void {
+    this.act(E.clearForge, () => this.audio.blip());
   }
 
   toggleAutoSell(kind: 'ore' | 'ingot', ore: OreId): void {
@@ -1058,6 +1079,7 @@ export class GameService {
       anomaly: [],
       trade: [],
       ingots: E.emptyOre(),
+      alloys: 0,
       autoSoldCredits: 0,
       story: [],
     };

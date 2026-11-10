@@ -400,3 +400,18 @@ th {
   letter-spacing: 0.06em;
   color: var(--text-dim);
 }
+
+/* Alloys: a hexagonal bar, and recipe buttons showing their two ingots */
+.ingot.alloy {
+  height: 8px;
+  clip-path: polygon(20% 0, 80% 0, 100% 50%, 80% 100%, 20% 100%, 0 50%);
+}
+
+.alloy-row td {
+  color: var(--text);
+}
+
+.recipe-in {
+  font-size: 0.6rem;
+  opacity: 0.7;
+}

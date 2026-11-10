@@ -194,6 +194,10 @@ export class GameShell {
         lines.push(`+ ${this.game.fmt(r.ingots[o.id])} ${o.name.toUpperCase()} INGOTS REFINED`);
       }
     }
+    if (r.alloys > 0) {
+      any = true;
+      lines.push(`+ ${this.game.fmt(r.alloys)} ALLOYS FORGED`);
+    }
     if (r.credits > 0) lines.push(`+ ${this.game.fmt(r.credits)} CR FROM AUTO-SELL`);
     for (const t of r.threats.slice(0, 6)) lines.push(`▸ ${t.toUpperCase()}`);
     if (r.threats.length > 6) lines.push(`▸ …AND ${r.threats.length - 6} MORE INCIDENTS (SEE DEFENSE LOG)`);

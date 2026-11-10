@@ -235,9 +235,9 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     expect(s.drill.tier).toBe(3);
   });
 
-  it('teaser nodes cannot be researched', () => {
+  it('Alloy Smelting needs Parallel Furnaces first', () => {
     const s = rich();
-    expect(E.researchStatus(s, 'alloys')).toBe('teaser');
+    expect(E.researchStatus(s, 'alloys')).toBe('locked');
     expect(E.startResearch(s, 'alloys')).toBe(false);
   });
 

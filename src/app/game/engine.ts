@@ -32,6 +32,7 @@ import {
   salvagerDepletionBonus,
 } from './fleet-rules';
 import { RESEARCH, researchNode } from './research';
+import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
 import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
 import { generateSector, pulsarSurge, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
@@ -71,6 +72,7 @@ import {
 export * from './common';
 export * from './crew-rules';
 export * from './fleet-rules';
+export * from './alloy-rules';
 
 function emptyDrones(): Record<DroneType, number> {
   const d = {} as Record<DroneType, number>;
@@ -89,6 +91,7 @@ export function emptyEvents(): TickEvents {
     anomaly: [],
     trade: [],
     ingots: emptyOre(),
+    alloys: 0,
     autoSoldCredits: 0,
     story: [],
   };
@@ -98,7 +101,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 9,
+    version: 10,
     commander,
     ship,
     createdAt: now,
@@ -111,6 +114,8 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     surveyData: 0,
     cargo: emptyOre(),
     ingots: emptyOre(),
+    alloys: emptyAlloys(),
+    forge: emptyForge(),
     cargoLevel: 0,
     drill: { powerLevel: 0, tier: 1, heat: 0, lockRemaining: 0, heatSinkLevel: 0, clamp: false },
     drones: emptyDrones(),
@@ -135,7 +140,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     zone: 'inner',
     research: { levels: {}, active: [] },
     refinery: { slots: [], capacityLevel: 0 },
-    autoSell: { ore: emptyFlags(), ingot: emptyFlags(), smart: false },
+    autoSell: { ore: emptyFlags(), ingot: emptyFlags(), alloy: emptyAlloyFlags(), smart: false },
     stats: {
       clicks: 0,
       oreMined: 0,
@@ -145,6 +150,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
       overheats: 0,
       creditsEarned: 0,
       ingotsRefined: 0,
+      alloysForged: 0,
       researchCompleted: 0,
       mechOre: 0,
       mechsBuilt: 0,
@@ -269,7 +275,13 @@ export function cargoCapacity(state: GameState, level = state.cargoLevel): numbe
  * for ingots still in the furnaces, so a finished batch always has room.
  */
 export function cargoUsed(state: GameState): number {
-  return sumOre(state.cargo) + sumOre(state.ingots) + refineryReserved(state);
+  return (
+    sumOre(state.cargo) +
+    sumOre(state.ingots) +
+    refineryReserved(state) +
+    Object.values(state.alloys).reduce((a, b) => a + b, 0) +
+    forgeReserved(state)
+  );
 }
 
 /** Ingots currently being made, which already have hold space set aside. */
@@ -522,10 +534,10 @@ export function sellIngots(state: GameState, ore: OreId): number {
 }
 
 export function sellAll(state: GameState): number {
-  return ORE_IDS.reduce((sum, id) => sum + sell(state, id) + sellIngots(state, id), 0);
+  return ORE_IDS.reduce((sum, id) => sum + sell(state, id) + sellIngots(state, id), 0) + sellAllAlloys(state);
 }
 
-function earn(state: GameState, credits: number): void {
+export function earn(state: GameState, credits: number): void {
   state.credits += credits;
   state.stats.creditsEarned += credits;
 }
@@ -540,7 +552,7 @@ function runAutoSell(state: GameState): number {
     if (state.autoSell.ore[id]) total += sell(state, id);
     if (state.autoSell.ingot[id]) total += sellIngots(state, id);
   }
-  return total;
+  return total + autoSellAlloys(state, smart);
 }
 
 export function toggleAutoSell(state: GameState, kind: 'ore' | 'ingot', ore: OreId): boolean {
@@ -875,6 +887,7 @@ function advance(
 
   advanceCrew(state, dt, events);
   events.ingots = advanceRefinery(state, dt);
+  events.alloys = advanceForge(state, dt);
   events.research = advanceResearch(state, dt);
   advanceTrade(state, dt, events, ctx.offline);
   advanceFold(state);
@@ -919,6 +932,7 @@ export function simulateOffline(state: GameState, seconds: number): OfflineRepor
     efficiency,
     gained: emptyOre(),
     ingots: emptyOre(),
+    alloys: 0,
     credits: 0,
     research: [],
     lost: 0,
@@ -935,6 +949,7 @@ export function simulateOffline(state: GameState, seconds: number): OfflineRepor
     for (const t of r.trade) report.threats.push(t.text);
     addOre(report.gained, r.added);
     addOre(report.ingots, r.ingots);
+    report.alloys += r.alloys;
     report.credits += r.autoSoldCredits;
     report.research.push(...r.research);
     report.lost += r.lost;

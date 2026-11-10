@@ -17,6 +17,7 @@ function ev(): TickEvents {
     threatResolved: [],
     anomaly: [], trade: [],
     ingots: E.emptyOre(),
+    alloys: 0,
     autoSoldCredits: 0,
     story: [],
   };

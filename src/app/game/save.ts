@@ -8,7 +8,7 @@ import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
 import { ensureStory } from './story-rules';
 
-export const CURRENT_VERSION = 9;
+export const CURRENT_VERSION = 10;
 const EXPORT_PREFIX = 'FDM1:';
 
 export class SaveError extends Error {}
@@ -60,6 +60,10 @@ export function migrate(raw: unknown): GameState {
   if (data['version'] === 8) {
     // v9 adds Deep Fold Echoes and settings-driven polish; Echoes start at zero.
     data['version'] = 9;
+  }
+  if (data['version'] === 9) {
+    // v10 adds Alloy Smelting: the forge, alloy stock and alloy auto-sell all start empty.
+    data['version'] = 10;
   }
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);

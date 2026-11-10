@@ -153,9 +153,15 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
   N({
     id: 'alloys', name: 'Alloy Smelting', branch: 'refinery', maxLevel: 1,
-    sd: 0, cr: 0, sec: 0, teaser: 'a later milestone',
-    effect: 'Combine two ores into high-value alloys',
-    flavor: 'Metallurgy data incomplete.',
+    sd: 25, cr: 60000, sec: 420, requires: ['refinery_slots'],
+    effect: 'Alloy Forge: two ingots into one alloy worth 1.5× the pair',
+    flavor: 'Metallurgy data complete. Two metals, one lattice, a better price.',
+  }),
+  N({
+    id: 'crucible_lining', name: 'Crucible Lining', branch: 'refinery', maxLevel: 3,
+    sd: 30, cr: 150000, sec: 480, growth: 3, requires: ['alloys'],
+    effect: '+0.25× alloy value',
+    flavor: 'A ceramic lining that keeps the melt clean. Cleaner alloys, better buyers.',
   }),
 
   // ---------------------------------------------------------------- Survey

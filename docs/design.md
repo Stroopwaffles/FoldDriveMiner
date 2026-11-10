@@ -380,3 +380,17 @@ These were proposed and are used by later sections, but not yet explicitly confi
 - **Hard caps.** Expand Hold stops at level 24, and the hold never exceeds 250M t, whatever the research or hauler bonuses. Furnace Capacity stops at level 18. Older saves past these caps are clamped when the numbers are calculated.
 - **Trigger Clamp** (2,500 cr, one-time, kept through Fold Jumps): hold the mouse button on the asteroid to keep drilling, at 2 hits/s. Held hits still build heat, so Heat Sinks still matter.
 - **Extraction research:** Servo Actuators (5 levels, each makes held hits 15% faster, reaching about 4.5/s). Thermal Governor (requires Servo Actuators) skips any held hit that would take the drill out of Overdrive.
+
+## Alloy Smelting
+
+- **Research:** Alloy Smelting (Refinery branch, needs Parallel Furnaces) unlocks the **Alloy Forge**, one forge beside the furnaces. Crucible Lining (3 levels) adds +0.25× alloy value per level.
+- **Recipes:** one ingot of each input makes one alloy. A recipe opens once the drill reaches both of its ores.
+  - Duralloy: Ferrite + Titanite
+  - Iridsteel: Titanite + Iridium
+  - Cryoplate: Iridium + Helium-3
+  - Nullsteel: Helium-3 + Voidglass
+- **Value:** an alloy sells for 1.5× the price of its two ingots, so it follows both ores' market prices.
+- **Batches:** a batch holds as many alloys as one furnace batch makes ingots, and takes 1.5× as long. Auto-Refine lets the forge repeat.
+- **Hold space and selling:** alloys take 1 t each, and a running batch reserves space for its output. Alloys can be sold, auto-sold and Smart Sold (when their two ores average at or above par), and Sell All includes them.
+- **Fold Jumps:** alloy stock and the forge reset, like ingots.
+- **Other:** save version 10. New commendations: Metallurgist, Alloy Baron and Lattice Lord.
