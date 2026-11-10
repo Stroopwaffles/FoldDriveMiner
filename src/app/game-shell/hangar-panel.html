@@ -99,7 +99,7 @@
         }
         <div class="stats">
           @for (sd of mechStatDefs; track sd.id) {
-            <div class="stat" [class.inactive]="!sd.active" [title]="sd.active ? '' : 'Used in later milestones'">
+            <div class="stat" [title]="sd.desc">
               <span>{{ sd.name }}</span>
               <b>{{ v.stats[sd.id].toFixed(0) }}</b>
             </div>

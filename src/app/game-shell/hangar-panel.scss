@@ -329,9 +329,7 @@ select {
     font-weight: normal;
   }
 
-  &.inactive {
-    opacity: 0.45;
-  }
+  cursor: help;
 }
 
 .pilot-row {

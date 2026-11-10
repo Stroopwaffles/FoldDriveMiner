@@ -78,12 +78,13 @@ export const SLOTS: { id: SlotId; name: string; kana: string }[] = [
   { id: 'armor', name: 'Armor Plating', kana: 'そうこう' },
 ];
 
-export const MECH_STATS: { id: MechStat; name: string; active: boolean }[] = [
-  { id: 'mining', name: 'Mining', active: true },
-  { id: 'armor', name: 'Armor', active: true },
-  { id: 'sensors', name: 'Sensors', active: true },
-  { id: 'speed', name: 'Speed', active: false },
-  { id: 'combat', name: 'Combat', active: false },
+/** Mech stats and what each one does (shown as a tooltip in the Hangar). */
+export const MECH_STATS: { id: MechStat; name: string; desc: string }[] = [
+  { id: 'mining', name: 'Mining', desc: 'Ore output while mining, and the Command Link bonus to drones in its zone.' },
+  { id: 'armor', name: 'Armor', desc: 'Hit points. Lost to wear, raids and risky missions; repaired in the Hangar.' },
+  { id: 'sensors', name: 'Sensors', desc: 'Survey Data while mining, anomaly mission odds, and a little combat power (×0.5).' },
+  { id: 'speed', name: 'Speed', desc: 'Combat power (×1) and anomaly mission odds (+1% per 2 points).' },
+  { id: 'combat', name: 'Combat', desc: 'Combat power in raids, strikes and Jackal fights (×3).' },
 ];
 
 export interface FrameDef {
