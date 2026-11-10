@@ -115,14 +115,21 @@
         <form class="sub panel" (ngSubmit)="startNew()">
           <div class="panel-title">New Game <span class="kana">しんき</span></div>
           <div class="sub-body">
-            <label class="field">
-              <span>COMMANDER NAME</span>
-              <input name="commander" [(ngModel)]="commander" maxlength="20" autocomplete="off" />
-            </label>
-            <label class="field">
-              <span>SHIP NAME</span>
-              <input name="ship" [(ngModel)]="ship" maxlength="24" autocomplete="off" />
-            </label>
+            <div class="field">
+              <label for="ng-commander">COMMANDER NAME</label>
+              <div class="name-row">
+                <input id="ng-commander" name="commander" [(ngModel)]="commander" maxlength="20" autocomplete="off" />
+                <button type="button" class="btn dice" (click)="rollCommander()" title="Random commander name" aria-label="Random commander name">⚄</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="ng-ship">SHIP NAME</label>
+              <div class="name-row">
+                <input id="ng-ship" name="ship" [(ngModel)]="ship" maxlength="24" autocomplete="off" />
+                <button type="button" class="btn dice" (click)="rollShip()" title="Random ship name" aria-label="Random ship name">⚄</button>
+              </div>
+            </div>
+            <button type="button" class="btn roll-both" (click)="rollBoth()">⚄ Randomize both</button>
             @if (hasSave()) {
               <p class="warn">⚠ Starting a new game will overwrite your current save. Export it first if you want to keep it.</p>
             }

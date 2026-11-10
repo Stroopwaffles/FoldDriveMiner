@@ -1,6 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { formatDuration, formatNumber } from '../game/format';
+import { randomCommander, randomShip, rerollName } from '../game/name-gen';
 import { SaveError, fromExportString, toExportString } from '../game/save';
 import { GameState } from '../game/types';
 import { AudioService } from '../services/audio.service';
@@ -52,6 +53,21 @@ export class TitleScreen implements OnInit {
   protected commander = 'Rook';
   protected ship = 'Halberd Dawn';
   protected readonly formError = signal('');
+
+  protected rollCommander(): void {
+    this.audio.blip();
+    this.commander = rerollName(this.commander, randomCommander);
+  }
+
+  protected rollShip(): void {
+    this.audio.blip();
+    this.ship = rerollName(this.ship, randomShip);
+  }
+
+  protected rollBoth(): void {
+    this.rollCommander();
+    this.ship = rerollName(this.ship, randomShip);
+  }
 
   // Import / export
   protected importText = '';

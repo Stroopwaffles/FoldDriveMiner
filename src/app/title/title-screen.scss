@@ -391,6 +391,27 @@ $horizon: 64%;
   }
 }
 
+/* New Game: name fields with a dice button */
+.name-row {
+  display: flex;
+  gap: 0.4rem;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.dice {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.6rem;
+}
+
+.roll-both {
+  justify-self: start;
+}
+
 .row-actions {
   display: flex;
   gap: 0.5rem;
