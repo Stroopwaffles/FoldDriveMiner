@@ -29,6 +29,9 @@
                 @if (e.state === 'locked' || e.state === 'next') {
                   <span class="ep-title">{{ e.state === 'next' ? e.def.title : '? ? ?' }}</span>
                   <span class="ep-hint">{{ e.state === 'next' ? 'NEXT · ' + e.def.hint : 'Locked' }}</span>
+                  @if (e.state === 'next' && nextNote()) {
+                    <span class="ep-hint wait">{{ nextNote() }}</span>
+                  }
                 } @else if (e.state === 'queued') {
                   <span class="ep-title">{{ e.def.title }}</span>
                   <span class="queued">QUEUED</span>

@@ -367,6 +367,9 @@ export interface StoryState {
   /** Highest episode that has arrived, and the highest one watched. */
   unlocked: number;
   watched: number;
+  /** Pacing: playtime and jump count when the last episode arrived. */
+  lastUnlockAt: number;
+  beatJumps: number;
   choice: 'break' | 'master' | null;
   /** Side stories unlocked (one per jump after the finale) and watched. */
   side: number;

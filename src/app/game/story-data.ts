@@ -22,6 +22,13 @@ export interface EpisodeDef {
 
 export const ACTS = ['', 'Act I · Frontier', 'Act II · Signal', 'Act III · Fold'] as const;
 
+/**
+ * Episode pacing: one at a time. The next arrives only once the last is
+ * watched, its milestone is met, and there's been a new story beat since the
+ * last one arrived: a Fold Jump, or this much playtime.
+ */
+export const STORY = { minGapSec: 600 };
+
 const codexKinds = (s: GameState) => Object.keys(s.anomalies.codex).length;
 const runCredits = (s: GameState) => s.stats.creditsEarned - s.fold.runStartCredits;
 const maxLevel = (s: GameState) => Math.max(0, ...s.pilots.map((p) => p.level));

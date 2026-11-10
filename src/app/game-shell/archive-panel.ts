@@ -45,6 +45,15 @@ export class ArchivePanel {
       })),
     }));
   });
+  /** What the next episode is waiting for. */
+  protected readonly nextNote = computed(() => {
+    const s = this.s();
+    const st = s.story;
+    if (st.watched < st.unlocked) return 'Watch the waiting episode first';
+    const wait = ST.episodeWait(s);
+    return wait > 0 ? `Arrives after your next Fold Jump or in ${formatDuration(wait)}, once its milestone is met` : '';
+  });
+
   protected readonly finale = computed(() => {
     const c = this.s().story.choice;
     return c ? FINALE[c] : null;

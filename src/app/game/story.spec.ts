@@ -2,7 +2,7 @@ import * as E from './engine';
 import * as F from './fold-rules';
 import { MEDALS } from './medal-data';
 import { CURRENT_VERSION, migrate } from './save';
-import { EPISODES, FINAL_EPISODE } from './story-data';
+import { EPISODES, FINAL_EPISODE, STORY } from './story-data';
 import * as ST from './story-rules';
 import * as T from './threat-rules';
 import { GameState, TickEvents } from './types';
@@ -43,22 +43,51 @@ describe('milestone 7: episodes', () => {
     expect(ST.currentLog(s)!.code).toBe(s.sector.code);
   });
 
-  it('episodes arrive in order and queue up', () => {
+  it('episodes arrive in order, one at a time', () => {
     const s = fresh();
     s.drill.tier = 2; // Episode 3's trigger, but Episode 2 hasn't happened
     expect(story(s).filter((x) => x.kind === 'episode')).toEqual([]);
     s.drones.prospector = 1;
-    const eps = story(s).filter((x) => x.kind === 'episode').map((x) => x.id);
-    expect(eps).toEqual(['2', '3']);
+    // Episode 3's milestone is also met, but only Episode 2 arrives.
+    expect(story(s).filter((x) => x.kind === 'episode').map((x) => x.id)).toEqual(['2']);
     expect(ST.pendingEpisode(s)).toBe(2);
     expect(ST.watchEpisode(s, 3)).toBe(false); // out of order
     expect(ST.watchEpisode(s, 2)).toBe(true);
-    expect(ST.pendingEpisode(s)).toBe(3);
+    expect(ST.pendingEpisode(s)).toBeNull();
+  });
+
+  it('the next episode waits for a story beat: a Fold Jump or 10 minutes of play', () => {
+    const s = fresh();
+    s.drones.prospector = 1;
+    s.drill.tier = 2;
+    story(s);
+    ST.watchEpisode(s, 2);
+    // Milestone met and Episode 2 watched, but no new beat yet.
+    expect(story(s).filter((x) => x.kind === 'episode')).toEqual([]);
+    expect(ST.episodeWait(s)).toBeGreaterThan(0);
+    s.playtimeSec += STORY.minGapSec;
+    expect(story(s).map((x) => x.id)).toContain('3');
+    ST.watchEpisode(s, 3);
+    // A Fold Jump is a beat on its own, no waiting.
+    s.stats.mechsBuilt = 1;
+    expect(story(s).filter((x) => x.kind === 'episode')).toEqual([]);
+    s.fold.jumps = 1;
+    expect(ST.episodeWait(s)).toBe(0);
+    expect(story(s).map((x) => x.id)).toContain('4');
+  });
+
+  it('older saves with a backlog keep only the next episode', () => {
+    const s = fresh();
+    s.story.unlocked = 9;
+    s.story.watched = 4;
+    ST.ensureStory(s);
+    expect(s.story.unlocked).toBe(5);
   });
 
   it('Saffi and Ansel join through their episodes, already seasoned', () => {
     const s = fresh();
     s.story.unlocked = 9;
+    s.story.watched = 9;
     s.fold.jumps = 1;
     s.threats.raidsWon = 3;
     story(s);
@@ -67,9 +96,14 @@ describe('milestone 7: episodes', () => {
     expect(s.story.unlocked).toBe(10);
     s.anomalies.codex = { gravity_lens: 1, derelict: 1, comet: 1, ion_cloud: 1, silent_beacon: 1 } as never;
     s.stats.creditsEarned = 2e6;
-    story(s);
+    // Episode 11, then Episode 12 a beat later.
+    for (const n of [10, 11]) {
+      ST.watchEpisode(s, n);
+      s.playtimeSec += STORY.minGapSec;
+      story(s);
+    }
     expect(s.pilots.some((p) => p.story === 'ansel')).toBe(true);
-    expect(s.story.unlocked).toBeGreaterThanOrEqual(12);
+    expect(s.story.unlocked).toBe(12);
   });
 
   it('the finale needs a choice, and the choice is permanent', () => {

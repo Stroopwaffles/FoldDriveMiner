@@ -6,11 +6,23 @@
 import { addStoryPilot } from './crew-rules';
 import { BonusKind, MEDALS } from './medal-data';
 import { sectorOf } from './sector-rules';
-import { EPISODES, FINAL_EPISODE, FinaleChoice, SIDE_STORIES } from './story-data';
+import { EPISODES, FINAL_EPISODE, FinaleChoice, SIDE_STORIES, STORY } from './story-data';
 import { GameState, LogEntry, LogSnap, PilotState, StoryState, TickEvents } from './types';
 
 export function emptyStory(): StoryState {
-  return { unlocked: 1, watched: 1, choice: null, side: 0, sideWatched: 0, medals: {}, logbook: [], dismissed: [] };
+  // lastUnlockAt starts a full gap back, so Episode 2 can follow the first drone straight away.
+  return {
+    unlocked: 1,
+    watched: 1,
+    lastUnlockAt: -STORY.minGapSec,
+    beatJumps: 0,
+    choice: null,
+    side: 0,
+    sideWatched: 0,
+    medals: {},
+    logbook: [],
+    dismissed: [],
+  };
 }
 
 export function choice(state: GameState): FinaleChoice | null {
@@ -76,14 +88,29 @@ export function medalMult(state: GameState, kind: BonusKind): number {
 
 // ---------------------------------------------------------------- the tick
 
-/** Unlocks episodes (in order) and awards commendations. */
+/** A new story beat since the last episode arrived: a Fold Jump, or enough playtime. */
+export function storyBeat(state: GameState): boolean {
+  const st = state.story;
+  return state.fold.jumps > st.beatJumps || state.playtimeSec - st.lastUnlockAt >= STORY.minGapSec;
+}
+
+/** Seconds until the gap allows the next episode (0 if it's only waiting on its milestone or a watch). */
+export function episodeWait(state: GameState): number {
+  const st = state.story;
+  if (state.fold.jumps > st.beatJumps) return 0;
+  return Math.max(0, st.lastUnlockAt + STORY.minGapSec - state.playtimeSec);
+}
+
+/** Unlocks the next episode when it's earned (one at a time), and awards commendations. */
 export function advanceStory(state: GameState, events: TickEvents): void {
   const st = state.story;
-  while (st.unlocked < EPISODES.length && EPISODES[st.unlocked].trigger(state)) {
-    const ep = EPISODES[st.unlocked];
-    st.unlocked = ep.n;
-    if (ep.joins) addStoryPilot(state, ep.joins);
-    events.story.push({ kind: 'episode', id: String(ep.n), text: ep.title });
+  const next = EPISODES[st.unlocked];
+  if (next && st.watched >= st.unlocked && storyBeat(state) && next.trigger(state)) {
+    st.unlocked = next.n;
+    st.lastUnlockAt = state.playtimeSec;
+    st.beatJumps = state.fold.jumps;
+    if (next.joins) addStoryPilot(state, next.joins);
+    events.story.push({ kind: 'episode', id: String(next.n), text: next.title });
   }
   for (const m of MEDALS) {
     if (st.medals[m.id] !== undefined || !m.check(state)) continue;
@@ -151,9 +178,15 @@ export function logTotals(state: GameState, e: LogEntry): LogSnap & { seconds: n
   };
 }
 
-/** Repairs story state on load: every save has an open logbook entry. */
+/**
+ * Repairs story state on load: every save has an open logbook entry, and
+ * older saves with a backlog keep only the next episode (the rest re-arrive
+ * one beat at a time).
+ */
 export function ensureStory(state: GameState): void {
   if (!currentLog(state)) openLog(state, state.story.logbook.length === 0);
+  const st = state.story;
+  if (st.unlocked > st.watched + 1) st.unlocked = st.watched + 1;
 }
 
 // ---------------------------------------------------------------- dossiers

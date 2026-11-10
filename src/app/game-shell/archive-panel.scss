@@ -127,6 +127,10 @@
   grid-column: 2 / -1;
   font-size: 0.64rem;
   color: var(--text-dim);
+
+  &.wait {
+    color: var(--cyan);
+  }
 }
 
 .finale {
