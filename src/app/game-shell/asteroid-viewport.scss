@@ -128,6 +128,12 @@
     outline-offset: -10px;
     border-radius: 50%;
   }
+}
+
+.shake-wrap {
+  display: block;
+  width: 100%;
+  height: 100%;
 
   &.shake {
     animation: shake 0.12s linear;
@@ -219,20 +225,14 @@
 }
 
 @keyframes shake {
-  0% {
-    transform: translate(-50%, -50%);
-  }
   25% {
-    transform: translate(calc(-50% + 3px), calc(-50% - 2px));
+    transform: translate(3px, -2px);
   }
   50% {
-    transform: translate(calc(-50% - 3px), calc(-50% + 2px));
+    transform: translate(-3px, 2px);
   }
   75% {
-    transform: translate(calc(-50% + 2px), calc(-50% + 1px));
-  }
-  100% {
-    transform: translate(-50%, -50%);
+    transform: translate(2px, 1px);
   }
 }
 
