@@ -3,6 +3,7 @@
  * side stories, commendations and their bonuses, the Sector Logbook and the
  * dossiers of pilots who left. Everything here survives Fold Jumps.
  */
+import { matrixBonus } from './core-rules';
 import { addStoryPilot } from './crew-rules';
 import { BonusKind, MEDALS } from './medal-data';
 import { sectorOf } from './sector-rules';
@@ -82,8 +83,9 @@ export function medalBonus(state: GameState, kind: BonusKind): number {
   return total;
 }
 
+/** All permanent bonuses of a kind: commendations plus the Core Matrix. */
 export function medalMult(state: GameState, kind: BonusKind): number {
-  return 1 + medalBonus(state, kind);
+  return 1 + medalBonus(state, kind) + matrixBonus(state, kind);
 }
 
 // ---------------------------------------------------------------- the tick

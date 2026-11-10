@@ -67,7 +67,8 @@ export type ItemKind =
   | 'curio'
   | 'data_cores'
   | 'survey_data'
-  | 'exclusive';
+  | 'exclusive'
+  | 'relic';
 
 export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBound?: boolean; contraband?: boolean }> = {
   part: { name: 'Mech part', desc: 'Goes to parts storage.' },
@@ -85,6 +86,7 @@ export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBou
   data_cores: { name: 'Data Cores', desc: 'Pristine Data Cores.' },
   survey_data: { name: 'Survey archive', desc: 'Survey Data from another expedition.' },
   exclusive: { name: 'Clan exclusive', desc: 'Only for the clan\'s partners.' },
+  relic: { name: 'Legendary part', desc: 'A one-of-a-kind part. Sold only for Data Cores.' },
 };
 
 /** What each clan tends to stock. */

@@ -457,6 +457,24 @@ export class GameService {
     this.act((s) => E.cancelResearch(s, index), () => this.audio.blip());
   }
 
+  /** Spends Data Cores to finish a research project on the next tick. */
+  rushResearch(index: number): void {
+    this.act((s) => E.rushResearch(s, index), () => this.audio.dataCore());
+  }
+
+  buyMatrix(id: string): void {
+    this.act(
+      (s) => E.buyMatrix(s, id),
+      () => {
+        this.audio.buy();
+        if (!this._state()!.flags['firstMatrix']) {
+          this._state()!.flags['firstMatrix'] = true;
+          this.say('VESPER', 'Core Matrix online. What we build into it stays with the ship, through every fold.');
+        }
+      },
+    );
+  }
+
   // ------------------------------------------------------------ refinery
 
   startBatch(index: number, ore: OreId): void {

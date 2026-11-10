@@ -33,6 +33,8 @@ export interface ResearchNode {
   effect: string;
   /** Flavor line from VESPER. */
   flavor: string;
+  /** Data Cores for level 1 (later levels add one each). */
+  cores?: number;
   /** Visible but not researchable yet; names the milestone that adds it. */
   teaser?: string;
 }
@@ -68,6 +70,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     sd: 20, cr: 40000, sec: 240, requires: ['servo_actuators'],
     effect: 'Held drilling pauses instead of leaving Overdrive',
     flavor: 'A governor on the trigger. It will not let the drill run hot while you hold it.',
+  }),
+  N({
+    id: 'core_lattice', name: 'Core Lattice', branch: 'extraction', maxLevel: 2,
+    sd: 10, cr: 8000, sec: 240, growth: 3, cores: 1,
+    effect: '+50% Data Core chance when an asteroid cracks',
+    flavor: 'Map the lattice from the cores we have, and the drill finds the next one.',
   }),
   N({
     id: 'drill_mk3', name: 'Drill Mk.III', branch: 'extraction', maxLevel: 1,
@@ -165,6 +173,12 @@ export const RESEARCH: readonly ResearchNode[] = [
   }),
 
   // ---------------------------------------------------------------- Survey
+  N({
+    id: 'core_decryption', name: 'Core Decryption', branch: 'survey', maxLevel: 3,
+    sd: 15, cr: 12000, sec: 300, growth: 2.5, cores: 2,
+    effect: '+20% Survey Data from every source',
+    flavor: 'Crack a Data Core and the survey logs inside are worth reading twice.',
+  }),
   N({
     id: 'core_sampling', name: 'Core Sampling', branch: 'survey', maxLevel: 5,
     sd: 5, cr: 2000, sec: 90, growth: 2.3,
@@ -344,6 +358,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     sd: 30, cr: 200000, sec: 480, growth: 2.5, requires: ['survey_ring'],
     effect: '+50% Silent Beacon decoding speed',
     flavor: 'The cipher is… familiar. As if I wrote it.',
+  }),
+  N({
+    id: 'core_resonator', name: 'Core Resonator', branch: 'fold', maxLevel: 2,
+    sd: 40, cr: 500000, sec: 600, growth: 3, cores: 4, requires: ['fold_drive'],
+    effect: '+10% Resonance from a Fold Jump',
+    flavor: 'Data Cores ring at the fold frequency. Wire them into the coil.',
   }),
 ];
 

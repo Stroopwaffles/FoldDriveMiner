@@ -38,6 +38,7 @@ export class BoardPanel {
         info: ITEM_INFO[item.kind],
         credits: TR.canBuy(this.s(), item.id, 'credits'),
         barter: item.barterOre ? TR.canBuy(this.s(), item.id, 'barter') : 'n/a',
+        cores: item.dataCores ? TR.canBuy(this.s(), item.id, 'cores') : 'n/a',
       })),
       favorReady: !!f.favor && !f.favor.done && this.s().cargo[f.favor.ore] >= f.favor.amount,
     };

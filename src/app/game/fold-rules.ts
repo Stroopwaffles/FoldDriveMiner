@@ -2,6 +2,7 @@
  * The Fold Jump: charging the drive, Fold Resonance, the Jump Core and the
  * prestige reset that carries the core hull (and its crew) to a new sector.
  */
+import { CORES } from './core-data';
 import { carryStory, choice } from './story-rules';
 import { DRONE_IDS } from './fleet-data';
 import { OreId } from './config';
@@ -130,7 +131,9 @@ export function resonanceGain(state: GameState): number {
   const over = Math.max(0, state.fold.charge - 1);
   const finale = choice(state) === 'break' ? 0.75 : choice(state) === 'master' ? 1.5 : 1;
   const echoes = 1 + (state.fold.echoes ?? 0) * FOLD.echoResonance;
-  const raw = (runCredits(state) / FOLD.resonanceUnit) ** FOLD.resonanceExponent * FOLD.resonanceMult * (1 + FOLD.overchargeBonus * over * 4) * finale * echoes;
+  const resonator = 1 + researchLevel(state, 'core_resonator') * CORES.resonatorPerLevel;
+  const raw =
+    (runCredits(state) / FOLD.resonanceUnit) ** FOLD.resonanceExponent * FOLD.resonanceMult * (1 + FOLD.overchargeBonus * over * 4) * finale * echoes * resonator;
   return Math.max(1, Math.floor(raw));
 }
 
@@ -264,6 +267,7 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.stats = { ...old.stats };
   s.flags = { ...old.flags };
   s.dataCores = old.dataCores;
+  s.matrix = { ...(old.matrix ?? {}) };
   s.parts = vault;
 
   // The crew comes along, healed by the fold; posts are on the core hull.

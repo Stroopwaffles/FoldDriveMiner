@@ -2,7 +2,32 @@
 <section class="panel lab">
   <div class="panel-title">
     <span class="led" [class.amber]="st.research.active.length > 0"></span>Research Lab <span class="kana">けんきゅうじょ</span>
-    <span class="sd">SURVEY DATA <b>{{ game.fmt(st.surveyData) }}</b></span>
+    <span class="sd">SURVEY DATA <b>{{ game.fmt(st.surveyData) }}</b> · DATA CORES <b class="cores">{{ st.dataCores }}</b></span>
+  </div>
+
+  <!-- Core Matrix -->
+  <div class="matrix" [class.open]="matrixOpen()">
+    <button type="button" class="matrix-head" (click)="matrixOpen.set(!matrixOpen())" [attr.aria-expanded]="matrixOpen()">
+      <span class="matrix-title">◆ CORE MATRIX</span>
+      <span class="dim">Permanent bonuses for Data Cores · kept through every Fold Jump · {{ matrixLevels() }} levels built</span>
+      <span class="matrix-toggle">{{ matrixOpen() ? '▲' : '▼' }}</span>
+    </button>
+    @if (matrixOpen()) {
+      <div class="matrix-grid">
+        @for (r of matrix(); track r.m.id) {
+          <div class="matrix-cell">
+            <div class="mx-name">{{ r.m.name }} <span class="lvl">LV {{ r.level }}/{{ r.m.maxLevel }}</span></div>
+            <div class="mx-effect">{{ r.now }}@if (r.next) { <span class="dim"> → {{ r.next }}</span> }</div>
+            <div class="mx-flavor">{{ r.m.flavor }}</div>
+            @if (r.cost !== null) {
+              <button type="button" class="btn small" [disabled]="!r.afford" (click)="game.buyMatrix(r.m.id)">◆ {{ r.cost }} cores</button>
+            } @else {
+              <span class="maxed">MAX</span>
+            }
+          </div>
+        }
+      </div>
+    }
   </div>
 
   <!-- Lab benches -->
@@ -14,8 +39,19 @@
           <div class="bench-name">{{ b.name }}</div>
           <div class="bench-bar"><div class="bench-fill" [style.width.%]="b.progress * 100"></div></div>
           <div class="bench-foot">
-            <span class="computing">COMPUTING… {{ b.remaining }}</span>
-            <button type="button" class="btn tiny" (click)="game.cancelResearch(i)" title="Cancel and refund">✕</button>
+            <span class="computing">{{ b.done ? 'FINISHING…' : 'COMPUTING… ' + b.remaining }}</span>
+            <span class="bench-btns">
+              @if (!b.done) {
+                <button
+                  type="button"
+                  class="btn tiny rush"
+                  [disabled]="st.dataCores < b.rush"
+                  (click)="game.rushResearch(i)"
+                  [title]="'Finish now for ' + b.rush + ' Data Core' + (b.rush > 1 ? 's' : '')"
+                >◆ {{ b.rush }} RUSH</button>
+              }
+              <button type="button" class="btn tiny" (click)="game.cancelResearch(i)" title="Cancel and refund">✕</button>
+            </span>
           </div>
         } @else {
           <div class="bench-idle">— IDLE — select a project below</div>
@@ -42,6 +78,9 @@
         <div class="costs">
           <span [class.short]="st.surveyData < sel.cost.sd">◈ {{ game.fmt(sel.cost.sd) }} SD</span>
           <span [class.short]="st.credits < sel.cost.cr">{{ game.fmt(sel.cost.cr) }} cr</span>
+          @if (sel.cost.cores) {
+            <span class="cores" [class.short]="st.dataCores < sel.cost.cores">◆ {{ sel.cost.cores }} cores</span>
+          }
           <span>⏱ {{ duration(sel.cost.sec) }}</span>
         </div>
       }

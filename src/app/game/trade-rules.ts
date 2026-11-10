@@ -3,9 +3,11 @@
  * escorts), the contract board (megacorps and sector-local outfits) and
  * pilot bonds.
  */
+import { CORES } from './core-data';
+import { makeRelic } from './core-rules';
 import { choice } from './story-rules';
 import { CONFIG, ORES, ORE_IDS, OreId, oreDef } from './config';
-import { currentZone, hasResearch, oreReachable, zoneUnlocked } from './common';
+import { currentZone, hasResearch, oreReachable, researchLevel, zoneUnlocked } from './common';
 import { generatePilot, pilotById, rosterCap } from './crew-rules';
 import { DroneType, PARTS, partDef, sectorPartId } from './fleet-data';
 import { droneCostOf, droneUnlocked, mechStats } from './fleet-rules';
@@ -118,7 +120,7 @@ export function droneCostMult(state: GameState): number {
 }
 
 export function surveyMult(state: GameState): number {
-  return corpPerk(state, 'orrery') ? 1.1 : 1;
+  return (corpPerk(state, 'orrery') ? 1.1 : 1) * (1 + researchLevel(state, 'core_decryption') * CORES.decryptionPerLevel);
 }
 
 export function raidMult(state: GameState): number {
@@ -262,6 +264,12 @@ export function spawnFleet(state: GameState, events: TickEvents, clan?: ClanId):
     const item = makeItem(state, id, kind, rng, tier.discount);
     if (item) stock.push(item);
   }
+  // A legendary part, sometimes: only for Data Cores.
+  const relic = makeRelic(state, rng, t.nextId);
+  if (relic) {
+    t.nextId++;
+    stock.push(relic);
+  }
   // Partners get the clan's exclusive (once).
   const ex = clanDef(id).exclusive;
   if (tier.name === 'Partner' && !t.perks.includes(ex)) {
@@ -299,14 +307,18 @@ function exclusiveDesc(id: string): string {
   );
 }
 
-export type PayMethod = 'credits' | 'barter';
+export type PayMethod = 'credits' | 'barter' | 'cores';
 
 export function canBuy(state: GameState, itemId: number, pay: PayMethod): string | null {
   const f = state.trade.fleet;
   const item = f?.stock.find((s) => s.id === itemId);
   if (!f || !item) return 'Not for sale';
   if (item.sold) return 'Sold';
-  if (pay === 'barter') {
+  if (pay === 'cores') {
+    if (!item.dataCores) return 'Not sold for cores';
+    if (state.dataCores < item.dataCores) return `Need ${item.dataCores} Data Cores`;
+  } else if (item.kind === 'relic') return 'Sold only for Data Cores';
+  else if (pay === 'barter') {
     if (!item.barterOre || !item.barterAmount) return 'No barter offered';
     if (state.cargo[item.barterOre] < item.barterAmount) return `Need ${item.barterAmount} ${oreDef(item.barterOre).name}`;
   } else if (state.credits < item.price) return 'Not enough credits';
@@ -319,7 +331,8 @@ export function buyItem(state: GameState, itemId: number, pay: PayMethod, events
   const t = state.trade;
   const f = t.fleet!;
   const item = f.stock.find((s) => s.id === itemId)!;
-  if (pay === 'barter') state.cargo[item.barterOre!] -= item.barterAmount!;
+  if (pay === 'cores') state.dataCores -= item.dataCores!;
+  else if (pay === 'barter') state.cargo[item.barterOre!] -= item.barterAmount!;
   else state.credits -= item.price;
   item.sold = true;
   t.rep[f.clan] += MERCHANT.repPerPurchase + (item.price > state.credits * 0.2 ? 1 : 0);
@@ -340,6 +353,7 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
   const t = state.trade;
   switch (item.kind) {
     case 'part':
+    case 'relic':
       state.parts[item.partId!] = (state.parts[item.partId!] ?? 0) + 1;
       news(events, `${item.label} added to parts storage.`, true);
       break;

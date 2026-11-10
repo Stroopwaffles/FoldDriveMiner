@@ -329,3 +329,14 @@
   color: var(--cc, var(--ok));
   font-weight: normal;
 }
+
+/* Legendary parts, sold for Data Cores */
+.tag.legendary {
+  color: var(--magenta);
+  border-color: var(--magenta);
+}
+
+.relic-buy {
+  color: var(--magenta);
+  border-color: var(--magenta);
+}

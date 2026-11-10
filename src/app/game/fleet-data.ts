@@ -170,6 +170,12 @@ export const PARTS: readonly PartDef[] = [
   { id: 'aster_capacitor', name: 'Aster-Lune Fold Capacitor', slot: 'reactor', cost: 0, stats: { speed: 4 }, draw: 0, supply: 40, rarity: 'unique' },
   { id: 'orrery_array', name: 'Orrery Deep Array', slot: 'sensor', cost: 0, stats: { sensors: 24 }, draw: 3, rarity: 'unique' },
   { id: 'vanguard_aegis', name: 'Vanguard Aegis', slot: 'offhand', cost: 0, stats: { armor: 80, combat: 12 }, draw: 4, rarity: 'unique' },
+  // Legendary parts: merchants sell them only for Data Cores.
+  { id: 'ancestor_bore', name: 'Ancestor Bore', slot: 'drill', cost: 0, stats: { mining: 60, combat: 6 }, draw: 8, rarity: 'legendary' },
+  { id: 'lattice_aegis', name: 'Lattice Aegis', slot: 'offhand', cost: 0, stats: { armor: 100, combat: 18 }, draw: 5, rarity: 'legendary' },
+  { id: 'fold_heart', name: 'Fold-Heart Reactor', slot: 'reactor', cost: 0, stats: { speed: 4 }, draw: 0, supply: 64, rarity: 'legendary' },
+  { id: 'oracle_eye', name: 'Oracle Eye', slot: 'sensor', cost: 0, stats: { sensors: 36 }, draw: 3, rarity: 'legendary' },
+  { id: 'comet_thrusters', name: 'Comet Thrusters', slot: 'thrusters', cost: 0, stats: { speed: 16, combat: 4 }, draw: 4, rarity: 'legendary' },
 ];
 
 /** Sector-unique parts sold by merchants: 'sx:<sector seed>:<base part id>'. Stats ×1.3 of the base. */

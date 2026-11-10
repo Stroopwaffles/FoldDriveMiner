@@ -109,6 +109,7 @@ export interface ResearchJob {
   /** What was paid, so cancelling can refund it. */
   paidSd: number;
   paidCr: number;
+  paidCores?: number;
 }
 
 /** The Alloy Forge: one batch at a time, like a furnace. */
@@ -421,7 +422,7 @@ export interface FoldState {
 }
 
 export interface GameState {
-  version: 10;
+  version: 11;
   commander: string;
   ship: string;
   createdAt: number;
@@ -437,6 +438,8 @@ export interface GameState {
   surveyData: number;
   cargo: OreAmounts;
   ingots: OreAmounts;
+  /** Core Matrix levels, bought with Data Cores (kept through Fold Jumps). */
+  matrix: Record<string, number>;
   /** Finished alloys (1 t each). */
   alloys: Record<AlloyId, number>;
   forge: AlloyForge;

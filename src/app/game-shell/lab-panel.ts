@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { MATRIX } from '../game/core-data';
 import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
 import { BRANCHES, RESEARCH, ResearchNode, researchNode } from '../game/research';
@@ -18,7 +19,7 @@ interface NodeView {
   status: E.ResearchStatus;
   level: number;
   progress: number | null;
-  cost: { sd: number; cr: number; sec: number };
+  cost: { sd: number; cr: number; sec: number; cores: number };
   affordable: boolean;
 }
 
@@ -67,7 +68,7 @@ export class LabPanel {
         level: E.researchLevel(s, node.id),
         progress: job ? 1 - job.remaining / job.duration : null,
         cost,
-        affordable: s.surveyData >= cost.sd && s.credits >= cost.cr,
+        affordable: s.surveyData >= cost.sd && s.credits >= cost.cr && s.dataCores >= cost.cores,
       };
     });
   });
@@ -110,10 +111,31 @@ export class LabPanel {
             name: researchNode(job.id).name,
             progress: 1 - job.remaining / job.duration,
             remaining: formatDuration(job.remaining),
+            rush: E.rushCost(job),
+            done: job.remaining <= 0,
           }
         : null;
     });
   });
+
+  /** The Core Matrix: permanent bonuses bought with Data Cores. */
+  protected readonly matrixOpen = signal(false);
+  protected readonly matrix = computed(() => {
+    const s = this.s();
+    return MATRIX.map((m) => {
+      const level = E.matrixLevel(s, m.id);
+      const cost = E.matrixCost(s, m.id);
+      return {
+        m,
+        level,
+        cost,
+        now: level ? E.matrixEffect(m, level) : 'No bonus yet',
+        next: cost !== null ? E.matrixEffect(m, level + 1) : null,
+        afford: cost !== null && s.dataCores >= cost,
+      };
+    });
+  });
+  protected readonly matrixLevels = computed(() => this.matrix().reduce((n, r) => n + r.level, 0));
 
   protected select(id: string): void {
     this.audio.blip();

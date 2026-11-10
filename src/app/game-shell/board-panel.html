@@ -35,15 +35,24 @@
                 @if (row.info.contraband) {
                   <span class="tag red">CONTRABAND</span>
                 }
+                @if (row.item.kind === 'relic') {
+                  <span class="tag legendary">LEGENDARY</span>
+                }
               </div>
               <div class="dim small">{{ row.item.desc }}</div>
               @if (row.item.sold) {
                 <div class="ok small">SOLD</div>
               } @else {
                 <div class="buy">
+                  @if (row.item.kind === 'relic') {
+                    <button type="button" class="btn small relic-buy" [disabled]="!!row.cores" [title]="row.cores ?? ''" (click)="game.buyItem(row.item.id, 'cores')">
+                      ◆ {{ row.item.dataCores }} Data Cores
+                    </button>
+                  } @else {
                   <button type="button" class="btn small" [disabled]="!!row.credits" [title]="row.credits ?? ''" (click)="game.buyItem(row.item.id, 'credits')">
                     {{ game.fmt(row.item.price) }} cr
                   </button>
+                  }
                   @if (row.item.barterOre) {
                     <button type="button" class="btn small btn-amber" [disabled]="!!row.barter" [title]="row.barter ?? ''" (click)="game.buyItem(row.item.id, 'barter')">
                       or {{ game.fmt(row.item.barterAmount ?? 0) }} t {{ oreName(row.item.barterOre) }}

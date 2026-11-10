@@ -394,3 +394,26 @@ These were proposed and are used by later sections, but not yet explicitly confi
 - **Hold space and selling:** alloys take 1 t each, and a running batch reserves space for its output. Alloys can be sold, auto-sold and Smart Sold (when their two ores average at or above par), and Sell All includes them.
 - **Fold Jumps:** alloy stock and the forge reset, like ingots.
 - **Other:** save version 10. New commendations: Metallurgist, Alloy Baron and Lattice Lord.
+
+## Spending Data Cores
+
+Data Cores used to have no use. Now they have three, plus the core research nodes:
+
+- **Rush research (Lab):** a ◆ RUSH button on each running project finishes it at once. It costs one core per 10 minutes left, minimum 1 and maximum 12.
+- **Core research nodes:** each costs Data Cores as well as SD and credits, one more core per level. Cancelling refunds the cores.
+  - Core Lattice (Extraction, 2 levels, from 1 core): +50% Data Core chance from cracks, per level.
+  - Core Decryption (Survey, 3 levels, from 2 cores): +20% Survey Data per level.
+  - Core Resonator (Fold, 2 levels, from 4 cores, needs the Fold Drive): +10% Resonance per level.
+- **Legendary parts (merchants):** 60% of convoys stock one legendary part. It's priced only in Data Cores (4–7) and is never offered once you own it. Legendary parts are kept through Fold Jumps, like unique parts.
+  - Ancestor Bore (drill)
+  - Lattice Aegis (offhand)
+  - Fold-Heart Reactor (reactor)
+  - Oracle Eye (sensor)
+  - Comet Thrusters (thrusters)
+- **Core Matrix (top of the Lab):** permanent bonuses kept through every Fold Jump, including Deep Folds. They add to the same bonuses as commendations. Each upgrade has 10 levels; level 1 costs 2 or 3 cores and each later level costs 1 more.
+  - Core-Tuned Drill: +5% drill power per level
+  - Core Uplink: +3% drone and mech output per level
+  - Core Ledger: +2% sell prices per level
+  - Core Cache: +5% research speed per level
+  - Core Sims: +5% pilot XP per level
+- **Save:** version 11.

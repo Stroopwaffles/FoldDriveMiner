@@ -315,3 +315,96 @@
     background: var(--amber);
   }
 }
+
+/* ---------------- Data Cores ---------------- */
+.cores {
+  color: var(--magenta);
+}
+
+.bench-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.rush {
+  color: var(--magenta);
+  border-color: var(--magenta);
+}
+
+.matrix {
+  margin: 0.7rem 0.9rem 0;
+  border: 1px solid #5a2a58;
+  background: rgba(30, 8, 30, 0.35);
+}
+
+.matrix-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.matrix-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: var(--magenta);
+  white-space: nowrap;
+}
+
+.matrix-toggle {
+  margin-left: auto;
+  color: var(--magenta);
+}
+
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  padding: 0 0.7rem 0.7rem;
+}
+
+.matrix-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0.45rem 0.55rem;
+  border: 1px dashed #5a2a58;
+  font-size: 0.75rem;
+
+  .btn,
+  .maxed {
+    align-self: flex-start;
+    margin-top: auto;
+  }
+}
+
+.mx-name {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--text);
+}
+
+.mx-effect {
+  color: var(--cyan);
+}
+
+.mx-flavor {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.7rem;
+}
+
+.maxed {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: var(--ok);
+}

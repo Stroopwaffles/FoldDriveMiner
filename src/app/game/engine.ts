@@ -32,6 +32,7 @@ import {
   salvagerDepletionBonus,
 } from './fleet-rules';
 import { RESEARCH, researchNode } from './research';
+import { CORES } from './core-data';
 import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
 import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
 import { generateSector, pulsarSurge, sectorMods, sectorZones, starLabel } from './sector-rules';
@@ -73,6 +74,7 @@ export * from './common';
 export * from './crew-rules';
 export * from './fleet-rules';
 export * from './alloy-rules';
+export * from './core-rules';
 
 function emptyDrones(): Record<DroneType, number> {
   const d = {} as Record<DroneType, number>;
@@ -101,7 +103,7 @@ export function emptyEvents(): TickEvents {
 
 export function newGame(commander: string, ship: string, now: number, seed: number): GameState {
   const state: GameState = {
-    version: 10,
+    version: 11,
     commander,
     ship,
     createdAt: now,
@@ -114,6 +116,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     surveyData: 0,
     cargo: emptyOre(),
     ingots: emptyOre(),
+    matrix: {},
     alloys: emptyAlloys(),
     forge: emptyForge(),
     cargoLevel: 0,
@@ -494,7 +497,8 @@ export function click(state: GameState): ClickResult {
       if (oreReachable(state, id)) haul[id] += asteroid.maxMass * bonusFrac * asteroid.composition[id];
     }
     const rng = new Rng(state.rng);
-    if (rng.next() < a.dataCoreChance + salvagerDataCoreBonus(state)) {
+    const lattice = 1 + researchLevel(state, 'core_lattice') * CORES.latticePerLevel;
+    if (rng.next() < a.dataCoreChance * lattice + salvagerDataCoreBonus(state)) {
       result.dataCore = true;
       state.dataCores++;
     }
@@ -642,11 +646,16 @@ function plannedLevel(state: GameState, id: string): number {
   return researchLevel(state, id) + active;
 }
 
-export function researchCost(state: GameState, id: string): { sd: number; cr: number; sec: number } {
+export function researchCost(state: GameState, id: string): { sd: number; cr: number; sec: number; cores: number } {
   const n = researchNode(id);
   const lvl = plannedLevel(state, id);
   const g = n.growth ** lvl;
-  return { sd: Math.ceil(n.sd * g), cr: Math.ceil(n.cr * g), sec: Math.ceil(n.sec * Math.sqrt(g)) };
+  return {
+    sd: Math.ceil(n.sd * g),
+    cr: Math.ceil(n.cr * g),
+    sec: Math.ceil(n.sec * Math.sqrt(g)),
+    cores: n.cores ? n.cores + lvl : 0,
+  };
 }
 
 export type ResearchStatus = 'teaser' | 'locked' | 'maxed' | 'active' | 'available';
@@ -675,6 +684,7 @@ export function researchBlocker(state: GameState, id: string): string | null {
   const cost = researchCost(state, id);
   if (state.surveyData < cost.sd) return 'Not enough Survey Data';
   if (state.credits < cost.cr) return 'Not enough credits';
+  if (state.dataCores < cost.cores) return 'Not enough Data Cores';
   return null;
 }
 
@@ -683,6 +693,7 @@ export function startResearch(state: GameState, id: string): boolean {
   const cost = researchCost(state, id);
   state.surveyData -= cost.sd;
   state.credits -= cost.cr;
+  state.dataCores -= cost.cores;
   state.research.active.push({
     id,
     level: researchLevel(state, id) + 1,
@@ -690,6 +701,7 @@ export function startResearch(state: GameState, id: string): boolean {
     duration: cost.sec,
     paidSd: cost.sd,
     paidCr: cost.cr,
+    paidCores: cost.cores,
   });
   return true;
 }
@@ -700,6 +712,7 @@ export function cancelResearch(state: GameState, index: number): boolean {
   state.research.active.splice(index, 1);
   state.surveyData += job.paidSd;
   state.credits += job.paidCr;
+  state.dataCores += job.paidCores ?? 0;
   return true;
 }
 
