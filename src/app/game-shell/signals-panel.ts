@@ -61,14 +61,14 @@ import { GameService } from '../services/game.service';
                 @default {
                   @if (r.mission) {
                     <div class="mission">
-                      <span>{{ r.mission.approach === 'mech' ? mechName(r.mission.mechId) : r.mission.drones + ' drones' }} on site — {{ (r.mission.chance * 100).toFixed(0) }}% success</span>
+                      <span>{{ r.mission.approach === 'mech' ? mechName(r.mission.mechId) : r.mission.drones + ' Prospectors' }} on site — {{ (r.mission.chance * 100).toFixed(0) }}% success</span>
                       <div class="bar"><div [style.width.%]="(1 - r.mission.remaining / r.mission.duration) * 100"></div></div>
                     </div>
                   } @else {
                     <div class="respond">
                       @if (r.def.approaches.includes('drones')) {
                         <button type="button" class="btn small" [disabled]="!!blocker(r.a.id, 'drones')" [title]="blocker(r.a.id, 'drones') ?? ''" (click)="game.launchMission(r.a.id, 'drones')">
-                          Send {{ dronesFor(r.a.kind) }} drones · {{ pct(chance(r.a.kind, 'drones')) }}
+                          Send {{ dronesFor(r.a.kind) }} Prospectors · {{ pct(chance(r.a.kind, 'drones')) }}
                         </button>
                       }
                       @if (r.def.approaches.includes('mech')) {
@@ -110,7 +110,7 @@ import { GameService } from '../services/game.service';
                 @default {
                   @if (r.mission) {
                     <div class="mission">
-                      <span>{{ r.mission.approach === 'mech' ? mechName(r.mission.mechId) : r.mission.drones + ' drones' }} on site — {{ (r.mission.chance * 100).toFixed(0) }}% success</span>
+                      <span>{{ r.mission.approach === 'mech' ? mechName(r.mission.mechId) : r.mission.drones + ' Prospectors' }} on site — {{ (r.mission.chance * 100).toFixed(0) }}% success</span>
                       <div class="bar"><div [style.width.%]="(1 - r.mission.remaining / r.mission.duration) * 100"></div></div>
                     </div>
                   }
