@@ -13,6 +13,14 @@
       <div class="cap-bar" [class.full]="game.cargoFull()">
         <div class="cap-fill" [style.width.%]="cargoPct()"></div>
       </div>
+      @if (hasRefinery()) {
+        <div class="cap-split">
+          ORE {{ game.fmt(load().ore) }} t · INGOTS {{ game.fmt(load().ingots) }} t
+          @if (load().reserved > 0) {
+            · FURNACES {{ game.fmt(load().reserved) }} t reserved
+          }
+        </div>
+      }
 
       <table class="ore-table">
         <thead>

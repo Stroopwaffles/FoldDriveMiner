@@ -277,6 +277,25 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     expect(E.ingotPrice(s, 'ferrite') / E.oreRatio(s)).toBeGreaterThan(E.orePrice(s, 'ferrite'));
   });
 
+  it('ingots take hold space, and furnaces reserve space for their output', () => {
+    const s = rich();
+    s.research.levels['refinery'] = 1;
+    E.syncRefinerySlots(s);
+    s.cargo.ferrite = 20;
+    E.startBatch(s, 0, 'ferrite');
+    expect(E.cargoUsed(s)).toBeCloseTo(2, 6); // 20 ore in the furnace → 2 t reserved
+    // Fill the rest of the hold; the reserved space can't be taken.
+    const lost = E.addToCargo(s, { ...E.emptyOre(), ferrite: 1000 }).lost;
+    expect(lost).toBeGreaterThan(0);
+    expect(E.cargoUsed(s)).toBeCloseTo(E.cargoCapacity(s), 6);
+    E.tick(s, E.batchDuration(s) + 0.01);
+    expect(s.ingots.ferrite).toBeCloseTo(2, 6);
+    expect(E.cargoUsed(s)).toBeLessThanOrEqual(E.cargoCapacity(s) + 1e-6);
+    // Selling ingots frees the space again.
+    E.sellIngots(s, 'ferrite');
+    expect(E.cargoUsed(s)).toBeCloseTo(E.cargoCapacity(s) - 2, 6);
+  });
+
   it('won\'t start a batch without enough ore', () => {
     const s = rich();
     s.research.levels['refinery'] = 1;

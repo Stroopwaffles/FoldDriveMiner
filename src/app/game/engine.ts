@@ -192,8 +192,18 @@ export function cargoCapacity(state: GameState, level = state.cargoLevel): numbe
   return Math.floor(c.baseCapacity * c.capacityGrowth ** level * bonus * haulerCargoMult(state));
 }
 
+/**
+ * Hold space in use: raw ore, finished ingots (1 t each), and space reserved
+ * for ingots still in the furnaces, so a finished batch always has room.
+ */
 export function cargoUsed(state: GameState): number {
-  return sumOre(state.cargo);
+  return sumOre(state.cargo) + sumOre(state.ingots) + refineryReserved(state);
+}
+
+/** Ingots currently being made, which already have hold space set aside. */
+export function refineryReserved(state: GameState): number {
+  const ratio = oreRatio(state);
+  return state.refinery.slots.reduce((s, slot) => s + (slot.batch > 0 ? slot.batch / ratio : 0), 0);
 }
 
 export function perDroneRate(state: GameState): number {

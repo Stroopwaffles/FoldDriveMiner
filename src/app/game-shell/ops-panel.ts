@@ -49,7 +49,14 @@ export class OpsPanel {
     this.cargoRows().reduce((sum, r) => sum + Math.floor(r.amount) * r.price + Math.floor(r.ingots) * r.ingotPrice, 0),
   );
 
-  protected readonly cargoPct = computed(() => (this.game.used() / this.game.capacity()) * 100);
+  /** What's taking up the hold: ore, finished ingots (1 t each) and furnace output reserved. */
+  protected readonly load = computed(() => {
+    const s = this.s();
+    const sum = (a: Record<string, number>) => Object.values(a).reduce((x, y) => x + y, 0);
+    return { ore: sum(s.cargo), ingots: sum(s.ingots), reserved: E.refineryReserved(s) };
+  });
+
+  protected readonly cargoPct = computed(() => Math.min(100, (this.game.used() / this.game.capacity()) * 100));
   protected readonly cargoCost = computed(() => E.cargoUpgradeCost(this.s()));
   protected readonly nextCapacity = computed(() => E.cargoCapacity(this.s(), this.s().cargoLevel + 1));
 
