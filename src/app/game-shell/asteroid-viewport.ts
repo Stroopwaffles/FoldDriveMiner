@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, untracked } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
 import { holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult, specialName } from '../game/engine';
 import { specialDef } from '../game/special-data';
@@ -9,7 +9,8 @@ import { Rng } from '../game/rng';
 import { AsteroidState } from '../game/types';
 import { GameService } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
-import { Starfield } from '../ui/starfield';
+import { ZoneBackdrop } from '../ui/zone-backdrop';
+import { backdrop } from '../game/backdrop';
 
 interface Shape {
   outline: string;
@@ -98,7 +99,7 @@ function buildShape(a: AsteroidState): Shape {
 
 @Component({
   selector: 'fdm-asteroid-viewport',
-  imports: [Starfield, MechPortrait, DroneSprite],
+  imports: [ZoneBackdrop, MechPortrait, DroneSprite],
   templateUrl: './asteroid-viewport.html',
   styleUrl: './asteroid-viewport.scss',
 })
@@ -135,6 +136,15 @@ export class AsteroidViewport {
   protected readonly integrity = computed(() => {
     const a = this.game.state()?.asteroid;
     return a ? a.mass / a.maxMass : 1;
+  });
+  /** Zone theme and star: only changes on a zone move or a jump, so the scene isn't rebuilt every tick. */
+  private readonly sceneKey = computed(() => {
+    const s = this.game.state();
+    return s ? `${s.zone}|${s.sector.seed}|${s.sector.depth}` : '';
+  });
+  protected readonly backdrop = computed(() => {
+    if (!this.sceneKey()) return null;
+    return backdrop(untracked(() => this.game.state()!));
   });
   protected readonly zoneName = computed(() => {
     const s = this.game.state();

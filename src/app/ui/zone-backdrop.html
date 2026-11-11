@@ -1,0 +1,84 @@
+@for (b of scene(); track key(b)) {
+  <div class="scene" [class]="'scene t-' + b.theme + ' s-' + b.star" [class.still]="still()" [style.--star]="b.starColor">
+    <!-- Far layer: nebula wash and theme sky -->
+    <div class="sky"></div>
+    @if (b.star === 'nebula') {
+      <div class="nebula"></div>
+    }
+    @if (b.theme === 'ice') {
+      @for (r of ribbons; track r) {
+        <div class="aurora" [style.--i]="r"></div>
+      }
+    }
+    @if (b.theme === 'void') {
+      <div class="lens"></div>
+    }
+
+    <fdm-starfield [speed]="b.theme === 'trade' ? 0.45 : 0.25" [still]="still()" [tint]="b.starColor" />
+
+    <!-- The star(s) -->
+    <div class="star main"></div>
+    @if (b.star === 'pulsar') {
+      <div class="beam"></div>
+    }
+    @if (b.star === 'black_hole') {
+      <div class="disk"></div>
+    }
+    @if (b.companion; as c) {
+      <div class="star companion" [class]="'star companion s-' + c.star" [style.--star]="c.color"></div>
+    }
+
+    <!-- Near layer: what this zone is -->
+    @switch (b.theme) {
+      @case ('belt') {
+        @for (m of motes; track m.i) {
+          <span class="mote" [style.left.%]="m.x" [style.top.%]="m.y" [style.--d]="m.r"></span>
+        }
+      }
+      @case ('trade') {
+        <div class="lane">
+          @for (k of beacons; track k) {
+            <span class="beacon" [style.left.%]="k * 12 + 2" [style.--k]="k"></span>
+          }
+        </div>
+        @for (c of convoy; track c.i) {
+          <span class="ship" [style.top.%]="30 + c.y * 0.35" [style.--d]="c.r" [style.--i]="c.i"></span>
+        }
+      }
+      @case ('wreck') {
+        @for (f of flashes; track f.i) {
+          <span class="flash" [style.left.%]="f.x" [style.top.%]="f.y * 0.8" [style.--d]="f.r"></span>
+        }
+        @for (w of wrecks; track $index) {
+          <svg class="hulk" viewBox="-90 -40 180 80" [style.left.%]="w.x" [style.top.%]="w.y" [style.--s]="w.s" [style.--rot]="w.rot + 'deg'" [style.--dur]="w.dur + 's'">
+            <polygon [attr.points]="hull" />
+            <line x1="-20" y1="-22" x2="-8" y2="22" />
+            <rect x="-74" y="-8" width="16" height="16" />
+          </svg>
+        }
+      }
+      @case ('dense') {
+        <div class="haze"></div>
+        @for (r of boulders; track $index) {
+          <span class="boulder" [style.top.%]="r.y" [style.--s]="r.s" [style.--dur]="r.dur + 's'" [style.--delay]="r.delay + 's'"></span>
+        }
+      }
+      @case ('crystal') {
+        @for (s of shards; track s.i) {
+          <span class="shard" [style.left.%]="s.x" [style.top.%]="s.y" [style.--d]="s.r"></span>
+        }
+      }
+      @case ('ice') {
+        @for (f of flakes; track f.i) {
+          <span class="flake" [style.left.%]="f.x" [style.--d]="f.r"></span>
+        }
+      }
+      @case ('void') {
+        <div class="swirl"></div>
+        @for (m of motes.slice(0, 14); track m.i) {
+          <span class="spark" [style.--a]="m.x * 3.6 + 'deg'" [style.--d]="m.r"></span>
+        }
+      }
+    }
+  </div>
+}

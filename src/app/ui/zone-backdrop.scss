@@ -1,0 +1,508 @@
+:host {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  animation: scene-in 1.2s ease-out both;
+
+  /* Reduced motion: keep the look, stop the movement. */
+  &.still,
+  &.still * {
+    animation: none !important;
+  }
+}
+
+@keyframes scene-in {
+  from {
+    opacity: 0;
+  }
+}
+
+fdm-starfield {
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------- skies */
+.sky {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--star) 22%, #0b0e24) 0%, #0b0e24 40%, #05060f 100%);
+}
+
+.t-trade .sky {
+  background:
+    linear-gradient(170deg, transparent 38%, rgba(255, 181, 71, 0.05) 46%, transparent 54%),
+    radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--star) 20%, #0b0e24) 0%, #0a0f26 42%, #05060f 100%);
+}
+
+.t-wreck .sky {
+  background: radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--star) 16%, #1a0a14) 0%, #12081a 40%, #050308 100%);
+}
+
+.t-dense .sky {
+  background: radial-gradient(ellipse at 80% 20%, color-mix(in srgb, var(--star) 18%, #1c140c) 0%, #120e10 45%, #060506 100%);
+}
+
+.t-crystal .sky {
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(199, 125, 255, 0.16) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--star) 18%, #140c2a) 0%, #0d0a24 42%, #05040f 100%);
+}
+
+.t-ice .sky {
+  background: radial-gradient(ellipse at 85% 15%, color-mix(in srgb, var(--star) 14%, #0a2030) 0%, #071628 45%, #030810 100%);
+}
+
+.t-void .sky {
+  background: radial-gradient(ellipse at 50% 55%, #1a0828 0%, #08040f 50%, #000 100%);
+}
+
+.nebula {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(255, 122, 217, 0.22) 0%, transparent 45%),
+    radial-gradient(ellipse at 70% 70%, rgba(122, 140, 255, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 20%, rgba(255, 61, 154, 0.14) 0%, transparent 40%);
+  filter: blur(8px);
+  animation: nebula-drift 60s ease-in-out infinite alternate;
+}
+
+@keyframes nebula-drift {
+  to {
+    transform: translate(4%, -3%) scale(1.08);
+  }
+}
+
+/* ---------------------------------------------------------------- stars */
+.star {
+  position: absolute;
+  z-index: 2;
+  border-radius: 50%;
+  right: -80px;
+  top: -80px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, #fff 0%, var(--star) 18%, color-mix(in srgb, var(--star) 35%, transparent) 40%, transparent 70%);
+  animation: star-breathe 9s ease-in-out infinite;
+}
+
+@keyframes star-breathe {
+  50% {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
+}
+
+.s-red_dwarf .star.main {
+  width: 190px;
+  height: 190px;
+  right: -50px;
+  top: -50px;
+  opacity: 0.85;
+}
+
+.s-blue_giant .star.main {
+  width: 380px;
+  height: 380px;
+  right: -140px;
+  top: -140px;
+}
+
+.s-pulsar .star.main {
+  width: 140px;
+  height: 140px;
+  right: 30px;
+  top: 20px;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  8% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.beam {
+  position: absolute;
+  z-index: 2;
+  right: 100px;
+  top: 90px;
+  width: 900px;
+  height: 6px;
+  margin: -3px 0 0 -450px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--star) 45%, transparent) 40%, #fff 50%, color-mix(in srgb, var(--star) 45%, transparent) 60%, transparent);
+  transform-origin: 50% 50%;
+  translate: 450px 0;
+  filter: blur(1px);
+  opacity: 0.55;
+  animation: sweep 6s linear infinite;
+}
+
+@keyframes sweep {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.s-nebula .star.main {
+  opacity: 0.6;
+  filter: blur(4px);
+}
+
+/* Black hole: a dark heart, a hot accretion disk, no glare. */
+.s-black_hole .star.main {
+  width: 120px;
+  height: 120px;
+  right: 40px;
+  top: 30px;
+  background: radial-gradient(circle, #000 0 45%, color-mix(in srgb, var(--star) 70%, #fff) 50%, transparent 62%);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--star) 50%, transparent);
+}
+
+.disk {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  top: 64px;
+  width: 200px;
+  height: 52px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, var(--star), #ffd8a8, transparent 40%, var(--star) 70%, transparent);
+  mask: radial-gradient(ellipse, transparent 30%, #000 34%, #000 60%, transparent 70%);
+  opacity: 0.7;
+  animation: spin 8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.star.companion {
+  right: auto;
+  top: auto;
+  left: -60px;
+  bottom: 30%;
+  width: 150px;
+  height: 150px;
+  opacity: 0.7;
+  animation-duration: 13s;
+}
+
+/* ---------------------------------------------------------------- belt: drifting dust */
+.mote {
+  position: absolute;
+  z-index: 3;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d98a4e;
+  opacity: calc(0.35 + var(--d) * 0.5);
+  animation: mote calc(14s + var(--d) * 18s) linear infinite;
+  animation-delay: calc(var(--d) * -30s);
+}
+
+@keyframes mote {
+  to {
+    transform: translate(-160px, 40px);
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- trade: beacons and traffic */
+.lane {
+  position: absolute;
+  z-index: 3;
+  left: -5%;
+  right: -5%;
+  top: 72%;
+  height: 2px;
+  transform: rotate(-10deg);
+}
+
+.beacon {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffb547;
+  box-shadow: 0 0 8px 2px rgba(255, 181, 71, 0.8);
+  opacity: 0.15;
+  animation: beacon 2.7s ease-out infinite;
+  animation-delay: calc(var(--k) * 0.3s);
+}
+
+@keyframes beacon {
+  0%,
+  12% {
+    opacity: 1;
+  }
+  40%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+/* Distant freighters: a running light and a faint drive trail crossing the sky. */
+.ship {
+  position: absolute;
+  z-index: 3;
+  left: -60px;
+  width: 46px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(79, 227, 255, 0.5));
+  animation: convoy calc(26s + var(--d) * 22s) linear infinite;
+  animation-delay: calc(var(--i) * -11s);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    top: -1px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px #4fe3ff;
+  }
+}
+
+@keyframes convoy {
+  to {
+    transform: translate(1500px, -60px);
+  }
+}
+
+/* ---------------------------------------------------------------- wreck: hulks and far-off fire */
+.hulk {
+  position: absolute;
+  z-index: 3;
+  width: 180px;
+  margin: -40px 0 0 -90px;
+  transform: scale(var(--s)) rotate(var(--rot));
+  animation: tumble var(--dur) linear infinite;
+  opacity: 0.55;
+
+  polygon,
+  rect {
+    fill: #0c0912;
+    stroke: #3a2a3a;
+    stroke-width: 1.5;
+  }
+
+  line {
+    stroke: #05060f;
+    stroke-width: 6;
+  }
+}
+
+@keyframes tumble {
+  to {
+    transform: scale(var(--s)) rotate(calc(var(--rot) + 360deg));
+  }
+}
+
+.flash {
+  position: absolute;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #ff7a3d 25%, rgba(255, 61, 154, 0.3) 50%, transparent 70%);
+  opacity: 0;
+  animation: flash calc(7s + var(--d) * 9s) ease-out infinite;
+  animation-delay: calc(var(--d) * -12s);
+}
+
+@keyframes flash {
+  0%,
+  90% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  92% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* ---------------------------------------------------------------- dense: heavy rock and haze */
+.haze {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 10% 90%, rgba(79, 216, 236, 0.07) 0%, transparent 45%),
+    radial-gradient(ellipse at 90% 60%, rgba(217, 138, 78, 0.08) 0%, transparent 40%);
+  animation: haze 20s ease-in-out infinite alternate;
+}
+
+@keyframes haze {
+  to {
+    opacity: 0.5;
+  }
+}
+
+/* Big dark boulders sliding past in the foreground. */
+.boulder {
+  position: absolute;
+  z-index: 3;
+  right: -260px;
+  width: 200px;
+  height: 150px;
+  border-radius: 46% 54% 40% 60% / 55% 45% 55% 45%;
+  background: radial-gradient(ellipse at 35% 30%, #2a2420 0%, #120e0c 60%, #080605 100%);
+  box-shadow: inset -10px -14px 0 rgba(0, 0, 0, 0.4);
+  transform: scale(var(--s));
+  opacity: 0.75;
+  animation: boulder var(--dur) linear infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes boulder {
+  to {
+    transform: translateX(-1500px) scale(var(--s)) rotate(-50deg);
+  }
+}
+
+/* ---------------------------------------------------------------- crystal: twinkling shards */
+.shard {
+  position: absolute;
+  z-index: 3;
+  width: 6px;
+  height: 14px;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: linear-gradient(180deg, #fff, #c77dff 50%, #4fe3ff);
+  transform: rotate(calc(var(--d) * 180deg)) scale(calc(0.6 + var(--d)));
+  opacity: 0.3;
+  animation: shimmer calc(3s + var(--d) * 4s) ease-in-out infinite;
+  animation-delay: calc(var(--d) * -6s);
+}
+
+@keyframes shimmer {
+  50% {
+    opacity: 0.95;
+    filter: hue-rotate(80deg) drop-shadow(0 0 4px #c77dff);
+  }
+}
+
+/* ---------------------------------------------------------------- ice: aurora and glitter */
+.aurora {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  top: calc(8% + var(--i) * 12%);
+  height: 60px;
+  background: linear-gradient(90deg, transparent, rgba(157, 255, 138, 0.4) 25%, rgba(79, 227, 255, 0.42) 55%, rgba(199, 125, 255, 0.28) 80%, transparent);
+  filter: blur(14px);
+  border-radius: 50%;
+  transform: skewY(calc(-6deg + var(--i) * 4deg));
+  animation: aurora calc(16s + var(--i) * 5s) ease-in-out infinite alternate;
+}
+
+@keyframes aurora {
+  to {
+    transform: skewY(calc(4deg - var(--i) * 3deg)) translateX(6%);
+    opacity: 0.5;
+  }
+}
+
+.flake {
+  position: absolute;
+  z-index: 3;
+  top: -10px;
+  width: 3px;
+  height: 3px;
+  background: #e8fbff;
+  box-shadow: 0 0 4px #9fefff;
+  opacity: calc(0.3 + var(--d) * 0.6);
+  animation: snow calc(12s + var(--d) * 14s) linear infinite;
+  animation-delay: calc(var(--d) * -26s);
+}
+
+@keyframes snow {
+  to {
+    transform: translate(-90px, 120vh);
+  }
+}
+
+/* ---------------------------------------------------------------- void: a slow swirl */
+.lens {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 140%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 38px, rgba(176, 122, 255, 0.12) 40px, transparent 46px);
+  animation: lens 30s ease-in-out infinite alternate;
+}
+
+@keyframes lens {
+  to {
+    transform: scale(1.12);
+  }
+}
+
+.swirl {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 55%;
+  width: 120%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 95, 162, 0.3), transparent 25%, rgba(176, 122, 255, 0.32) 50%, transparent 75%, rgba(255, 95, 162, 0.26));
+  mask: radial-gradient(circle, transparent 18%, #000 30%, #000 55%, transparent 70%);
+  animation: spin 70s linear infinite;
+}
+
+/* Sparks spiral inward along the swirl and wink out. */
+.spark {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 55%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ff5fa2;
+  box-shadow: 0 0 6px #ff5fa2;
+  animation: spiral calc(9s + var(--d) * 8s) linear infinite;
+  animation-delay: calc(var(--d) * -17s);
+}
+
+@keyframes spiral {
+  from {
+    transform: rotate(var(--a)) translateX(46vmin) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  to {
+    transform: rotate(calc(var(--a) + 300deg)) translateX(4vmin);
+    opacity: 0;
+  }
+}

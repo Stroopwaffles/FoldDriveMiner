@@ -1,7 +1,8 @@
 @let st = game.state();
 <div class="viewport" [class.od]="game.overdrive()" [class.locked]="locked()">
-  <fdm-starfield [speed]="0.25" [still]="settings.reducedMotion()" tint="#fff1c2" />
-  <div class="star-glow"></div>
+  @if (backdrop(); as bd) {
+    <fdm-zone-backdrop [bd]="bd" [still]="settings.reducedMotion()" />
+  }
 
   <div class="sector-label">
     <span class="led"></span>
