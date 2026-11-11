@@ -17,7 +17,7 @@
               }
               <div>
                 <div class="enemy-name">{{ event()?.jackal ? 'The Vermilion Jackal + raiders' : v.strike ? 'Fortified pirate base' : v.escort ? 'Raiders shadowing the convoy' : 'Pirate raiders' }}</div>
-                <div class="strength">STRENGTH {{ game.fmt(strength()) }} / round · HP {{ game.fmt(strength() * 6) }}</div>
+                <div class="strength">HITS {{ game.fmt(strength()) }} / round · HULL {{ game.fmt(strength() * 6) }} HP</div>
               </div>
             </div>
           </div>

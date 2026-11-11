@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { eventDef } from '../game/threat-data';
+import { THREAT, eventDef } from '../game/threat-data';
 import * as T from '../game/threat-rules';
 import { GameService } from '../services/game.service';
 
@@ -24,7 +24,7 @@ import { GameService } from '../services/game.service';
           <div class="actions">
             @switch (w.ev.kind) {
               @case ('raid') {
-                <span class="info">Enemy strength {{ game.fmt(w.ev.strength ?? 0) }} · your defense {{ game.fmt(defense()) }}</span>
+                <span class="info" title="Win by breaking their hull before your mechs run out of armor">Pirates hit {{ game.fmt(w.ev.strength ?? 0) }}/round, hull {{ game.fmt((w.ev.strength ?? 0) * hpPerStrength) }} · you hit {{ game.fmt(defense()) }}/round</span>
                 <button type="button" class="btn btn-primary small" (click)="game.openSortiePrep(w.ev.id)">Prepare sortie</button>
                 <button type="button" class="btn small" (click)="game.surrender(w.ev.id)">Surrender cargo</button>
                 <span class="order">Standing order: {{ raidOrderText() }}</span>
@@ -182,6 +182,8 @@ export class ThreatBanner {
       .threats.events.filter((e) => e.phase === 'warning')
       .map((ev) => ({ ev, def: eventDef(ev.kind) })),
   );
+
+  protected readonly hpPerStrength = THREAT.raid.hpPerStrength;
 
   protected readonly defense = computed(() => {
     const s = this.s();

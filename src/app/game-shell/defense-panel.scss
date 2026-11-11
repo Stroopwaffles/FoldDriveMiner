@@ -220,3 +220,41 @@
   font-size: 0.66rem;
   margin-right: 0.3rem;
 }
+
+/* Raid matchup: pirates on the left, you on the right. */
+.matchup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+
+.mu-side {
+  border: 1px solid var(--bezel);
+  background: rgba(5, 6, 15, 0.5);
+  padding: 4px 6px;
+  font-size: 0.74rem;
+}
+
+.mu-head {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  color: var(--amber);
+  margin-bottom: 2px;
+}
+
+.mu-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+
+  span:first-child {
+    flex: 1;
+  }
+
+  b {
+    font-family: var(--font-mono);
+    font-weight: normal;
+  }
+}

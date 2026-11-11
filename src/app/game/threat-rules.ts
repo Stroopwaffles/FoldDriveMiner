@@ -125,6 +125,11 @@ export function guardianPower(state: GameState): number {
   return THREAT.guardian.power * droneMultiplier(state.drones.guardian) * firmwareBonus(state);
 }
 
+/** Hit points of one Guardian: they toughen up at the same milestones that double their guns. */
+export function guardianHp(state: GameState): number {
+  return THREAT.guardian.hp * droneMultiplier(state.drones.guardian);
+}
+
 /** A mech's damage per sortie round at full armor. */
 export function mechCombatPower(state: GameState, mech: MechState): number {
   const st = mechStats(state, mech);
@@ -156,6 +161,29 @@ export function defenders(state: GameState, includeMiners: boolean): MechState[]
 
 export function defensePower(state: GameState, mechs: MechState[], useGuardians: boolean): number {
   return mechs.reduce((s, m) => s + mechCombatPower(state, m), 0) + (useGuardians ? state.drones.guardian * guardianPower(state) : 0);
+}
+
+/** The real shape of a raid fight, for the Defense screen. */
+export function raidMatchup(state: GameState, mechs: MechState[], guardians: number, strength: number) {
+  const r = THREAT.raid;
+  const enemyHp = strength * r.hpPerStrength;
+  const fullPower = defensePower(state, mechs, false) + guardians * guardianPower(state);
+  // Damage per round right now, with worn mechs fighting below full power.
+  const power =
+    mechs.reduce((sum, m) => sum + mechCombatPower(state, m) * mechConditionMult(m.armor / Math.max(1, mechStats(state, m).armor)), 0) +
+    guardians * guardianPower(state);
+  const armor = mechs.reduce((sum, m) => sum + m.armor, 0);
+  const maxArmor = mechs.reduce((sum, m) => sum + mechStats(state, m).armor, 0);
+  const guardianHpTotal = guardians * guardianHp(state);
+  const rounds = power > 0 ? Math.ceil(enemyHp / power) : Infinity;
+  // Fire you'd take before they break, if your damage held steady.
+  let incoming = 0;
+  for (let i = 1; i < Math.min(rounds, r.rounds + 1); i++) incoming += strength * Math.sqrt(Math.max(0, 1 - (power * i) / enemyHp));
+  if (rounds > r.rounds) incoming = Infinity;
+  // What you can take before the line breaks: Guardians soak part of the fire while mechs stand, all of it alone.
+  const a = THREAT.guardian.absorb;
+  const soak = mechs.length ? armor + Math.min(guardianHpTotal, (armor * a) / (1 - a)) : guardianHpTotal;
+  return { enemyHp, enemyHit: strength, power, fullPower, armor, maxArmor, guardianHp: guardianHpTotal, rounds, incoming, soak, maxRounds: r.rounds };
 }
 
 // ---------------------------------------------------------------- sortie simulation
@@ -230,7 +258,8 @@ function simulate(
       name: m.designation,
     };
   });
-  let gHp = guardians * g.hp;
+  const gUnitHp = guardianHp(state);
+  let gHp = guardians * gUnitHp;
   const gPower = guardianPower(state);
   const rounds: SortieRound[] = [];
   const techniques: SimResult['techniques'] = [];
@@ -240,7 +269,7 @@ function simulate(
   for (let i = 0; i < r.rounds; i++) {
     const lines: string[] = [];
     if (i === 0 && withLines) lines.push(...bonds.lines);
-    const gAlive = Math.ceil(gHp / g.hp - 1e-9);
+    const gAlive = Math.ceil(gHp / gUnitHp - 1e-9);
     let dmg = 0;
     let technique: SortieRound['technique'];
     for (const f of fighters) {
@@ -301,7 +330,7 @@ function simulate(
     lucky = true;
     if (withLines) rounds[rounds.length - 1]?.lines.push('A lucky shot hits their reactor — the pirates break off!');
   }
-  const guardiansLost = guardians - Math.ceil(Math.max(0, gHp) / g.hp - 1e-9);
+  const guardiansLost = guardians - Math.ceil(Math.max(0, gHp) / gUnitHp - 1e-9);
   const costly = won && (lucky || fighters.some((f) => f.disabled) || guardiansLost > guardians * 0.3);
   return { outcome: won ? (costly ? 'costly' : 'victory') : 'defeat', rounds, fighters, guardiansLost, techniques, lucky };
 }

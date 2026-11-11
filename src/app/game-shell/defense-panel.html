@@ -21,7 +21,36 @@
       @if (graceLeft() > 0) {
         <div class="ok small">Quiet sector: no hostile events for another {{ duration(graceLeft()) }}.</div>
       }
-      <div class="dim small">Expected raid strength now: <b>{{ game.fmt(expected()) }}</b> · your standing defense: <b>{{ game.fmt(standby()) }}</b></div>
+      @let mu = matchup();
+      <div class="matchup">
+        <div class="mu-side">
+          <div class="mu-head">PIRATES</div>
+          <div class="mu-row"><span>Hits for</span><b class="warn">{{ game.fmt(mu.enemyHit) }}</b><span class="dim">/ round</span></div>
+          <div class="mu-row"><span>Hull</span><b>{{ game.fmt(mu.enemyHp) }}</b><span class="dim">HP</span></div>
+        </div>
+        <div class="mu-side">
+          <div class="mu-head">YOUR DEFENSE</div>
+          <div class="mu-row" [title]="mu.power < mu.fullPower ? 'Worn mechs fight below full power. Full armor: ' + game.fmt(mu.fullPower) : ''">
+            <span>Hits for</span><b class="ok">{{ game.fmt(mu.power) }}</b><span class="dim">/ round</span>
+          </div>
+          @if (mu.maxArmor > 0) {
+            <div class="mu-row"><span>Mech armor</span><b>{{ game.fmt(mu.armor) }}</b><span class="dim">/ {{ game.fmt(mu.maxArmor) }}</span></div>
+          }
+          @if (mu.guardianHp > 0) {
+            <div class="mu-row"><span>Guardian hull</span><b>{{ game.fmt(mu.guardianHp) }}</b><span class="dim">HP</span></div>
+          }
+        </div>
+      </div>
+      <div class="dim small">
+        @if (mu.rounds > mu.maxRounds) {
+          You can't break them within {{ mu.maxRounds }} rounds. Add firepower.
+        } @else {
+          You'd break them in about {{ mu.rounds }} round{{ mu.rounds === 1 ? '' : 's' }}, taking roughly <b>{{ game.fmt(mu.incoming) }}</b> damage first.
+          @if (mu.incoming > mu.soak) {
+            <span class="warn">That's more than your armor can take.</span>
+          }
+        }
+      </div>
       @if (odds(); as o) {
         <div class="small">Estimated chance to repel a raid right now: <b [class.ok]="o.win >= 0.7" [class.warn]="o.win < 0.7">{{ pct(o.win) }}</b></div>
       } @else {

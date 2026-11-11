@@ -322,3 +322,39 @@ describe('rogue reward with a full hold', () => {
     expect(s.credits).toBeGreaterThan(credits);
   });
 });
+
+describe('raid balance: guardian hulls and the matchup', () => {
+  it('Guardian hulls toughen at the same milestones that double their guns', () => {
+    const s = rich();
+    s.drones.guardian = 10;
+    const hp10 = T.guardianHp(s);
+    expect(hp10).toBe(THREAT.guardian.hp);
+    s.drones.guardian = 100;
+    expect(T.guardianHp(s)).toBe(THREAT.guardian.hp * 8);
+    expect(T.guardianPower(s) / T.guardianHp(s)).toBeCloseTo(THREAT.guardian.power / THREAT.guardian.hp, 9);
+  });
+
+  it('a big Guardian swarm can now hold off a raid it out-guns', () => {
+    const s = rich();
+    s.drones.guardian = 100;
+    const strength = T.guardianPower(s) * 100 * 0.45; // they out-gun the raid about 2:1
+    expect(T.riskPreview(s, [], 100, strength).win).toBeGreaterThan(0.9);
+  });
+
+  it('the matchup reports enemy hull, worn-mech power and the fire you will take', () => {
+    const s = rich();
+    const m = bulwark(s);
+    const full = T.mechCombatPower(s, m);
+    let mu = T.raidMatchup(s, [m], 0, 100);
+    expect(mu.enemyHp).toBe(100 * THREAT.raid.hpPerStrength);
+    expect(mu.power).toBeCloseTo(full, 9);
+    expect(mu.armor).toBe(m.armor);
+    m.armor = E.mechStats(s, m).armor * 0.3;
+    mu = T.raidMatchup(s, [m], 0, 100);
+    expect(mu.power).toBeCloseTo(full * 0.75, 9);
+    expect(mu.fullPower).toBeCloseTo(full, 9);
+    mu = T.raidMatchup(s, [m], 0, 1e6);
+    expect(mu.rounds).toBeGreaterThan(THREAT.raid.rounds);
+    expect(mu.incoming).toBe(Infinity);
+  });
+});

@@ -54,12 +54,12 @@ export class DefensePanel {
     }));
   });
 
-  protected readonly standby = computed(() => {
-    const s = this.s();
-    return T.defensePower(s, T.defenders(s, s.threats.orders.raid === 'defend_all'), true);
-  });
-
   protected readonly expected = computed(() => T.raidStrength(this.s()));
+  /** Both sides of a raid as the fight actually works: damage per round against hull and armor. */
+  protected readonly matchup = computed(() => {
+    const s = this.s();
+    return T.raidMatchup(s, T.defenders(s, s.threats.orders.raid === 'defend_all'), s.drones.guardian, T.raidStrength(s));
+  });
   protected readonly guardians = computed(() => ({
     count: this.s().drones.guardian,
     power: this.s().drones.guardian * T.guardianPower(this.s()),
