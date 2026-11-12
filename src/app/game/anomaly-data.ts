@@ -126,7 +126,7 @@ export const ANOMALY = {
   derelictMechSpeed: 2,
   beaconFragments: 5,
   beaconSecPerFragment: 900,
-  bloomPerSec: 0.01,
+  bloomPerSec: 0.1,
   bloomRigCost: 250000,
   /** Harvest rig upgrades: output multiplier per rig level (level 1 = the base rig). */
   bloomRigMult: [1, 2.5, 5, 10, 20],
