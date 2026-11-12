@@ -31,6 +31,17 @@ describe('hard caps: hold and furnaces', () => {
     expect(E.cargoUpgradeCost(s)).toBeNull();
   });
 
+  it('a late-game hold (level 23, Cargo Compression 5, 123 Haulers) can still expand', () => {
+    const s = fresh();
+    s.cargoLevel = 23;
+    s.research.levels['cargo_compression'] = 5;
+    s.drones.hauler = 123;
+    expect(E.cargoCapacity(s)).toBeGreaterThan(250_000_000);
+    expect(E.cargoCapacity(s)).toBeLessThan(CONFIG.cargo.maxCapacity);
+    expect(E.cargoUpgradeCost(s)).not.toBeNull();
+    expect(E.cargoCapacity(s, 24)).toBeGreaterThan(E.cargoCapacity(s));
+  });
+
   it('Furnace Capacity stops at its max level', () => {
     const s = fresh();
     s.research.levels['refinery'] = 1;

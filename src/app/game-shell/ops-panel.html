@@ -106,7 +106,11 @@
           @if (cargoCost() !== null) {
             <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} → {{ game.fmt(nextCapacity()) }} t</div>
           } @else {
-            <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} t · the hold is at full size</div>
+            @if (holdCapped()) {
+              <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} t · at the {{ game.fmt(holdLimit) }} t limit (Haulers and Cargo Compression filled it)</div>
+            } @else {
+              <div class="up-desc">Capacity {{ game.fmt(game.capacity()) }} t · the hold is at full size</div>
+            }
           }
         </div>
         @if (cargoCost(); as c) {

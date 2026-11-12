@@ -180,7 +180,7 @@ export const CONFIG = {
     costGrowth: 2.1,
     /** Expand Hold stops here, and no mix of bonuses lifts the hold past maxCapacity tonnes. */
     maxLevel: 24,
-    maxCapacity: 250_000_000,
+    maxCapacity: 5_000_000_000,
   },
 
   /** Trigger Clamp: hold the mouse button to keep drilling. */

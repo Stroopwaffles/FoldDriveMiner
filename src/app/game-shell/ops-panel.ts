@@ -148,6 +148,9 @@ export class OpsPanel {
   });
   protected readonly holdRate = computed(() => (1 / E.holdInterval(this.s())).toFixed(1));
   protected readonly cargoMax = CONFIG.cargo.maxLevel;
+  /** True when the hold hit its tonnage limit before Expand Hold ran out of levels. */
+  protected readonly holdCapped = computed(() => this.s().cargoLevel < CONFIG.cargo.maxLevel && E.cargoCapacity(this.s()) >= CONFIG.cargo.maxCapacity);
+  protected readonly holdLimit = CONFIG.cargo.maxCapacity;
   protected readonly furnaceMax = CONFIG.refinery.maxBatchLevel;
   protected readonly odMult = computed(() => E.overdriveMult(this.s()));
   protected readonly drillTier = computed(() => E.drillTier(this.s()));
