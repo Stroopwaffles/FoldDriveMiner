@@ -307,6 +307,8 @@ export interface TradeState {
   /** Seconds left on an Overdrive cell / deterrent beacon. */
   overdriveCell: number;
   deterrent: number;
+  /** Seconds left on a Collegium research grant. */
+  researchGrant: number;
   /** Purchases that only last for the current sector. */
   sectorBuffs: { key: string; sell: Partial<Record<OreId, number>>; cancelled: string[] };
   /** Permanent unlocks (clan exclusives and the like). */

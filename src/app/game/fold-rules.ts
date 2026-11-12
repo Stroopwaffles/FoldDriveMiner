@@ -279,6 +279,8 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   // Reputation, standing, Codex, lore, stores.
   s.trade.rep = { ...old.trade.rep };
   s.trade.perks = [...old.trade.perks];
+  // A research grant is paid for: it keeps running through the jump.
+  s.trade.researchGrant = old.trade.researchGrant ?? 0;
   s.trade.inventory = { ...old.trade.inventory };
   s.trade.nextId = old.trade.nextId;
   s.contracts.standing = { ...old.contracts.standing };

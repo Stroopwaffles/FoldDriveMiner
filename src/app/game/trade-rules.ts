@@ -48,10 +48,11 @@ export function emptyTrade(): TradeState {
     nextIn: MERCHANT.intervalMin,
     pending: false,
     visits: 0,
-    rep: { halcyon: 0, grey_tithe: 0, okonkwo: 0, lantern: 0 },
+    rep: { halcyon: 0, grey_tithe: 0, okonkwo: 0, lantern: 0, collegium: 0 },
     inventory: { repair_kit: 0, medkit: 0, fold_cell: 0 },
     overdriveCell: 0,
     deterrent: 0,
+    researchGrant: 0,
     sectorBuffs: { key: '', sell: {}, cancelled: [] },
     perks: [],
     nextId: 1,
@@ -131,6 +132,15 @@ export function raidMult(state: GameState): number {
 
 export function overdriveCellActive(state: GameState): boolean {
   return (state.trade?.overdriveCell ?? 0) > 0;
+}
+
+/** Extra research speed from merchants: a timed Collegium grant and the Fellowship perk. */
+export function researchGrantBonus(state: GameState): number {
+  return (state.trade?.researchGrant ?? 0) > 0 ? MERCHANT.grantBonus : 0;
+}
+
+export function fellowshipBonus(state: GameState): number {
+  return state.trade?.perks?.includes('collegium_fellowship') ? MERCHANT.fellowshipBonus : 0;
 }
 
 export function deterrentActive(state: GameState): boolean {
@@ -219,6 +229,9 @@ function makeItem(state: GameState, clan: ClanId, kind: ItemKind, rng: Rng, disc
     case 'deterrent':
       item.price = scaledPrice(state, 150);
       break;
+    case 'research_grant':
+      item.price = scaledPrice(state, 180);
+      break;
     case 'fold_cell':
       item.price = scaledPrice(state, 200);
       break;
@@ -230,7 +243,8 @@ function makeItem(state: GameState, clan: ClanId, kind: ItemKind, rng: Rng, disc
       item.price = scaledPrice(state, 120);
       break;
     case 'data_cores':
-      item.count = 1 + Math.floor(rng.next() * 2);
+      // Scholars hoard cores: the Collegium brings bigger lots.
+      item.count = clan === 'collegium' ? 2 + Math.floor(rng.next() * 3) : 1 + Math.floor(rng.next() * 2);
       item.label = `${item.count} Data Core${item.count > 1 ? 's' : ''}`;
       item.price = scaledPrice(state, 400) * item.count;
       break;
@@ -295,7 +309,7 @@ export function spawnFleet(state: GameState, events: TickEvents, clan?: ClanId):
 }
 
 function exclusiveName(id: string): string {
-  return { halcyon_chrome: 'Halcyon Chrome Plating', tithe_codex: 'The Tithe\'s Codex', combine_overhaul: 'Combine Overhaul Contract', jackal_map: 'The Jackal\'s Bounty Map' }[id] ?? id;
+  return { halcyon_chrome: 'Halcyon Chrome Plating', tithe_codex: 'The Tithe\'s Codex', combine_overhaul: 'Combine Overhaul Contract', jackal_map: 'The Jackal\'s Bounty Map', collegium_fellowship: 'Collegium Fellowship' }[id] ?? id;
 }
 
 function exclusiveDesc(id: string): string {
@@ -305,6 +319,7 @@ function exclusiveDesc(id: string): string {
       tithe_codex: 'A record of the first fold. 5 Data Cores and a Codex revelation.',
       combine_overhaul: 'Permanent: wreck rebuilds cost 10% instead of 25%, repairs 25% faster.',
       jackal_map: 'Reveals the pirate base right now.',
+      collegium_fellowship: 'Permanent: +10% research speed, and 3 Data Cores to seal the charter.',
     }[id] ?? ''
   );
 }
@@ -387,6 +402,10 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
     case 'overdrive_cell':
       t.overdriveCell = MERCHANT.overdriveCellSec;
       break;
+    case 'research_grant':
+      t.researchGrant = Math.max(t.researchGrant ?? 0, MERCHANT.grantSec);
+      news(events, `Collegium analysts plug into the lab. Research +${Math.round(MERCHANT.grantBonus * 100)}% for ${MERCHANT.grantSec / 60} minutes.`, true, 'merchant');
+      break;
     case 'deterrent':
       t.deterrent = MERCHANT.deterrentSec;
       state.threats.heat = Math.max(0, state.threats.heat - MERCHANT.deterrentHeat);
@@ -421,6 +440,10 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
         news(events, 'The Tithe\'s Codex: "The first fold did not go anywhere. It went back."', true, 'merchant');
       }
       if (ex === 'jackal_map') state.threats.baseFound = true;
+      if (ex === 'collegium_fellowship') {
+        state.dataCores += 3;
+        news(events, 'Provost Sel: "Welcome to the Fellowship, Commander. Publish everything."', true, 'merchant');
+      }
       break;
     }
   }
@@ -483,6 +506,7 @@ function advanceMerchants(state: GameState, dt: number, events: TickEvents, offl
   const t = state.trade;
   if (t.overdriveCell > 0) t.overdriveCell = Math.max(0, t.overdriveCell - dt);
   if (t.deterrent > 0) t.deterrent = Math.max(0, t.deterrent - dt);
+  if (t.researchGrant > 0) t.researchGrant = Math.max(0, t.researchGrant - dt);
   if (t.fleet) {
     t.fleet.remaining -= dt;
     if (t.fleet.remaining <= 0) {

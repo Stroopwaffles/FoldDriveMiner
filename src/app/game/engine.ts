@@ -44,7 +44,9 @@ import {
   emptyTrade,
   ensureStoryBonds,
   ensureTradeSector,
+  fellowshipBonus,
   overdriveCellActive,
+  researchGrantBonus,
   surveyMult,
   tradeSellMult,
 } from './trade-rules';
@@ -745,13 +747,20 @@ export function cancelResearch(state: GameState, index: number): boolean {
 }
 
 /** Where research speed comes from: each part is a bonus fraction (0.2 = +20%). */
-export function researchSpeedParts(state: GameState): { science: number; medals: number; matrix: number } {
-  return { science: postBonus(state, 'science'), medals: medalBonus(state, 'research'), matrix: matrixBonus(state, 'research') };
+export function researchSpeedParts(state: GameState): { science: number; medals: number; matrix: number; grant: number; fellowship: number } {
+  return {
+    science: postBonus(state, 'science'),
+    medals: medalBonus(state, 'research'),
+    matrix: matrixBonus(state, 'research'),
+    grant: researchGrantBonus(state),
+    fellowship: fellowshipBonus(state),
+  };
 }
 
-/** Research seconds that pass per real second. */
+/** Research seconds that pass per real second. A research grant multiplies everything else. */
 export function researchSpeed(state: GameState): number {
-  return (1 + postBonus(state, 'science')) * medalMult(state, 'research');
+  const p = researchSpeedParts(state);
+  return (1 + p.science) * (1 + p.medals + p.matrix + p.fellowship) * (1 + p.grant);
 }
 
 function advanceResearch(state: GameState, dt: number): ResearchDone[] {

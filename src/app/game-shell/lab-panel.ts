@@ -110,8 +110,10 @@ export class LabPanel {
       `Science Officer: ${p.science ? pct(p.science) : 'none posted (CREW)'}`,
       `Commendations: ${p.medals ? pct(p.medals) : 'none yet'}`,
       `Core Cache (Core Matrix): ${p.matrix ? pct(p.matrix) : 'not built'}`,
+      `Collegium Fellowship: ${p.fellowship ? pct(p.fellowship) : 'not a Fellow'}`,
+      `Research grant: ${p.grant ? pct(p.grant) + ' for ' + formatDuration(s.trade.researchGrant) : 'none (Starward Collegium sells them)'}`,
     ];
-    if (p.science && (p.medals || p.matrix)) lines.push('The Science Officer bonus multiplies the others.');
+    if (p.science || p.grant) lines.push('The Science Officer and research grants multiply the other bonuses.');
     return { mult, bonus: mult - 1, tip: lines.join('\n') };
   });
 

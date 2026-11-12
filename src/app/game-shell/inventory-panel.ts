@@ -72,6 +72,7 @@ export class InventoryPanel {
     const t = s.trade;
     const out: { name: string; detail: string }[] = [];
     if (t.overdriveCell > 0) out.push({ name: 'Overdrive cell', detail: `${formatDuration(t.overdriveCell)} left · every hit at Overdrive` });
+    if (t.researchGrant > 0) out.push({ name: 'Research grant', detail: `${formatDuration(t.researchGrant)} left · research +${Math.round(MERCHANT.grantBonus * 100)}%` });
     if (t.deterrent > 0) out.push({ name: 'Deterrent beacon', detail: `${formatDuration(t.deterrent)} left · no raids` });
     for (const [ore, bonus] of Object.entries(t.sectorBuffs.sell)) {
       const def = ORES.find((o) => o.id === ore);
@@ -117,6 +118,7 @@ export class InventoryPanel {
     }
     for (const perk of s.trade.perks) {
       if (perk === 'combine_overhaul') out.push({ name: 'Combine Overhaul Contract', detail: 'Wreck rebuilds cost 10%, repairs 25% faster.' });
+      if (perk === 'collegium_fellowship') out.push({ name: 'Collegium Fellowship', detail: `Research +${Math.round(MERCHANT.fellowshipBonus * 100)}%, permanently.` });
     }
     return out;
   });

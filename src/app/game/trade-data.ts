@@ -6,7 +6,7 @@ import { OreId } from './config';
 
 // ---------------------------------------------------------------- merchants
 
-export type ClanId = 'halcyon' | 'grey_tithe' | 'okonkwo' | 'lantern';
+export type ClanId = 'halcyon' | 'grey_tithe' | 'okonkwo' | 'lantern' | 'collegium';
 
 export interface ClanDef {
   id: ClanId;
@@ -41,6 +41,11 @@ export const CLANS: readonly ClanDef[] = [
     greet: 'Salvage Combine. We fix things and we sell things. Mostly we sell things.',
   },
   {
+    id: 'collegium', name: 'Starward Collegium', captain: 'Provost Amara Sel', kana: 'コレギウム', color: '#7ad7ff',
+    specialty: 'Data Cores, research grants and survey archives', wants: ['iridium', 'voidglass'], exclusive: 'collegium_fellowship',
+    greet: 'A working laboratory under way, Commander. We trade in knowledge, and we pay well for interesting rocks.',
+  },
+  {
     id: 'lantern', name: 'The Lantern Market', captain: '"Wick"', kana: 'ランタン', color: '#ff3b3b',
     specialty: 'Contraband: risky, powerful, no questions', wants: ['iridium', 'helium3'], exclusive: 'jackal_map',
     greet: 'Shh. Lanterns off. You didn\'t see us, we didn\'t see you, and the prices are… flexible.',
@@ -68,7 +73,8 @@ export type ItemKind =
   | 'data_cores'
   | 'survey_data'
   | 'exclusive'
-  | 'relic';
+  | 'relic'
+  | 'research_grant';
 
 export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBound?: boolean; contraband?: boolean }> = {
   part: { name: 'Mech part', desc: 'Goes to parts storage.' },
@@ -87,6 +93,7 @@ export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBou
   survey_data: { name: 'Survey archive', desc: 'Survey Data from another expedition.' },
   exclusive: { name: 'Clan exclusive', desc: 'Only for the clan\'s partners.' },
   relic: { name: 'Legendary part', desc: 'A one-of-a-kind part. Sold only for Data Cores.' },
+  research_grant: { name: 'Research grant', desc: '+50% research speed for 15 minutes. Collegium analysts join your lab.' },
 };
 
 /** What each clan tends to stock. */
@@ -94,6 +101,7 @@ export const CLAN_STOCK: Record<ClanId, ItemKind[]> = {
   halcyon: ['part', 'part', 'part', 'countermeasure', 'ore_contract', 'pilot'],
   grey_tithe: ['curio', 'chart', 'data_cores', 'survey_data', 'fold_cell'],
   okonkwo: ['drones', 'drones', 'repair_kit', 'medkit', 'deterrent', 'part'],
+  collegium: ['data_cores', 'research_grant', 'research_grant', 'survey_data', 'chart', 'curio'],
   lantern: ['overdrive_cell', 'fold_cell', 'part', 'deterrent', 'pilot', 'data_cores'],
 };
 
@@ -124,6 +132,11 @@ export const MERCHANT = {
   overdriveCellSec: 60,
   deterrentSec: 600,
   deterrentHeat: 30,
+  /** Research grant: bonus research speed and how long it lasts. */
+  grantBonus: 0.5,
+  grantSec: 900,
+  /** Collegium Fellowship (Partner exclusive): permanent research speed. */
+  fellowshipBonus: 0.1,
 };
 
 // ---------------------------------------------------------------- contracts
