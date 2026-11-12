@@ -57,11 +57,42 @@
             </span>
           </div>
         } @else {
-          <div class="bench-idle">— IDLE — select a project below</div>
+          <div class="bench-idle">{{ aria().on ? '— IDLE — ARIA is waiting for a project she can start' : '— IDLE — select a project below' }}</div>
         }
       </div>
     }
   </div>
+
+  <!-- ARIA, the research assistant -->
+  @if (aria(); as a) {
+    @if (a.owned) {
+      <div class="aria" [class.on]="a.on">
+        <div class="aria-head">
+          <span class="aria-eye" aria-hidden="true"></span>
+          <span class="aria-name">ARIA</span>
+          <span class="dim small">research assistant · fills empty benches</span>
+          <div class="seg">
+            <button type="button" class="btn tiny" [class.on]="a.mode === 'queue'" (click)="game.setAssistantMode('queue')" title="Only start what's in the queue">QUEUE ONLY</button>
+            <button type="button" class="btn tiny" [class.on]="a.mode === 'auto'" (click)="game.setAssistantMode('auto')" title="When the queue has nothing she can start, pick the cheapest project (never spends Data Cores)">QUEUE + CHEAPEST</button>
+          </div>
+          <button type="button" class="btn small" [class.btn-primary]="!a.on" (click)="game.setAssistant(!a.on)">{{ a.on ? 'Switch off' : 'Switch on' }}</button>
+        </div>
+        <div class="aria-queue">
+          @for (q of a.queue; track $index; let i = $index) {
+            <span class="chip" [class.ready]="q.ready" [title]="q.ready ? 'Can start now' : q.why">
+              <b>{{ i + 1 }}</b> {{ q.name }}
+              <button type="button" class="x" (click)="game.dequeueResearch(i)" title="Remove from queue">✕</button>
+            </span>
+          } @empty {
+            <span class="dim small">Queue empty. Select a project below and press + QUEUE.</span>
+          }
+          @if (a.queue.length) {
+            <button type="button" class="btn tiny clear" (click)="game.clearResearchQueue()">Clear</button>
+          }
+        </div>
+      </div>
+    }
+  }
 
   <!-- Detail of the selected node -->
   @let sel = selected();
@@ -100,9 +131,14 @@
           }
         </div>
       }
-      <button type="button" class="btn btn-primary" [disabled]="blocker() !== null" (click)="start()">
-        {{ sel.status === 'maxed' ? 'Complete' : sel.status === 'active' ? 'Researching' : 'Research' }}
-      </button>
+      <div class="detail-btns">
+        <button type="button" class="btn btn-primary" [disabled]="blocker() !== null" (click)="start()">
+          {{ sel.status === 'maxed' ? 'Complete' : sel.status === 'active' ? 'Researching' : 'Research' }}
+        </button>
+        @if (aria().owned && sel.status !== 'maxed' && sel.status !== 'teaser') {
+          <button type="button" class="btn" [disabled]="queueBlocker() !== null" [title]="queueBlocker() ?? 'ARIA starts it when a bench is free'" (click)="game.enqueueResearch(sel.node.id)">+ Queue</button>
+        }
+      </div>
       @if (blocker(); as b) {
         <div class="blocker">{{ b }}</div>
       }
@@ -141,6 +177,9 @@
           (click)="select(n.node.id)"
         >
           <span class="pins" aria-hidden="true"></span>
+          @if (queuePos()[n.node.id]; as qp) {
+            <span class="q-badge" title="In ARIA's queue">Q{{ qp }}</span>
+          }
           <span class="node-name">{{ n.status === 'teaser' ? 'CLASSIFIED' : n.node.name }}</span>
           @if (n.node.maxLevel > 1) {
             <span class="node-lvl">LV {{ n.level }}/{{ n.node.maxLevel }}</span>

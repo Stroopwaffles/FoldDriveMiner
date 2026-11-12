@@ -144,6 +144,8 @@ export class GameService {
   readonly scene = signal<Scene | null>(null);
   /** The mid-run eyecatch card. */
   readonly eyecatch = signal(false);
+  /** Which eyecatch look to show (0 ship, 1 mech, 2 VESPER), taken in turn. */
+  readonly eyecatchVariant = signal(0);
 
   // Derived values used across the HUD.
   readonly power = computed(() => this.withState(E.drillPower, 0));
@@ -588,6 +590,9 @@ export class GameService {
       const m = s.mechs.find((x) => x.id === id);
       if (m) this.say('VESPER', `${m.designation} "${m.name}" returning to the repair bay for maintenance.`);
     }
+    if (ev.assistantStarted?.length) {
+      this.say('VESPER', `ARIA put ${ev.assistantStarted.join(' and ')} on a free lab bench.`);
+    }
     for (const id of ev.repairStalled ?? []) {
       const m = s.mechs.find((x) => x.id === id);
       if (m) this.say('VESPER', `Repairs on ${m.designation} have stopped: the bay needs credits and Ferrite or Titanite in the hold.`);
@@ -948,6 +953,27 @@ export class GameService {
     this.act((s) => A.deployRig(s, id), () => this.audio.buy());
   }
 
+  /** ARIA, the research assistant. */
+  setAssistant(on: boolean): void {
+    this.act((s) => E.setAssistant(s, on), () => this.audio.blip());
+  }
+
+  setAssistantMode(mode: E.AssistantMode): void {
+    this.act((s) => E.setAssistantMode(s, mode), () => this.audio.blip());
+  }
+
+  enqueueResearch(id: string): void {
+    this.act((s) => E.enqueue(s, id), () => this.audio.blip());
+  }
+
+  dequeueResearch(index: number): void {
+    this.act((s) => E.dequeue(s, index), () => this.audio.blip());
+  }
+
+  clearResearchQueue(): void {
+    this.act(E.clearQueue, () => this.audio.blip());
+  }
+
   upgradeRig(id: number): void {
     this.act((s) => A.upgradeRig(s, id), () => this.audio.buy());
   }
@@ -1155,6 +1181,7 @@ export class GameService {
       syncUps: [],
       autoRepairs: [],
       repairStalled: [],
+      assistantStarted: [],
       threatStarted: [],
       threatResolved: [],
       anomaly: [],
@@ -1298,7 +1325,10 @@ export class GameService {
     if (s.flags[key]) return;
     // Never on top of something else.
     if (this.episode() || this.scene() || this.jump() || this.sortie() || this.cutIn() || this.offlineReport()) return;
+    // Take the looks in turn: count the eyecatches this save has already seen.
+    const seen = Object.keys(s.flags).filter((k) => k.startsWith('eyecatch:') && s.flags[k]).length;
     s.flags[key] = true;
+    this.eyecatchVariant.set(seen % 3);
     this.eyecatch.set(true);
     setTimeout(() => this.eyecatch.set(false), this.settings.reducedMotion() ? 1500 : 3200);
   }

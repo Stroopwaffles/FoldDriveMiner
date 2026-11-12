@@ -305,6 +305,8 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   // New sector.
   s.sector = { seed, depth, code: '', name: '', star: '', charted: 1, scan: null };
   s.research.levels = keep;
+  // ARIA's settings and queue come along; she only works if her research did too.
+  s.research.assistant = { ...old.research.assistant, queue: [...(old.research.assistant?.queue ?? [])] };
 
   // Fold state carries over, reset for the new run.
   s.fold = {

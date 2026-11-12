@@ -56,6 +56,7 @@ export const PERMANENT_NODES = [
   'hangar',
   'repair_bay',
   'auto_repair',
+  'lab_assistant',
 ];
 
 export interface CoreUpgrade {

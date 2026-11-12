@@ -1,3 +1,4 @@
+import type { AssistantState } from './assistant-rules';
 import type { BoosterState } from './booster-rules';
 import type { AlloyId } from './alloy-data';
 import type { DerelictClass, SpecialKind } from './special-data';
@@ -499,6 +500,8 @@ export interface GameState {
   research: {
     levels: Record<string, number>;
     active: ResearchJob[];
+    /** ARIA, the research assistant: on/off, mode and her queue. */
+    assistant: AssistantState;
   };
   /** capacityLevel: Furnace Capacity upgrades bought (bigger batches). */
   refinery: { slots: RefinerySlot[]; capacityLevel: number };
@@ -542,6 +545,8 @@ export interface TickEvents {
   trade: { text: string; good: boolean; from?: 'merchant' | 'corp' | 'vesper' }[];
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
+  /** Research ARIA started on empty benches this tick. */
+  assistantStarted?: string[];
   /** Mechs whose repair just stalled for lack of credits or ore. */
   repairStalled?: number[];
   ingots: OreAmounts;

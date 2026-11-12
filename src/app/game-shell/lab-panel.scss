@@ -465,3 +465,125 @@
     color: #ffd23f;
   }
 }
+
+/* ---------------- ARIA, the research assistant ---------------- */
+.aria {
+  margin: 0 0.9rem 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px dashed #2a3168;
+  background: rgba(10, 13, 34, 0.6);
+
+  &.on {
+    border: 1px solid rgba(157, 255, 138, 0.5);
+    box-shadow: inset 0 0 18px rgba(157, 255, 138, 0.06);
+  }
+}
+
+.aria-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+
+  .seg {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+
+    .on {
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+  }
+}
+
+.aria-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.2em;
+  color: #9dff8a;
+  font-size: 0.8rem;
+}
+
+/* Her "eye": dim when off, a soft pulse when she's working. */
+.aria-eye {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2a3a2a;
+  box-shadow: 0 0 0 2px #1a2a1a;
+}
+
+.aria.on .aria-eye {
+  background: #9dff8a;
+  box-shadow: 0 0 8px #9dff8a;
+  animation: aria-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes aria-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.aria-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 0.4rem;
+  align-items: center;
+
+  .clear {
+    margin-left: auto;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1px 4px 1px 6px;
+  font-size: 0.7rem;
+  border: 1px solid #2a3168;
+  color: var(--text-dim);
+
+  b {
+    color: var(--amber);
+    font-weight: normal;
+    font-family: var(--font-mono);
+  }
+
+  &.ready {
+    color: var(--text);
+    border-color: rgba(157, 255, 138, 0.5);
+  }
+
+  .x {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 0 2px;
+
+    &:hover {
+      color: var(--danger);
+    }
+  }
+}
+
+.detail-btns {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.q-badge {
+  position: absolute;
+  top: 4px;
+  right: 18px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  padding: 0 3px;
+  color: #05060f;
+  background: #9dff8a;
+}

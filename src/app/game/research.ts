@@ -218,6 +218,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Three. Now we are cooking. — Kit Okafor (pending recruitment)',
   }),
   N({
+    id: 'lab_assistant', name: 'Research Assistant', branch: 'station', maxLevel: 1,
+    sd: 15, cr: 30000, sec: 240, requires: ['lab_slot_2'],
+    effect: 'ARIA starts research on empty benches from your queue (switch her on in the LAB)',
+    flavor: 'I have hired help. Her name is ARIA. She is very polite and she never sleeps. I am not jealous.',
+  }),
+  N({
     id: 'hyperthought', name: 'Hyperthought Engine', branch: 'station', maxLevel: 3,
     sd: 25, cr: 40000, sec: 300, growth: 3, requires: ['lab_slot_2'],
     effect: 'Burns Survey Data hard for +30% research speed per level (switch it on in OPS)',

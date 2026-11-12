@@ -112,6 +112,28 @@ export class LabPanel {
     return { permanent: runs >= FOLD.permanentAfter, runs: Math.min(runs, FOLD.permanentAfter), need: FOLD.permanentAfter };
   });
 
+  /** ARIA: owned, on/off, mode, and her queue with whether each can start now. */
+  protected readonly aria = computed(() => {
+    const s = this.s();
+    const a = s.research.assistant;
+    return {
+      owned: E.hasAssistant(s),
+      on: a.on && E.hasAssistant(s),
+      mode: a.mode,
+      queue: a.queue.map((id) => {
+        const why = E.researchBlocker(s, id);
+        return { id, name: researchNode(id).name, ready: why === null, why: why ?? '' };
+      }),
+    };
+  });
+  /** Queue position (1-based, first occurrence) per node, for the tree badges. */
+  protected readonly queuePos = computed(() => {
+    const out: Record<string, number> = {};
+    this.s().research.assistant.queue.forEach((id, i) => (out[id] ??= i + 1));
+    return out;
+  });
+  protected readonly queueBlocker = computed(() => E.queueBlocker(this.s(), this.selectedId()));
+
   protected readonly blocker = computed(() => E.researchBlocker(this.s(), this.selectedId()));
 
   /** Research seconds per real second, and where the bonus comes from. */

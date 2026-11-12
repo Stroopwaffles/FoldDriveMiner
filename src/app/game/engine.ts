@@ -55,6 +55,7 @@ import { advanceFold, coreLevel, depthMult, emptyFold, resonanceMult } from './f
 import { advanceStory, emptyStory, medalBonus, medalMult, openLog } from './story-rules';
 import { matrixBonus } from './core-rules';
 import { advanceBooster, boosterActiveBonus, emptyBooster } from './booster-rules';
+import { emptyAssistant, runAssistant } from './assistant-rules';
 import {
   LossContext,
   ONLINE,
@@ -84,6 +85,7 @@ export * from './alloy-rules';
 export * from './core-rules';
 export * from './special-rules';
 export * from './booster-rules';
+export * from './assistant-rules';
 
 function emptyDrones(): Record<DroneType, number> {
   const d = {} as Record<DroneType, number>;
@@ -98,6 +100,7 @@ export function emptyEvents(): TickEvents {
     syncUps: [],
     autoRepairs: [],
     repairStalled: [],
+    assistantStarted: [],
     threatStarted: [],
     threatResolved: [],
     anomaly: [],
@@ -154,7 +157,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     asteroid: null as unknown as AsteroidState,
     sector: { seed: seed >>> 0, code: '00-H', name: 'Home Reach', star: 'Yellow main-sequence', depth: 0, charted: 1, scan: null },
     zone: 'inner',
-    research: { levels: {}, active: [] },
+    research: { levels: {}, active: [], assistant: emptyAssistant() },
     refinery: { slots: [], capacityLevel: 0 },
     autoSell: { ore: emptyFlags(), ingot: emptyFlags(), alloy: emptyAlloyFlags(), smart: false },
     stats: {
@@ -966,6 +969,8 @@ function advance(
   if (charted) events.charted.push(charted.name);
   advanceBooster(state, dt);
   events.research = advanceResearch(state, dt);
+  // ARIA refills any bench that just freed up (or was already empty).
+  events.assistantStarted = runAssistant(state);
   advanceTrade(state, dt, events, ctx.offline);
   advanceFold(state);
   events.autoSoldCredits = runAutoSell(state);
