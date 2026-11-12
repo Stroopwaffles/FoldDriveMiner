@@ -385,6 +385,7 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
 
   // Build the new sector: labels, fresh zone names, anomalies, local outfits, first asteroid.
   s.zoneNamesUsed = [...(old.zoneNamesUsed ?? [])];
+  if (old.eyecatch) s.eyecatch = { ...old.eyecatch };
   if (s.sector.depth > 0) assignZoneNames(s, generateSector(s.sector.seed, s.sector.depth).zones);
   syncSector(s);
   s.anomalies.sectorKey = '';

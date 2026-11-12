@@ -112,6 +112,12 @@ import { Settings, SettingsService } from '../services/settings.service';
         <span class="val">{{ s.eyecatch ? 'ON' : 'OFF' }}</span>
       </label>
 
+      <label class="row">
+        <span>Event eyecatches</span>
+        <input type="checkbox" [checked]="s.eventCatches" (change)="patch({ eventCatches: !s.eventCatches })" />
+        <span class="val">{{ s.eventCatches ? 'ON' : 'OFF' }}</span>
+      </label>
+
       <div class="row">
         <span>UI scale</span>
         <div class="seg">

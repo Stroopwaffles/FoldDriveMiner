@@ -18,8 +18,10 @@ export interface Settings {
   screenShake: boolean;
   /** Special Technique cut-ins: full, short, or off. */
   cutIns: 'full' | 'short' | 'off';
-  /** The mid-run eyecatch card (once per sector). */
+  /** The mid-run eyecatch card (every 15 minutes of play). */
   eyecatch: boolean;
+  /** Quick banners for big moments: convoys, improvements, the Jackal, strikes, new Codex entries. */
+  eventCatches: boolean;
   /** Film grain and colour fringing over the screen. */
   filmGrain: boolean;
   autosaveSec: number;
@@ -46,6 +48,7 @@ const DEFAULTS: Settings = {
   screenShake: true,
   cutIns: 'full',
   eyecatch: true,
+  eventCatches: true,
   filmGrain: true,
   autosaveSec: 30,
   confirmJump: true,

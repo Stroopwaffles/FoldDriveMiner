@@ -3,7 +3,7 @@ import { GameService } from '../services/game.service';
 
 /**
  * The mid-run eyecatch: an 80s-anime "we'll be right back" card. Click to dismiss.
- * Three looks, taken in turn so each sector's card differs from the last:
+ * Plays every 15 minutes of play. Three looks, taken in turn so each card differs from the last:
  *  0 · the ship flying past a striped wipe (the original)
  *  1 · a mech on a sunset horizon, split-screen
  *  2 · VESPER on a CRT, "stand by"

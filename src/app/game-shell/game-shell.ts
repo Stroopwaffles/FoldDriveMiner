@@ -29,6 +29,7 @@ import { FoldPanel } from './fold-panel';
 import { ArchivePanel } from './archive-panel';
 import { StoryScene } from '../ui/story-scene';
 import { Eyecatch } from '../ui/eyecatch';
+import { EventCatch } from '../ui/event-catch';
 import * as ST from '../game/story-rules';
 import { LAST_OFFER, MASTER_EPILOGUE, EPILOGUE, episodeDef } from '../game/story-data';
 import { JumpOverlay } from '../ui/jump-overlay';
@@ -68,6 +69,7 @@ interface NavItem {
     ArchivePanel,
     StoryScene,
     Eyecatch,
+    EventCatch,
     JumpOverlay,
     ThreatBanner,
     SortieModal,

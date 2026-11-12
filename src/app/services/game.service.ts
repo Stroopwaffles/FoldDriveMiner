@@ -1,3 +1,5 @@
+import { ImprovementId, improvementDef } from '../game/improvement-data';
+import { RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
 import { formatDuration } from '../game/format';
 import { AlloyId } from '../game/alloy-data';
 import { derelictDef, specialDef } from '../game/special-data';
@@ -51,6 +53,20 @@ export interface CommMessage {
   look?: string;
   text: string;
   at: number;
+}
+
+/** Seconds of play between mid-run eyecatches. */
+const EYECATCH_EVERY_SEC = 900;
+
+/** An event eyecatch: a quick banner for a big moment. */
+export interface EventCatchCard {
+  kind: 'convoy' | 'build' | 'jackal' | 'strike' | 'codex';
+  kicker: string;
+  title: string;
+  kana: string;
+  sub: string;
+  color: string;
+  improvement?: ImprovementId;
 }
 
 /** The sortie screen: choosing a squad, or watching a battle play out. */
@@ -153,6 +169,10 @@ export class GameService {
   readonly eyecatch = signal(false);
   /** Which eyecatch look to show (0 ship, 1 mech, 2 VESPER), taken in turn. */
   readonly eyecatchVariant = signal(0);
+  /** A quick banner for a big moment (see showEventCatch), and the ones waiting their turn. */
+  readonly eventCatch = signal<EventCatchCard | null>(null);
+  private catchQueue: EventCatchCard[] = [];
+  private catchTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Derived values used across the HUD.
   readonly power = computed(() => this.withState(E.drillPower, 0));
@@ -305,10 +325,11 @@ export class GameService {
     }
     s.lastSeen = now;
     this.checkHints(s);
+    // Before publish: publish swaps in a copy, so writes to s after it would be lost.
+    this.checkEyecatch(s);
     this.publish();
 
     this.sinceSave += CONFIG.tickMs / 1000;
-    this.checkEyecatch(s);
     if (this.sinceSave >= (this.settings.settings().autosaveSec || CONFIG.save.autosaveSec)) {
       this.sinceSave = 0;
       this.save();
@@ -569,8 +590,18 @@ export class GameService {
     const s = this._state()!;
     for (const t of ev.threatStarted) this.announceThreat(t);
     if (ev.story.length) this.storySay(ev.story);
-    for (const t of ev.trade) this.tradeSay(t);
+    for (const t of ev.trade) {
+      this.tradeSay(t);
+      if (t.from === 'merchant' && t.clan && t.text === clanDef(t.clan).greet) {
+        const c = clanDef(t.clan);
+        this.showEventCatch({ kind: 'convoy', kicker: 'MERCHANT CONVOY', title: c.name, kana: c.kana, sub: `${c.captain} · ${c.specialty}. Trade on the BOARD.`, color: c.color });
+      }
+    }
     for (const a of ev.anomaly) {
+      if (a.text.includes('New Codex entry!')) {
+        const d = anomalyDef(a.kind);
+        this.showEventCatch({ kind: 'codex', kicker: 'NEW CODEX ENTRY', title: d.name, kana: d.kana, sub: d.codex, color: RARITY_COLOR[d.rarity] });
+      }
       this.say('VESPER', a.text);
       if (a.lore) this.audio.dataCore();
       else if (a.good) this.audio.blip();
@@ -868,6 +899,14 @@ export class GameService {
         this.alert('Pirate raid incoming!');
         if (e.jackal) {
           const s = this._state()!;
+          this.showEventCatch({
+            kind: 'jackal',
+            kicker: 'WARNING · CAPTAIN RAID',
+            title: 'The Vermilion Jackal',
+            kana: 'ヴァーミリオン・ジャッカル',
+            sub: `Her raid hits ${T.jackalStrengthMult(s).toFixed(1)}× as hard as ordinary pirates. Ready a sortie.`,
+            color: '#ff3b3b',
+          });
           if (s.threats.jackalEncounters === 0) {
             // Her entrance: the first raid after the first Fold Jump.
             JACKAL.intro.forEach(([who, line, delay], i) =>
@@ -987,6 +1026,9 @@ export class GameService {
     for (const r of events.threatResolved) this.say('VESPER', r.text);
     for (const t of events.trade) this.tradeSay(t);
     this.afterSortie(report, true);
+    if (report.strike && report.outcome !== 'defeat') {
+      this.showEventCatch({ kind: 'strike', kicker: 'STRIKE SUCCESSFUL', title: 'Pirate Base Destroyed', kana: 'かいぞくきちはかい', sub: report.rewards.join(' · '), color: '#ffd23f' });
+    }
     this.publish();
   }
 
@@ -1127,8 +1169,14 @@ export class GameService {
     const s = this._state();
     if (!s) return;
     const events = this.blankEvents();
-    if (TR.buildContract(s, id, events)) this.audio.buy();
-    else this.audio.denied();
+    const what = s.contracts.active.find((c) => c.id === id)?.improvement;
+    if (TR.buildContract(s, id, events)) {
+      this.audio.buy();
+      if (what) {
+        const d = improvementDef(what);
+        this.showEventCatch({ kind: 'build', kicker: 'CONSTRUCTION COMPLETE', title: d.name, kana: d.kana, sub: d.effect + '.', color: '#6dff9b', improvement: what });
+      }
+    } else this.audio.denied();
     for (const t of events.trade) this.tradeSay(t);
     this.publish();
     this.save();
@@ -1518,19 +1566,43 @@ export class GameService {
     this.cutIn.set(c);
   }
 
-  /** Once per sector, after 15 minutes there: the "A-part / B-part" eyecatch. */
+  /** Queues an event eyecatch; they play one at a time and wait while anything else is on screen. */
+  showEventCatch(card: EventCatchCard): void {
+    if (!this.settings.settings().eventCatches) return;
+    if (this.catchQueue.length >= 3) return;
+    this.catchQueue.push(card);
+    if (!this.eventCatch() && !this.catchTimer) this.nextEventCatch();
+  }
+
+  dismissEventCatch(): void {
+    if (this.catchTimer) clearTimeout(this.catchTimer);
+    this.catchTimer = null;
+    this.eventCatch.set(null);
+    if (this.catchQueue.length) this.catchTimer = setTimeout(() => ((this.catchTimer = null), this.nextEventCatch()), 400);
+  }
+
+  private nextEventCatch(): void {
+    if (!this.catchQueue.length) return;
+    // Never on top of a scene, jump, battle or the other eyecatch: try again shortly.
+    if (this.view() !== 'game' || this.episode() || this.scene() || this.jump() || this.sortie() || this.cutIn() || this.offlineReport() || this.eyecatch()) {
+      this.catchTimer = setTimeout(() => ((this.catchTimer = null), this.nextEventCatch()), 1500);
+      return;
+    }
+    this.eventCatch.set(this.catchQueue.shift()!);
+    this.catchTimer = setTimeout(() => this.dismissEventCatch(), this.settings.reducedMotion() ? 1400 : 2600);
+  }
+
+  /** Every 15 minutes of play: the "A-part / B-part" eyecatch. */
   private checkEyecatch(s: GameState): void {
     if (!this.settings.settings().eyecatch || this.eyecatch()) return;
-    const log = ST.currentLog(s);
-    if (!log || s.playtimeSec - log.arrived < 900) return;
-    const key = `eyecatch:${log.code}:${log.arrived}`;
-    if (s.flags[key]) return;
+    // Older saves (and new games) start the clock now rather than firing straight away.
+    if (s.eyecatch === undefined) s.eyecatch = { at: s.playtimeSec, count: Object.keys(s.flags).filter((k) => k.startsWith('eyecatch:')).length };
+    if (s.playtimeSec - s.eyecatch.at < EYECATCH_EVERY_SEC) return;
     // Never on top of something else.
-    if (this.episode() || this.scene() || this.jump() || this.sortie() || this.cutIn() || this.offlineReport()) return;
-    // Take the looks in turn: count the eyecatches this save has already seen.
-    const seen = Object.keys(s.flags).filter((k) => k.startsWith('eyecatch:') && s.flags[k]).length;
-    s.flags[key] = true;
-    this.eyecatchVariant.set(seen % 3);
+    if (this.episode() || this.scene() || this.jump() || this.sortie() || this.cutIn() || this.offlineReport() || this.eventCatch()) return;
+    // Take the looks in turn.
+    this.eyecatchVariant.set(s.eyecatch.count % 3);
+    s.eyecatch = { at: s.playtimeSec, count: s.eyecatch.count + 1 };
     this.eyecatch.set(true);
     setTimeout(() => this.eyecatch.set(false), this.settings.reducedMotion() ? 1500 : 3200);
   }

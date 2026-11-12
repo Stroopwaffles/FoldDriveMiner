@@ -559,6 +559,8 @@ export interface GameState {
   sector: SectorInfo;
   /** Sector improvements built in the current sector (key = sector seed:depth; reset by a jump). */
   improvements?: { key: string; built: ImprovementId[]; zones?: Partial<Record<ImprovementId, ZoneId>> };
+  /** The mid-run eyecatch: playtime when it last played, and how many have played (picks the look). */
+  eyecatch?: { at: number; count: number };
   /** Zone names this save has used, so none repeats until the whole pool has been used. */
   zoneNamesUsed?: string[];
   zone: ZoneId;
