@@ -20,9 +20,8 @@ export class BoardPanel {
   protected readonly rerollCost = CONTRACT.rerollCost;
 
   // ---------------------------------------------------------------- convoy
-  protected readonly fleet = computed(() => {
-    const f = this.s().trade.fleet;
-    if (!f) return null;
+  protected readonly fleets = computed(() =>
+    this.s().trade.fleets.map((f) => {
     const clan = clanDef(f.clan);
     const rep = this.s().trade.rep[f.clan];
     const tier = TR.repTier(rep);
@@ -42,7 +41,10 @@ export class BoardPanel {
       })),
       favorReady: !!f.favor && !f.favor.done && this.s().cargo[f.favor.ore] >= f.favor.amount,
     };
-  });
+    }),
+  );
+  /** Convoy slots in this sector (3 in a Trade Nexus). */
+  protected readonly maxConvoys = computed(() => TR.maxConvoys(this.s()));
 
   protected readonly nextConvoy = computed(() => {
     const t = this.s().trade;

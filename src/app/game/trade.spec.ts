@@ -28,17 +28,17 @@ describe('milestone 5b: merchant convoys', () => {
     const s = rich();
     s.trade.nextIn = 1;
     run(s, 2);
-    expect(s.trade.fleet).not.toBeNull();
-    expect(s.trade.fleet!.stock.length).toBeGreaterThanOrEqual(MERCHANT.baseItems - 1);
+    expect(s.trade.fleets.length).toBe(1);
+    expect(s.trade.fleets[0]!.stock.length).toBeGreaterThanOrEqual(MERCHANT.baseItems - 1);
     run(s, MERCHANT.stayMax + 5, 5);
-    expect(s.trade.fleet).toBeNull();
+    expect(s.trade.fleets.length).toBe(0);
   });
 
   it('the Lantern Market only trades in pirate havens', () => {
     const s = rich();
     for (let i = 0; i < 40; i++) {
       TR.spawnFleet(s, E.emptyEvents());
-      expect(s.trade.fleet!.clan).not.toBe('lantern');
+      expect(s.trade.fleets[0]!.clan).not.toBe('lantern');
     }
   });
 
@@ -48,7 +48,7 @@ describe('milestone 5b: merchant convoys', () => {
     s.cargo.iridium = 1e6;
     s.drill.tier = 3;
     TR.spawnFleet(s, E.emptyEvents(), 'halcyon');
-    const f = s.trade.fleet!;
+    const f = s.trade.fleets[0]!;
     const part = f.stock.find((x) => x.kind === 'part')!;
     expect(part).toBeDefined();
     expect(TR.buyItem(s, part.id, 'credits', E.emptyEvents())).toBe(true);
@@ -73,7 +73,7 @@ describe('milestone 5b: merchant convoys', () => {
   it('charts reveal hidden anomalies; ore contracts raise prices for the sector', () => {
     const s = rich();
     TR.spawnFleet(s, E.emptyEvents(), 'grey_tithe');
-    s.trade.fleet!.stock = [
+    s.trade.fleets[0]!.stock = [
       { id: 900, kind: 'chart', label: 'chart', desc: '', price: 1, sold: false },
       { id: 901, kind: 'ore_contract', label: 'oc', desc: '', price: 1, ore: 'ferrite', sold: false },
     ];
@@ -103,17 +103,17 @@ describe('milestone 5b: merchant convoys', () => {
     const s = rich();
     s.trade.nextIn = 10;
     E.simulateOffline(s, 3600);
-    expect(s.trade.fleet).toBeNull();
+    expect(s.trade.fleets.length).toBe(0);
     expect(s.trade.pending).toBe(true);
     run(s, 1);
-    expect(s.trade.fleet).not.toBeNull();
-    expect(s.trade.fleet!.remaining).toBeCloseTo(MERCHANT.waitAfterReturn, 0);
+    expect(s.trade.fleets.length).toBe(1);
+    expect(s.trade.fleets[0]!.remaining).toBeCloseTo(MERCHANT.waitAfterReturn, 0);
   });
 
   it('favors and escorts earn reputation', () => {
     const s = rich();
     TR.spawnFleet(s, E.emptyEvents(), 'okonkwo');
-    const f = s.trade.fleet!;
+    const f = s.trade.fleets[0]!;
     s.cargo[f.favor!.ore] = f.favor!.amount;
     const rep = s.trade.rep.okonkwo;
     expect(TR.deliverFavor(s, E.emptyEvents())).toBe(true);

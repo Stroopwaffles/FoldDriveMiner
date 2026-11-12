@@ -2,6 +2,7 @@
  * Threats: hazard and market events, Pirate Heat, raids resolved as automatic
  * sorties, rogue asteroids, drone wrecks and the Vermilion Jackal.
  */
+import type { ClanId } from './trade-data';
 import { choice, medalMult } from './story-rules';
 import { CONFIG, ORE_IDS, OreId, oreDef } from './config';
 import { sectorMods, sectorZones } from './sector-rules';
@@ -1025,8 +1026,8 @@ export function wreckRebuildCost(state: GameState, type: DroneType): number {
 }
 
 /** Escort a merchant convoy past the raiders shadowing it. */
-export function launchEscort(state: GameState, mechIds: number[], useGuardians: boolean, events: TickEvents): SortieReport | null {
-  const f = state.trade.fleet;
+export function launchEscort(state: GameState, mechIds: number[], useGuardians: boolean, events: TickEvents, clan?: ClanId): SortieReport | null {
+  const f = clan ? state.trade.fleets.find((x) => x.clan === clan) : state.trade.fleets[0];
   if (!f || f.escortDone) return null;
   const mechs = state.mechs.filter((m) => mechIds.includes(m.id) && canFight(state, m));
   if (!mechs.length && !(useGuardians && state.drones.guardian > 0)) return null;
@@ -1037,7 +1038,7 @@ export function launchEscort(state: GameState, mechIds: number[], useGuardians: 
     ONLINE,
   );
   report.enemy = 'Raiders shadowing the convoy';
-  onEscortResult(state, report.outcome !== 'defeat', events);
+  onEscortResult(state, report.outcome !== 'defeat', events, f.clan);
   return report;
 }
 

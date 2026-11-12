@@ -340,3 +340,13 @@
   color: var(--magenta);
   border-color: var(--magenta);
 }
+
+.nexus {
+  margin-left: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--ok);
+}
+.convoy + .convoy {
+  margin-top: 0.6rem;
+}

@@ -117,6 +117,10 @@ export const REP_TIERS = [
 ];
 
 export const MERCHANT = {
+  /** Convoys that can trade in a Trade Nexus at once (everywhere else, one). */
+  nexusConvoys: 3,
+  /** A Trade Nexus brings convoys this many times as often. */
+  nexusArrivalMult: 2,
   /** In a Pirate Haven the Lantern Market is this many times as likely as any other clan. */
   lanternHavenWeight: 3,
   /** Pirate sighting reports count as this many raid wins toward tracing the base. */

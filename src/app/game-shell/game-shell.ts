@@ -113,7 +113,7 @@ export class GameShell {
   /** Board opens once contracts are offered or a convoy shows up. */
   private readonly boardOpen = computed(() => {
     const s = this.s();
-    return s.contracts.board.length > 0 || s.contracts.active.length > 0 || !!s.trade.fleet || s.contracts.completed > 0;
+    return s.contracts.board.length > 0 || s.contracts.active.length > 0 || s.trade.fleets.length > 0 || s.contracts.completed > 0;
   });
   private readonly foldOpen = computed(() => F.driveOnline(this.s()) || this.s().fold.jumps > 0);
   /** Fold badge: the drive is fully charged. */
@@ -138,7 +138,7 @@ export class GameShell {
     return null;
   });
   /** Board badge: a merchant convoy is in the sector. */
-  protected readonly boardReady = computed(() => !!this.s().trade.fleet);
+  protected readonly boardReady = computed(() => this.s().trade.fleets.length > 0);
   /** Map badge: an unscanned signal is waiting. */
   protected readonly mapReady = computed(() => this.s().anomalies.list.some((a) => a.status === 'signal' && a.kind !== 'golden_asteroid'));
   /** Lab badge: a bench is free and something can be started. */

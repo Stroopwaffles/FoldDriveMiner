@@ -19,8 +19,9 @@ function rich(): GameState {
 /** Collegium fleets until one stocks the kind we want. */
 function collegiumWith(s: GameState, kind: string) {
   for (let i = 0; i < 60; i++) {
+    s.trade.fleets = [];
     TR.spawnFleet(s, E.emptyEvents(), 'collegium');
-    const item = s.trade.fleet!.stock.find((x) => x.kind === kind);
+    const item = s.trade.fleets[0]!.stock.find((x) => x.kind === kind);
     if (item) return item;
   }
   throw new Error(`no ${kind} in 60 Collegium visits`);
@@ -58,7 +59,7 @@ describe('Starward Collegium', () => {
     expect(TR.buyItem(s, item.id, 'credits', E.emptyEvents())).toBe(true);
     expect(s.trade.researchGrant).toBe(MERCHANT.grantSec);
     expect(E.researchSpeed(s)).toBeCloseTo(base * 1.5, 9);
-    s.trade.fleet = null;
+    s.trade.fleets = [];
     for (let t = 0; t < MERCHANT.grantSec + 2; t++) E.tick(s, 1);
     expect(s.trade.researchGrant).toBe(0);
     expect(E.researchSpeed(s)).toBeCloseTo(base, 9);

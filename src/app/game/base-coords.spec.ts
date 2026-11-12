@@ -18,8 +18,9 @@ function rich(): GameState {
 
 function itemFrom(s: GameState, clan: 'lantern' | 'okonkwo', kind: string) {
   for (let i = 0; i < 80; i++) {
+    s.trade.fleets = [];
     TR.spawnFleet(s, E.emptyEvents(), clan);
-    const item = s.trade.fleet!.stock.find((x) => x.kind === kind);
+    const item = s.trade.fleets[0]!.stock.find((x) => x.kind === kind);
     if (item) return item;
   }
   return null;

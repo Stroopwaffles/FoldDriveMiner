@@ -17,7 +17,7 @@ import { ACTS, EPILOGUE, FINALE, FINAL_EPISODE, LAST_OFFER, MASTER_EPILOGUE, Fin
 import { BONUS_LABEL, medalDef } from '../game/medal-data';
 import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
-import { clanDef } from '../game/trade-data';
+import { ClanId, clanDef } from '../game/trade-data';
 import { Approach } from '../game/anomaly-data';
 import { CORP_TAUNTS, CaptainId, JACKAL, RAIDER_TAUNTS, StandingOrders, captainDef, eventDef } from '../game/threat-data';
 import { DroneType as DT } from '../game/fleet-data';
@@ -60,6 +60,8 @@ export interface SortieView {
   eventId?: number;
   strike?: boolean;
   escort?: boolean;
+  /** Which convoy the escort is for (a Trade Nexus can host several). */
+  escortClan?: ClanId;
   report?: SortieReport;
 }
 
@@ -958,9 +960,9 @@ export class GameService {
     this.publish();
   }
 
-  openSortiePrep(eventId?: number, strike = false, escort = false): void {
+  openSortiePrep(eventId?: number, strike = false, escort: ClanId | boolean = false): void {
     this.audio.select();
-    this.sortie.set({ mode: 'prep', eventId, strike, escort });
+    this.sortie.set({ mode: 'prep', eventId, strike, escort: !!escort, ...(typeof escort === 'string' ? { escortClan: escort } : {}) });
   }
 
   closeSortie(): void {
@@ -973,7 +975,7 @@ export class GameService {
     if (!s || !view) return;
     const events = this.blankEvents();
     const report = view.escort
-      ? T.launchEscort(s, mechIds, useGuardians, events)
+      ? T.launchEscort(s, mechIds, useGuardians, events, view.escortClan)
       : view.strike
         ? T.launchStrike(s, mechIds, useGuardians, events)
         : T.launchDefense(s, view.eventId ?? -1, mechIds, useGuardians, events);
@@ -1096,10 +1098,11 @@ export class GameService {
   // ------------------------------------------------------------ trade & contracts
 
   /** Merchant captains and corporate liaisons speak in the comm log. */
-  private tradeSay(t: { text: string; good: boolean; from?: string }): void {
+  private tradeSay(t: { text: string; good: boolean; from?: string; clan?: ClanId }): void {
     const s = this._state()!;
-    if (t.from === 'merchant' && s.trade.fleet) {
-      const clan = clanDef(s.trade.fleet.clan);
+    const id = t.clan ?? s.trade.fleets[0]?.clan;
+    if (t.from === 'merchant' && id) {
+      const clan = clanDef(id);
       this.say('TRADER', t.text, 0, undefined, clan.captain);
     } else if (t.from === 'corp') {
       this.say('CORP', t.text);
@@ -1119,11 +1122,11 @@ export class GameService {
     this.publish();
   }
 
-  deliverFavor(): void {
+  deliverFavor(clan?: ClanId): void {
     const s = this._state();
     if (!s) return;
     const events = this.blankEvents();
-    if (TR.deliverFavor(s, events)) this.audio.sell();
+    if (TR.deliverFavor(s, events, clan)) this.audio.sell();
     else this.audio.denied();
     for (const t of events.trade) this.tradeSay(t);
     this.publish();

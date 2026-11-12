@@ -1,14 +1,19 @@
 @let st = s();
 <section class="panel board">
   <div class="panel-title">
-    <span class="led" [class.amber]="!!fleet()"></span>Trade &amp; Contracts <span class="kana">けいやく</span>
+    <span class="led" [class.amber]="fleets().length > 0"></span>Trade &amp; Contracts <span class="kana">けいやく</span>
     <span class="head-info">CONTRACTS DONE {{ st.contracts.completed }}</span>
   </div>
 
   <!-- Merchant convoy -->
   <div class="section">
-    <div class="sub">MERCHANT CONVOY <span class="kana">しょうだん</span></div>
-    @if (fleet(); as v) {
+    <div class="sub">
+      MERCHANT CONVOY{{ maxConvoys() > 1 ? 'S' : '' }} <span class="kana">しょうだん</span>
+      @if (maxConvoys() > 1) {
+        <span class="nexus">TRADE NEXUS · {{ fleets().length }}/{{ maxConvoys() }} docked</span>
+      }
+    </div>
+    @for (v of fleets(); track v.f.clan) {
       <div class="convoy" [style.--cc]="v.clan.color">
         <div class="convoy-head">
           <div class="crest" aria-hidden="true">{{ v.clan.kana }}</div>
@@ -70,7 +75,7 @@
               @if (fav.done) {
                 <span class="ok">Delivered ✓</span>
               } @else {
-                <button type="button" class="btn small" [disabled]="!v.favorReady" (click)="game.deliverFavor()">Deliver ({{ game.fmt(st.cargo[fav.ore]) }} in hold)</button>
+                <button type="button" class="btn small" [disabled]="!v.favorReady" (click)="game.deliverFavor(v.f.clan)">Deliver ({{ game.fmt(st.cargo[fav.ore]) }} in hold)</button>
               }
             </div>
           }
@@ -79,13 +84,16 @@
             @if (v.f.escortDone) {
               <span class="ok">Done ✓</span>
             } @else {
-              <button type="button" class="btn small btn-primary" (click)="game.openSortiePrep(undefined, false, true)">Escort</button>
+              <button type="button" class="btn small btn-primary" (click)="game.openSortiePrep(undefined, false, v.f.clan)">Escort</button>
             }
           </div>
         </div>
       </div>
-    } @else {
-      <p class="dim small">No convoy in the sector. Next one expected {{ nextConvoy() }}. Trade hubs bring them more often; the Lantern Market only trades in pirate havens.</p>
+    } @empty {
+      <p class="dim small">No convoy in the sector. Next one expected {{ nextConvoy() }}. Trade hubs bring them more often, a Trade Nexus hosts up to three at once, and the Lantern Market only trades in pirate havens.</p>
+    }
+    @if (fleets().length > 0 && fleets().length < maxConvoys()) {
+      <p class="dim small">Room for {{ maxConvoys() - fleets().length }} more. Next convoy expected {{ nextConvoy() }}.</p>
     }
     <div class="inv small">
       STORES: Repair kits <b>{{ inventory().repair_kit }}</b> (use in HANGAR) · Med kits <b>{{ inventory().medkit }}</b> (use in CREW) · Fold cells <b>{{ inventory().fold_cell }}</b>

@@ -98,6 +98,7 @@ export const SECTOR_TRAITS: readonly SectorTraitDef[] = [
   { id: 'dense_field', name: 'Dense Field', desc: 'Asteroids have 2× mass; cracking pays 1.5×.', polarity: 'mixed', minDepth: 1, weight: 2, mods: { asteroidMass: 2, crackBonus: 1.5 } },
   { id: 'pirate_haven', name: 'Pirate Haven', desc: 'Raids twice as likely. The Lantern Market trades here.', polarity: 'bad', minDepth: 1, weight: 2, mods: { eventWeights: { raid: 2 } } },
   { id: 'ion_storms', name: 'Ion Storms', desc: 'Clicks −30%, drones +40%.', polarity: 'mixed', minDepth: 1, weight: 2, mods: { clickPower: 0.7, droneOutput: 1.4 } },
+  { id: 'trade_nexus', name: 'Trade Nexus', desc: 'A crossroads of the shipping lanes: up to three convoys trade here at once, and they arrive twice as often.', polarity: 'good', minDepth: 1, weight: 1, mods: {} },
   { id: 'trade_hub', name: 'Trade Hub Nearby', desc: 'Prices +10%, but they swing 50% harder.', polarity: 'good', minDepth: 1, weight: 2, mods: { sellPrice: 1.1, marketAmp: 1.5 } },
   { id: 'micrometeor_swarm', name: 'Micrometeor Swarm', desc: 'Micrometeor storms ×3; ore sells for 25% more.', polarity: 'mixed', minDepth: 2, weight: 1.5, mods: { eventWeights: { micrometeor: 3 }, sellPrice: 1.25 } },
   { id: 'ancient_marker', name: 'Ancient Survey Marker', desc: 'One fixed anomaly is guaranteed Rare or better.', polarity: 'good', minDepth: 2, weight: 1, mods: {} },

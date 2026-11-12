@@ -46,7 +46,7 @@ import { productionValuePerSec } from './anomaly-rules';
 
 export function emptyTrade(): TradeState {
   return {
-    fleet: null,
+    fleets: [],
     nextIn: MERCHANT.intervalMin,
     pending: false,
     visits: 0,
@@ -106,8 +106,8 @@ export function identifyCurio(state: GameState): CurioDef | null {
   return pick;
 }
 
-function news(events: TickEvents, text: string, good: boolean, from: 'merchant' | 'corp' | 'vesper' = 'vesper'): void {
-  events.trade.push({ text, good, from });
+function news(events: TickEvents, text: string, good: boolean, from: 'merchant' | 'corp' | 'vesper' = 'vesper', clan?: ClanId): void {
+  events.trade.push({ text, good, from, ...(clan ? { clan } : {}) });
 }
 
 // ---------------------------------------------------------------- modifiers used elsewhere
@@ -169,7 +169,10 @@ export function repTier(rep: number) {
 
 function pickClan(state: GameState, rng: Rng): ClanId {
   const haven = sectorOf(state).traits.includes('pirate_haven');
-  const options = CLANS.filter((c) => !c.blackMarket || haven || choice(state) === 'break');
+  const here = new Set(state.trade.fleets.map((f) => f.clan));
+  // Only one convoy per clan at a time (a Trade Nexus can host several clans).
+  const allowed = CLANS.filter((c) => (!c.blackMarket || haven || choice(state) === 'break') && !here.has(c.id));
+  const options = allowed.length ? allowed : CLANS.filter((c) => !c.blackMarket || haven || choice(state) === 'break');
   // The Lantern Market is at home in a Pirate Haven: it turns up there far more often.
   const weight = (c: (typeof CLANS)[number]) => (c.blackMarket && haven ? MERCHANT.lanternHavenWeight : 1);
   const total = options.reduce((sum, c) => sum + weight(c), 0);
@@ -332,11 +335,11 @@ export function spawnFleet(state: GameState, events: TickEvents, clan?: ClanId):
     escortDone: false,
   };
   state.rng = rng.state;
-  t.fleet = fleet;
+  t.fleets.push(fleet);
   t.visits++;
   state.stats.convoysHosted = (state.stats.convoysHosted ?? 0) + 1;
   news(events, `UNIDENTIFIED CONVOY ON APPROACH — TRANSPONDER: ${clanDef(id).name.toUpperCase()}. They'll trade for a while; open the BOARD.`, true);
-  news(events, clanDef(id).greet, true, 'merchant');
+  news(events, clanDef(id).greet, true, 'merchant', id);
   return fleet;
 }
 
@@ -358,8 +361,24 @@ function exclusiveDesc(id: string): string {
 
 export type PayMethod = 'credits' | 'barter' | 'cores';
 
+/** The convoy selling an item. */
+function fleetSelling(state: GameState, itemId: number): MerchantFleet | undefined {
+  return state.trade.fleets.find((f) => f.stock.some((s) => s.id === itemId));
+}
+
+/** A convoy by clan, or the only/first one. */
+function fleetOf(state: GameState, clan?: ClanId): MerchantFleet | undefined {
+  const fleets = state.trade.fleets;
+  return clan ? fleets.find((f) => f.clan === clan) : fleets[0];
+}
+
+/** How many convoys can trade here at once. */
+export function maxConvoys(state: GameState): number {
+  return sectorOf(state).traits.includes('trade_nexus') ? MERCHANT.nexusConvoys : 1;
+}
+
 export function canBuy(state: GameState, itemId: number, pay: PayMethod): string | null {
-  const f = state.trade.fleet;
+  const f = fleetSelling(state, itemId);
   const item = f?.stock.find((s) => s.id === itemId);
   if (!f || !item) return 'Not for sale';
   if (item.sold) return 'Sold';
@@ -378,14 +397,14 @@ export function canBuy(state: GameState, itemId: number, pay: PayMethod): string
 export function buyItem(state: GameState, itemId: number, pay: PayMethod, events: TickEvents): boolean {
   if (canBuy(state, itemId, pay) !== null) return false;
   const t = state.trade;
-  const f = t.fleet!;
+  const f = fleetSelling(state, itemId)!;
   const item = f.stock.find((s) => s.id === itemId)!;
   if (pay === 'cores') state.dataCores -= item.dataCores!;
   else if (pay === 'barter') state.cargo[item.barterOre!] -= item.barterAmount!;
   else state.credits -= item.price;
   item.sold = true;
   t.rep[f.clan] += MERCHANT.repPerPurchase + (item.price > state.credits * 0.2 ? 1 : 0);
-  applyItem(state, item, events);
+  applyItem(state, item, events, f.clan);
   if (clanDef(f.clan).blackMarket && ITEM_INFO[item.kind].contraband) {
     const rng = new Rng(state.rng);
     if (rng.next() < MERCHANT.stingChance && !state.threats.events.some((e) => e.kind === 'raid')) {
@@ -398,7 +417,7 @@ export function buyItem(state: GameState, itemId: number, pay: PayMethod, events
   return true;
 }
 
-function applyItem(state: GameState, item: StockItem, events: TickEvents): void {
+function applyItem(state: GameState, item: StockItem, events: TickEvents, clan: ClanId): void {
   const t = state.trade;
   switch (item.kind) {
     case 'part':
@@ -436,7 +455,7 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
       break;
     case 'research_grant':
       t.researchGrant = Math.max(t.researchGrant ?? 0, MERCHANT.grantSec);
-      news(events, `Collegium analysts plug into the lab. Research +${Math.round(MERCHANT.grantBonus * 100)}% for ${MERCHANT.grantSec / 60} minutes.`, true, 'merchant');
+      news(events, `Collegium analysts plug into the lab. Research +${Math.round(MERCHANT.grantBonus * 100)}% for ${MERCHANT.grantSec / 60} minutes.`, true, 'merchant', clan);
       break;
     case 'base_coords':
       state.threats.baseFound = true;
@@ -488,18 +507,17 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
       state.surveyData += item.count!;
       break;
     case 'exclusive': {
-      const f = t.fleet!;
-      const ex = clanDef(f.clan).exclusive;
+      const ex = clanDef(clan).exclusive;
       t.perks.push(ex);
       if (item.partId) state.parts[item.partId] = (state.parts[item.partId] ?? 0) + 1;
       if (ex === 'tithe_codex') {
         state.dataCores += 5;
-        news(events, 'The Tithe\'s Codex: "The first fold did not go anywhere. It went back."', true, 'merchant');
+        news(events, 'The Tithe\'s Codex: "The first fold did not go anywhere. It went back."', true, 'merchant', clan);
       }
       if (ex === 'jackal_map') state.threats.baseFound = true;
       if (ex === 'collegium_fellowship') {
         state.dataCores += 3;
-        news(events, 'Provost Sel: "Welcome to the Fellowship, Commander. Publish everything."', true, 'merchant');
+        news(events, 'Provost Sel: "Welcome to the Fellowship, Commander. Publish everything."', true, 'merchant', clan);
       }
       break;
     }
@@ -529,8 +547,8 @@ export function useMedkit(state: GameState, pilotId: number): boolean {
 }
 
 /** Deliver ore for the captain's favor. */
-export function deliverFavor(state: GameState, events: TickEvents): boolean {
-  const f = state.trade.fleet;
+export function deliverFavor(state: GameState, events: TickEvents, clan?: ClanId): boolean {
+  const f = fleetOf(state, clan);
   if (!f?.favor || f.favor.done || state.cargo[f.favor.ore] < f.favor.amount) return false;
   state.cargo[f.favor.ore] -= f.favor.amount;
   f.favor.done = true;
@@ -538,7 +556,7 @@ export function deliverFavor(state: GameState, events: TickEvents): boolean {
   state.credits += reward;
   state.stats.creditsEarned += reward;
   state.trade.rep[f.clan] += MERCHANT.favorRep;
-  news(events, `Favor delivered. ${clanDef(f.clan).captain} pays ${Math.round(reward).toLocaleString()} cr and won't forget it.`, true, 'merchant');
+  news(events, `Favor delivered. ${clanDef(f.clan).captain} pays ${Math.round(reward).toLocaleString()} cr and won't forget it.`, true, 'merchant', f.clan);
   return true;
 }
 
@@ -547,15 +565,15 @@ export function escortStrength(state: GameState): number {
   return 12 * (1 + Math.log10(1 + state.stats.creditsEarned / 1e5)) * 0.8;
 }
 
-export function onEscortResult(state: GameState, won: boolean, events: TickEvents): void {
-  const f = state.trade.fleet;
+export function onEscortResult(state: GameState, won: boolean, events: TickEvents, clan?: ClanId): void {
+  const f = fleetOf(state, clan);
   if (!f) return;
   f.escortDone = true;
   if (won) {
     state.trade.rep[f.clan] += MERCHANT.escortRep;
-    news(events, `Convoy escorted safely. ${clanDef(f.clan).name} reputation +${MERCHANT.escortRep}.`, true, 'merchant');
+    news(events, `Convoy escorted safely. ${clanDef(f.clan).name} reputation +${MERCHANT.escortRep}.`, true, 'merchant', f.clan);
   } else {
-    news(events, 'The raiders broke through the escort. The convoy limps away.', false, 'merchant');
+    news(events, 'The raiders broke through the escort. The convoy limps away.', false, 'merchant', f.clan);
   }
 }
 
@@ -564,23 +582,26 @@ function advanceMerchants(state: GameState, dt: number, events: TickEvents, offl
   if (t.overdriveCell > 0) t.overdriveCell = Math.max(0, t.overdriveCell - dt);
   if (t.deterrent > 0) t.deterrent = Math.max(0, t.deterrent - dt);
   if (t.researchGrant > 0) t.researchGrant = Math.max(0, t.researchGrant - dt);
-  if (t.fleet) {
-    t.fleet.remaining -= dt;
-    if (t.fleet.remaining <= 0) {
-      news(events, `${clanDef(t.fleet.clan).name} have burned out for the shipping lanes. Safe travels.`, true);
-      t.fleet = null;
+  for (const f of [...t.fleets]) {
+    f.remaining -= dt;
+    if (f.remaining <= 0) {
+      news(events, `${clanDef(f.clan).name} have burned out for the shipping lanes. Safe travels.`, true);
+      t.fleets = t.fleets.filter((x) => x !== f);
     }
-    return;
   }
-  if (t.pending && !offline) {
+  const room = t.fleets.length < maxConvoys(state);
+  if (t.pending && !offline && room) {
     t.pending = false;
     const f = spawnFleet(state, events);
     f.remaining = MERCHANT.waitAfterReturn;
     return;
   }
+  // Only one convoy at a time, except in a Trade Nexus.
+  if (!room) return;
   // Convoys are a fixed part of the economy only once you have something to trade.
   if (state.stats.creditsEarned < 2000) return;
-  t.nextIn -= dt * (sectorOf(state).traits.includes('trade_hub') ? 1.5 : 1);
+  const traits = sectorOf(state).traits;
+  t.nextIn -= dt * (traits.includes('trade_hub') ? 1.5 : 1) * (traits.includes('trade_nexus') ? MERCHANT.nexusArrivalMult : 1);
   if (t.nextIn > 0) return;
   const rng = new Rng(state.rng);
   t.nextIn = rng.range(MERCHANT.intervalMin, MERCHANT.intervalMax);

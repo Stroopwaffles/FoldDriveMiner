@@ -106,6 +106,12 @@ export function migrate(raw: unknown): GameState {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);
   }
   backfillConvoys(data);
+  // One convoy became a list (Trade Nexus sectors host several).
+  const trade = data['trade'] as { fleet?: unknown; fleets?: unknown[] } | undefined;
+  if (trade && !Array.isArray(trade.fleets)) {
+    trade.fleets = trade.fleet ? [trade.fleet] : [];
+    delete trade.fleet;
+  }
   return fillDefaults(data as Partial<GameState>);
 }
 

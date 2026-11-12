@@ -346,7 +346,8 @@ export interface MerchantFleet {
 }
 
 export interface TradeState {
-  fleet: MerchantFleet | null;
+  /** Convoys trading in the sector right now (one at a time, up to three in a Trade Nexus). */
+  fleets: MerchantFleet[];
   nextIn: number;
   /** A convoy arrived while you were away and is waiting for you. */
   pending: boolean;
@@ -599,7 +600,7 @@ export interface TickEvents {
   /** Anomaly news: detections, scans, mission results, lore. */
   anomaly: { text: string; good: boolean; kind: AnomalyKind; lore?: number }[];
   /** Merchant and contract news. */
-  trade: { text: string; good: boolean; from?: 'merchant' | 'corp' | 'vesper' }[];
+  trade: { text: string; good: boolean; from?: 'merchant' | 'corp' | 'vesper'; clan?: ClanId }[];
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
   /** Saved loadouts that auto-rebuild built this tick (loadout names). */
