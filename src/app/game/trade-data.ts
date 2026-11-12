@@ -74,7 +74,9 @@ export type ItemKind =
   | 'survey_data'
   | 'exclusive'
   | 'relic'
-  | 'research_grant';
+  | 'research_grant'
+  | 'base_coords'
+  | 'pirate_leads';
 
 export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBound?: boolean; contraband?: boolean }> = {
   part: { name: 'Mech part', desc: 'Goes to parts storage.' },
@@ -94,15 +96,17 @@ export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBou
   exclusive: { name: 'Clan exclusive', desc: 'Only for the clan\'s partners.' },
   relic: { name: 'Legendary part', desc: 'A one-of-a-kind part. Sold only for Data Cores.' },
   research_grant: { name: 'Research grant', desc: '+50% research speed for 15 minutes. Collegium analysts join your lab.' },
+  base_coords: { name: 'Pirate base coordinates', desc: 'Locates the pirate base right away, so you can plan a strike from DEFENSE.' },
+  pirate_leads: { name: 'Pirate sighting reports', desc: "Salvage crews' sightings. They count as 2 raid wins toward tracing the pirate base." },
 };
 
 /** What each clan tends to stock. */
 export const CLAN_STOCK: Record<ClanId, ItemKind[]> = {
   halcyon: ['part', 'part', 'part', 'countermeasure', 'ore_contract', 'pilot'],
   grey_tithe: ['curio', 'chart', 'data_cores', 'survey_data', 'fold_cell'],
-  okonkwo: ['drones', 'drones', 'repair_kit', 'medkit', 'deterrent', 'part'],
+  okonkwo: ['drones', 'drones', 'repair_kit', 'medkit', 'deterrent', 'part', 'pirate_leads'],
   collegium: ['data_cores', 'research_grant', 'research_grant', 'survey_data', 'chart', 'curio'],
-  lantern: ['overdrive_cell', 'fold_cell', 'part', 'deterrent', 'pilot', 'data_cores'],
+  lantern: ['overdrive_cell', 'fold_cell', 'part', 'deterrent', 'pilot', 'data_cores', 'base_coords'],
 };
 
 export const REP_TIERS = [
@@ -113,6 +117,10 @@ export const REP_TIERS = [
 ];
 
 export const MERCHANT = {
+  /** In a Pirate Haven the Lantern Market is this many times as likely as any other clan. */
+  lanternHavenWeight: 3,
+  /** Pirate sighting reports count as this many raid wins toward tracing the base. */
+  leadsWins: 2,
   /** Seconds between convoys, and how long they stay. */
   intervalMin: 600,
   intervalMax: 1200,

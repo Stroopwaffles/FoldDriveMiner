@@ -3,6 +3,7 @@
  * escorts), the contract board (megacorps and sector-local outfits) and
  * pilot bonds.
  */
+import { THREAT } from './threat-data';
 import { CURIO, CURIOS, CurioDef } from './curio-data';
 import { CORES } from './core-data';
 import { makeRelic } from './core-rules';
@@ -169,7 +170,15 @@ export function repTier(rep: number) {
 function pickClan(state: GameState, rng: Rng): ClanId {
   const haven = sectorOf(state).traits.includes('pirate_haven');
   const options = CLANS.filter((c) => !c.blackMarket || haven || choice(state) === 'break');
-  return options[Math.floor(rng.next() * options.length)].id;
+  // The Lantern Market is at home in a Pirate Haven: it turns up there far more often.
+  const weight = (c: (typeof CLANS)[number]) => (c.blackMarket && haven ? MERCHANT.lanternHavenWeight : 1);
+  const total = options.reduce((sum, c) => sum + weight(c), 0);
+  let roll = rng.next() * total;
+  for (const c of options) {
+    roll -= weight(c);
+    if (roll < 0) return c.id;
+  }
+  return options[options.length - 1].id;
 }
 
 /** A credit price that keeps up with the economy. */
@@ -232,6 +241,15 @@ function makeItem(state: GameState, clan: ClanId, kind: ItemKind, rng: Rng, disc
     }
     case 'repair_kit':
       item.price = scaledPrice(state, 45);
+      break;
+    case 'base_coords':
+      // Only worth selling once there are pirates about and their base is still hidden.
+      if (state.threats.baseFound || state.threats.raids < 1) return null;
+      item.price = scaledPrice(state, 300);
+      break;
+    case 'pirate_leads':
+      if (state.threats.baseFound || state.threats.raids < 1) return null;
+      item.price = scaledPrice(state, 120);
       break;
     case 'medkit':
       item.price = scaledPrice(state, 45);
@@ -419,6 +437,22 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
       t.researchGrant = Math.max(t.researchGrant ?? 0, MERCHANT.grantSec);
       news(events, `Collegium analysts plug into the lab. Research +${Math.round(MERCHANT.grantBonus * 100)}% for ${MERCHANT.grantSec / 60} minutes.`, true, 'merchant');
       break;
+    case 'base_coords':
+      state.threats.baseFound = true;
+      news(events, 'The coordinates check out: pirate base located. Plan a strike from the DEFENSE screen.', true);
+      break;
+    case 'pirate_leads': {
+      const th = state.threats;
+      th.winsSinceBase += MERCHANT.leadsWins;
+      const need = th.strikesWon === 0 ? THREAT.strike.winsToFind : THREAT.strike.winsToRefind;
+      if (th.winsSinceBase >= need) {
+        th.baseFound = true;
+        news(events, 'The sighting reports narrow it down: pirate base located. Plan a strike from the DEFENSE screen.', true);
+      } else {
+        news(events, `The sighting reports help: ${th.winsSinceBase} of ${need} toward tracing the pirate base.`, true);
+      }
+      break;
+    }
     case 'deterrent':
       t.deterrent = MERCHANT.deterrentSec;
       state.threats.heat = Math.max(0, state.threats.heat - MERCHANT.deterrentHeat);
