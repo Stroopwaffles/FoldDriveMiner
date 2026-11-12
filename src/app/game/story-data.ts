@@ -52,6 +52,47 @@ const codexKinds = (s: GameState) => Object.keys(s.anomalies.codex).length;
 const runCredits = (s: GameState) => s.stats.creditsEarned - s.fold.runStartCredits;
 const maxLevel = (s: GameState) => Math.max(0, ...s.pilots.map((p) => p.level));
 
+/** One measurable step toward an episode's milestone, for the Archive's progress bars. */
+export interface EpisodeGoal {
+  label: string;
+  value: number;
+  target: number;
+}
+
+/** How far along each episode's milestone is. `any`: meeting one goal is enough. */
+export function episodeGoals(n: number, s: GameState): { any: boolean; goals: EpisodeGoal[] } | null {
+  const g = (label: string, value: number, target: number): EpisodeGoal => ({ label, value: Math.max(0, value), target });
+  const all = (...goals: EpisodeGoal[]) => ({ any: false, goals });
+  switch (n) {
+    case 2: return all(g('Prospector drones', s.drones.prospector, 1));
+    case 3: return all(g('Drill tier', drillTier(s), 2));
+    case 4: return all(g('Mechs built', s.stats.mechsBuilt, 1));
+    case 5: return all(g('Kit Okafor aboard', s.pilots.some((p) => p.story === 'kit') ? 1 : 0, 1));
+    case 6: return all(g('Pirate raids faced', s.threats.raids, 1));
+    case 7: return all(g('Beacon fragments decoded', s.anomalies.lore, 1));
+    case 8: return all(g('Fold Jumps', s.fold.jumps, 1));
+    case 9: return all(g('Beacon fragments decoded', s.anomalies.lore, 3));
+    case 10: return all(g('Fold Jumps', s.fold.jumps, 1), g('Raids won', s.threats.raidsWon, 3));
+    case 11: return all(g('Fold Jumps', s.fold.jumps, 1), g('Credits earned this run', runCredits(s), 1e6));
+    case 12: return all(g('Anomaly kinds identified', codexKinds(s), 5));
+    case 13: return all(g('Jackal encounters', s.threats.jackalEncounters, 3));
+    case 14: return all(g('Meridian standing', s.contracts.standing.meridian ?? 0, 5));
+    case 15: return all(g('Fold Jumps', s.fold.jumps, 2));
+    case 16: return all(g('Beacon fragments decoded', s.anomalies.lore, 5));
+    case 17: return all(g('Fold Jumps', s.fold.jumps, 3));
+    case 18: return all(g('Lifetime Fold Resonance', s.fold.lifetimeResonance, 50));
+    case 19: return all(g('Highest pilot level', maxLevel(s), 20));
+    case 20: return all(g('Fold Jumps', s.fold.jumps, 4));
+    case 21: return all(g('Lifetime Fold Resonance', s.fold.lifetimeResonance, 150));
+    case 22: return { any: true, goals: [g('Jackal defeated', s.threats.jackalDefeats, 3), g('Pirate base strikes won', s.threats.strikesWon, 2)] };
+    case 23: return all(g('Sector depth', s.sector.depth, 5));
+    case 24: return all(g('Fold Jumps', s.fold.jumps, 5));
+    case 25: return all(g('Lifetime Fold Resonance', s.fold.lifetimeResonance, 300));
+    case 26: return all(g('Fold Jumps', s.fold.jumps, 6));
+    default: return null;
+  }
+}
+
 export const EPISODES: readonly EpisodeDef[] = [
   // ------------------------------------------------------------ Act I · Frontier
   {

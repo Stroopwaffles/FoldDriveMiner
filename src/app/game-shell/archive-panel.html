@@ -29,6 +29,20 @@
                 @if (e.state === 'locked' || e.state === 'next') {
                   <span class="ep-title">{{ e.state === 'next' ? e.def.title : '? ? ?' }}</span>
                   <span class="ep-hint">{{ e.state === 'next' ? 'NEXT · ' + e.def.hint : 'Locked' }}</span>
+                  @if (e.state === 'next' && nextGoals(); as ng) {
+                    <div class="goals">
+                      @if (ng.any && ng.goals.length > 1) {
+                        <div class="goal-mode">Either one will do:</div>
+                      }
+                      @for (g of ng.goals; track g.label) {
+                        <div class="goal" [class.done]="g.done">
+                          <span class="g-label">{{ g.done ? '✓' : '○' }} {{ g.label }}</span>
+                          <span class="g-bar"><i [style.width.%]="g.pct"></i></span>
+                          <span class="g-num">{{ game.fmt(Math.min(g.value, g.target)) }} / {{ game.fmt(g.target) }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
                   @if (e.state === 'next' && nextNote()) {
                     <span class="ep-hint wait">{{ nextNote() }}</span>
                   }

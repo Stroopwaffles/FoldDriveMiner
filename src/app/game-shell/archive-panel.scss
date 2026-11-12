@@ -123,6 +123,46 @@
   color: var(--cyan);
 }
 
+.goals {
+  grid-column: 2 / -1;
+  display: grid;
+  gap: 3px;
+  margin: 0.2rem 0 0.1rem;
+}
+.goal-mode {
+  font-size: 0.62rem;
+  color: var(--amber);
+}
+.goal {
+  display: grid;
+  grid-template-columns: minmax(9rem, auto) 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.66rem;
+  color: var(--text-dim);
+
+  .g-bar {
+    height: 6px;
+    background: #15193a;
+    border: 1px solid #2a3168;
+
+    i {
+      display: block;
+      height: 100%;
+      background: var(--cyan);
+    }
+  }
+  .g-num {
+    font-family: var(--font-mono);
+  }
+  &.done {
+    color: var(--ok);
+
+    .g-bar i {
+      background: var(--ok);
+    }
+  }
+}
 .ep-hint {
   grid-column: 2 / -1;
   font-size: 0.64rem;

@@ -3,7 +3,7 @@ import { BackgroundId, backgroundDef } from '../game/crew-data';
 import { formatDuration } from '../game/format';
 import { BONUS_LABEL, BonusKind, CATEGORIES, MEDALS } from '../game/medal-data';
 import * as S from '../game/sector-rules';
-import { ACTS, EPISODES, FINALE } from '../game/story-data';
+import { ACTS, EPISODES, FINALE, episodeGoals } from '../game/story-data';
 import * as ST from '../game/story-rules';
 import { LogEntry } from '../game/types';
 import { AudioService } from '../services/audio.service';
@@ -45,13 +45,26 @@ export class ArchivePanel {
       })),
     }));
   });
+  /** Progress toward the next episode's milestone. */
+  protected readonly Math = Math;
+  protected readonly nextGoals = computed(() => {
+    const s = this.s();
+    const g = episodeGoals(s.story.unlocked + 1, s);
+    if (!g) return null;
+    const goals = g.goals.map((x) => ({ ...x, done: x.value >= x.target, pct: Math.min(100, (x.value / x.target) * 100) }));
+    return { any: g.any, goals, met: g.any ? goals.some((x) => x.done) : goals.every((x) => x.done) };
+  });
+
   /** What the next episode is waiting for. */
   protected readonly nextNote = computed(() => {
     const s = this.s();
     const st = s.story;
     if (st.watched < st.unlocked) return 'Watch the waiting episode first';
     const wait = ST.episodeWait(s);
-    return wait > 0 ? `Arrives after your next Fold Jump or in ${formatDuration(wait)}, once its milestone is met` : '';
+    if (wait <= 0) return '';
+    return this.nextGoals()?.met
+      ? `Milestone met. Arrives after your next Fold Jump or in ${formatDuration(wait)}`
+      : `Once its milestone is met, it arrives after your next Fold Jump or in ${formatDuration(wait)}`;
   });
 
   protected readonly finale = computed(() => {
