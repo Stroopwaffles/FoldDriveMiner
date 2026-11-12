@@ -6,6 +6,9 @@ import { RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
 import * as E from '../game/engine';
 import * as S from '../game/sector-rules';
 import * as F from '../game/fold-rules';
+import * as IR from '../game/improvement-rules';
+import { improvementDef } from '../game/improvement-data';
+import { ImprovementArt } from '../ui/improvement-art';
 import { GameService } from '../services/game.service';
 import { SettingsService } from '../services/settings.service';
 import { CodexPanel } from './codex-panel';
@@ -19,7 +22,7 @@ const R = (i: number) => 52 + i * 30;
 /** The MAP tab: the sector's zones as orbital bands, anomaly signals, the Codex and the long-range scan. */
 @Component({
   selector: 'fdm-map-panel',
-  imports: [SignalsPanel, CodexPanel],
+  imports: [SignalsPanel, CodexPanel, ImprovementArt],
   templateUrl: './map-panel.html',
   styleUrl: './map-panel.scss',
 })
@@ -99,6 +102,8 @@ export class MapPanel {
         next: !E.zoneUnlocked(s, def.id) && S.nextChartZone(s)?.id === def.id,
         comet: E.zoneBoost(s, def.id) > 1,
         site: def.site ? siteDef(def.site) : null,
+        /** Sector improvements standing in this zone (their bonuses cover the whole sector). */
+        improvements: IR.builtHere(s).filter((id) => IR.improvementZone(s, id) === def.id).map((id) => improvementDef(id)),
         specialOdds: (E.specialChance(s, def) * 100).toFixed(1),
         anomalies: anomalies.map((a, k) => ({
           a,

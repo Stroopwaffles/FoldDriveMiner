@@ -172,6 +172,15 @@
                 @if (z.site; as site) {
                   <div class="site" [title]="site.desc">⌖ {{ site.name }} — {{ site.desc }}</div>
                 }
+                @for (imp of z.improvements; track imp.id) {
+                  <div class="zone-imp">
+                    <fdm-improvement-art [id]="imp.id" [size]="30" />
+                    <div>
+                      <span class="imp-name">{{ imp.name }}</span>
+                      <div class="small ok">{{ imp.effect }}</div>
+                    </div>
+                  </div>
+                }
                 @for (m of z.anomalies; track m.a.id) {
                   <button type="button" class="signal-link" [style.color]="m.color" (click)="setTab('signals')">◈ {{ m.label }}</button>
                 }
