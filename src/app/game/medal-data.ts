@@ -77,7 +77,7 @@ export const MEDALS: readonly MedalDef[] = [
     [10, 100, 1000, 10000], (s) => s.stats.asteroidsCracked, (n) => `Crack ${n} asteroids.`, D(0.02)),
   ...tiers('overdrive', 'mining', ['Cool Head', 'Steady Rhythm', 'Ice in the Veins'],
     [100, 1000, 10000], (s) => s.stats.overdriveClicks, (n) => `Drill ${n} times in Overdrive.`, D(0.02)),
-  ...tiers('click', 'mining', ['Trigger Finger', 'Iron Wrist', 'Ten Thousand Taps'],
+  ...tiers('click', 'mining', ['Trigger Finger', 'Iron Wrist', 'Hundred Thousand Taps'],
     [1000, 10000, 100000], (s) => s.stats.clicks, (n) => `Drill ${n} times by hand.`, D(0.02)),
   ...tiers('ingot', 'mining', ['Smelter', 'Foundry Hand', 'Forge Master'],
     [100, 1e4, 1e6], (s) => s.stats.ingotsRefined, (n) => `Refine ${n} ingots.`, S(0.01)),
