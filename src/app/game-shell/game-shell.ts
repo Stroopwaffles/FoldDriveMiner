@@ -273,7 +273,8 @@ export class GameShell {
   }
 
   protected speakerName(m: CommMessage): string {
-    if (m.from === 'JACKAL') return '??? — UNKNOWN FRAME';
+    if (m.from === 'JACKAL') return m.name ?? '??? — UNKNOWN FRAME';
+    if (m.from === 'PIRATE') return m.name ?? 'PIRATE CAPTAIN';
     if (m.from === 'TRADER') return m.name ?? 'TRADER';
     if (m.from === 'PILOT') return m.name ?? 'PILOT';
     return SPEAKER_NAMES[m.from] ?? m.from;

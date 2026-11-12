@@ -11,11 +11,15 @@ import { DRONE_IDS, DroneType, MECH, PARTS } from './fleet-data';
 import { droneCostOf, droneMultiplier, firmwareBonus, mechCondition, mechOperable, mechPilot, mechStats, techniqueName } from './fleet-rules';
 import { Rng } from './rng';
 import {
+  CAPTAINS,
+  CaptainId,
   DEFAULT_ORDERS,
   ENEMY_UNITS,
   EventKind,
   JACKAL,
+  JackalMood,
   StandingOrders,
+  captainDef,
   THREAT,
   eventDef,
   EVENTS,
@@ -52,6 +56,9 @@ export function emptyThreats(): ThreatState {
     jackalEncounters: 0,
     jackalDefeats: 0,
     raidsSinceJackal: 0,
+    captainRaids: 0,
+    raidsSinceCaptain: 0,
+    captains: {},
     lastSortie: null,
     salvageAcc: 0,
     nextEventId: 1,
@@ -117,6 +124,42 @@ export function raidStrength(state: GameState): number {
 export function jackalStrengthMult(state: GameState): number {
   const base = THREAT.jackal.strengthMult + THREAT.jackal.perEncounter * state.threats.jackalEncounters;
   return base * (choice(state) === 'master' ? 1.5 : 1);
+}
+
+// ---------------------------------------------------------------- pirate captains
+
+/** Who leads the next raid: the Jackal, a rival captain, or nobody (plain raiders). */
+export function nextCaptain(state: GameState, rng: Rng): 'jackal' | CaptainId | null {
+  const t = state.threats;
+  const c = THREAT.captain;
+  const jackalOut = choice(state) !== 'break' && state.fold.jumps >= 1;
+  // Her entrance: the first raid after the first Fold Jump, no matter what.
+  if (jackalOut && t.jackalEncounters === 0) return 'jackal';
+  const due =
+    t.raids + 1 === c.firstRaid ||
+    (t.raids >= c.firstRaid && t.heat >= c.minHeat && (t.raidsSinceCaptain ?? 0) >= c.everyRaids && rng.next() < c.chance);
+  if (!due) return null;
+  if (jackalOut && (t.captainRaids ?? 0) % c.lieutenantEvery !== c.lieutenantEvery - 1) return 'jackal';
+  // Rivals take turns, least-met first.
+  const met = (id: CaptainId) => t.captains?.[id] ?? 0;
+  return [...CAPTAINS].sort((a, b) => met(a.id) - met(b.id))[0].id;
+}
+
+/** Display name of whoever leads a raid or sortie. */
+export function enemyName(opts: { jackal?: boolean; captain?: CaptainId; strike?: boolean; corporate?: boolean }): string {
+  if (opts.jackal) return `${JACKAL.name} and raiders`;
+  if (opts.captain) return `${captainDef(opts.captain).name} and raiders`;
+  if (opts.corporate) return 'Meridian Security';
+  return opts.strike ? 'Pirate base' : 'Pirate raiders';
+}
+
+/** Where the Jackal is in the story, which sets what she says. */
+export function jackalMood(state: GameState): JackalMood {
+  if (choice(state) === 'master') return 'bitter';
+  const watched = state.story?.watched ?? 0;
+  if (watched >= JACKAL.offerEpisode) return 'offer';
+  if (watched >= JACKAL.revealEpisode) return 'revealed';
+  return 'pirate';
 }
 
 // ---------------------------------------------------------------- combat power
@@ -207,12 +250,16 @@ interface SimResult {
   lucky: boolean;
 }
 
-function unitsFor(strength: number, jackal: boolean): { name: string; count: number }[] {
+function unitsFor(strength: number, jackal: boolean, captain?: CaptainId): { name: string; count: number }[] {
   let left = strength;
   const out: { name: string; count: number }[] = [];
   if (jackal) {
     out.push({ name: ENEMY_UNITS.jackal.name, count: 1 });
     left -= strength * 0.4;
+  }
+  if (captain) {
+    out.push({ name: captainDef(captain).ship, count: 1 });
+    left -= strength * 0.3;
   }
   const frames = Math.floor(left / 40);
   if (frames) out.push({ name: ENEMY_UNITS.rogue_frame.name, count: frames });
@@ -432,7 +479,7 @@ function log(state: GameState, kind: EventKind | 'strike', text: string, good: b
 
 function runSortie(
   state: GameState,
-  opts: { mechs: MechState[]; guardians: number; strength: number; jackal: boolean; strike: boolean; title: string },
+  opts: { mechs: MechState[]; guardians: number; strength: number; jackal: boolean; captain?: CaptainId; strike: boolean; title: string },
   events: TickEvents,
   ctx: LossContext,
 ): SortieReport {
@@ -477,6 +524,7 @@ function runSortie(
     const r = THREAT.raid;
     let bounty = opts.strength * r.bountyPerStrength * (1 + Math.log10(1 + state.stats.creditsEarned / 1e4));
     if (opts.jackal) bounty *= THREAT.jackal.bountyMult;
+    if (opts.captain) bounty *= captainDef(opts.captain).bountyMult;
     if (opts.strike) bounty *= THREAT.strike.bountyMult;
     if (reckless) bounty *= 1.3;
     state.credits += bounty;
@@ -508,9 +556,10 @@ function runSortie(
   const report: SortieReport = {
     id: t.nextEventId++,
     title: opts.title,
-    enemy: opts.jackal ? `${JACKAL.name} and raiders` : opts.strike ? 'Pirate base' : 'Pirate raiders',
-    units: unitsFor(opts.strength, opts.jackal),
+    enemy: enemyName(opts),
+    units: unitsFor(opts.strength, opts.jackal, opts.captain),
     jackal: opts.jackal,
+    ...(opts.captain ? { captain: opts.captain } : {}),
     strike: opts.strike,
     mechIds: opts.mechs.map((m) => m.id),
     guardians: opts.guardians,
@@ -533,6 +582,7 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
   const t = state.threats;
   t.raids++;
   t.raidsSinceJackal++;
+  t.raidsSinceCaptain = (t.raidsSinceCaptain ?? 0) + 1;
   const order = t.orders.raid;
   const mechs = manualMechs ?? (order === 'surrender' ? [] : defenders(state, order === 'defend_all'));
   const guardians = order === 'surrender' && !manualMechs ? 0 : useGuardians ? state.drones.guardian : 0;
@@ -542,6 +592,14 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
     t.jackalEncounters++;
     t.raidsSinceJackal = 0;
   }
+  if (ev.jackal || ev.captain) {
+    t.captainRaids = (t.captainRaids ?? 0) + 1;
+    t.raidsSinceCaptain = 0;
+  }
+  if (ev.captain) {
+    t.captains ??= {};
+    t.captains[ev.captain] = (t.captains[ev.captain] ?? 0) + 1;
+  }
 
   if (mechs.length === 0 && guardians === 0) {
     const lost = removeCargo(state, THREAT.raid.surrenderCargo, ctx);
@@ -550,9 +608,10 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
     const report: SortieReport = {
       id: t.nextEventId++,
       title: 'Pirate Raid',
-      enemy: ev.jackal ? `${JACKAL.name} and raiders` : ev.corporate ? 'Meridian Security' : 'Pirate raiders',
-      units: unitsFor(strength, !!ev.jackal),
+      enemy: enemyName(ev),
+      units: unitsFor(strength, !!ev.jackal, ev.captain),
       jackal: !!ev.jackal,
+      ...(ev.captain ? { captain: ev.captain } : {}),
       strike: false,
       mechIds: [],
       guardians: 0,
@@ -566,7 +625,7 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
     return report;
   }
 
-  const report = runSortie(state, { mechs, guardians, strength, jackal: !!ev.jackal, strike: false, title: 'Raid Defense' }, events, ctx);
+  const report = runSortie(state, { mechs, guardians, strength, jackal: !!ev.jackal, captain: ev.captain, strike: false, title: 'Raid Defense' }, events, ctx);
   if (report.outcome === 'defeat') {
     t.raidsLost++;
     log(state, 'raid', `Raid: defense failed. ${report.losses.join('; ')}.`, false, events, report);
@@ -766,15 +825,13 @@ export function startEvent(state: GameState, kind: EventKind, events: TickEvents
   const def = eventDef(kind);
   const ev: ActiveEvent = { id: t.nextEventId++, kind, phase: def.warning > 0 ? 'warning' : 'active', remaining: def.warning || def.duration };
   if (kind === 'raid') {
-    const j = THREAT.jackal;
-    const jackal =
-      choice(state) !== 'break' &&
-      (t.raids + 1 === j.firstRaid ||
-      (t.jackalEncounters > 0 && t.heat >= j.minHeat && t.raidsSinceJackal >= j.everyRaids && rng.next() < j.chance));
+    const lead = nextCaptain(state, rng);
+    const jackal = lead === 'jackal';
     ev.jackal = jackal;
-    ev.strength = raidStrength(state) * (jackal ? jackalStrengthMult(state) : 1);
+    if (lead && lead !== 'jackal') ev.captain = lead;
+    ev.strength = raidStrength(state) * (jackal ? jackalStrengthMult(state) : ev.captain ? captainDef(ev.captain).strengthMult : 1);
     // Break the Cycle: Meridian sends its own security wings.
-    if (!jackal && choice(state) === 'break' && rng.next() < THREAT.corporateChance) {
+    if (!lead && choice(state) === 'break' && rng.next() < THREAT.corporateChance) {
       ev.corporate = true;
       ev.strength *= THREAT.corporateStrength;
     }

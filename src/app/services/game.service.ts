@@ -19,7 +19,7 @@ import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
 import { clanDef } from '../game/trade-data';
 import { Approach } from '../game/anomaly-data';
-import { JACKAL, StandingOrders, eventDef } from '../game/threat-data';
+import { CaptainId, JACKAL, StandingOrders, captainDef, eventDef } from '../game/threat-data';
 import { DroneType as DT } from '../game/fleet-data';
 import { PostId, postDef } from '../game/crew-data';
 import { DroneType, FrameId, SlotId, frameDef } from '../game/fleet-data';
@@ -29,7 +29,7 @@ import { SettingsService } from './settings.service';
 
 export type Tab = 'ops' | 'lab' | 'map' | 'hangar' | 'crew' | 'defense' | 'board' | 'fold' | 'archive' | 'inventory';
 
-export type Speaker = StoryVoice | 'PILOT' | 'TRADER' | 'CORP';
+export type Speaker = StoryVoice | 'PILOT' | 'TRADER' | 'CORP' | 'PIRATE';
 
 export const SPEAKER_NAMES: Partial<Record<Speaker, string>> = {
   JUNO: 'JUNO HART',
@@ -47,6 +47,8 @@ export interface CommMessage {
   name?: string;
   /** Portrait seed for generated pilots. */
   seed?: number;
+  /** Fixed portrait (a pirate captain). */
+  look?: string;
   text: string;
   at: number;
 }
@@ -122,6 +124,7 @@ const SPEAKER_PITCH: Record<Speaker, number> = {
   JACKAL: 330,
   TRADER: 500,
   CORP: 380,
+  PIRATE: 300,
 };
 
 /** Owns the live game state, the tick loop, saving and player actions. */
@@ -792,7 +795,7 @@ export class GameService {
 
   // ------------------------------------------------------------ threats
 
-  private announceThreat(e: { id: number; kind: string; jackal?: boolean; corporate?: boolean; ore?: OreId; phase: string }): void {
+  private announceThreat(e: { id: number; kind: string; jackal?: boolean; captain?: CaptainId; corporate?: boolean; ore?: OreId; phase: string }): void {
     const def = eventDef(e.kind as never);
     if (def.hostile) this.audio.klaxon();
     switch (e.kind) {
@@ -807,9 +810,22 @@ export class GameService {
         this.alert('Pirate raid incoming!');
         if (e.jackal) {
           const s = this._state()!;
-          const line = JACKAL.arrive[Math.min(s.threats.jackalEncounters, JACKAL.arrive.length - 1)];
-          this.say('JACKAL', line, 1200);
-          if (s.threats.jackalEncounters === 0) this.say('JUNO', 'That voice... who IS that? Commander, that frame is no ordinary pirate.', 4000);
+          if (s.threats.jackalEncounters === 0) {
+            // Her entrance: the first raid after the first Fold Jump.
+            JACKAL.intro.forEach(([who, line, delay], i) =>
+              this.say(who as Speaker, line, delay, undefined, who === 'JACKAL' ? (i === 0 ? '??? — UNKNOWN FRAME' : this.jackalName(s)) : undefined),
+            );
+          } else {
+            const lines = JACKAL.lines[T.jackalMood(s)].arrive;
+            this.say('JACKAL', lines[s.threats.jackalEncounters % lines.length], 1200, undefined, this.jackalName(s));
+          }
+        } else if (e.captain) {
+          const s = this._state()!;
+          const c = captainDef(e.captain);
+          const met = s.threats.captains?.[e.captain] ?? 0;
+          const underJackal = s.threats.jackalEncounters > 0 && s.fold.jumps >= 1;
+          this.sayPirate(e.captain, underJackal ? c.underJackal : c.arrive[met % c.arrive.length], 1200);
+          if (met === 0 && !underJackal) this.say('JUNO', `${c.name}? VESPER, pull everything we've got on that ship.`, 4200);
         }
         break;
       case 'flare':
@@ -842,9 +858,19 @@ export class GameService {
     const s = this._state()!;
     if (report.outcome === 'victory' || report.outcome === 'costly') this.audio.victory();
     else this.audio.defeat();
+    const pirateWon = report.outcome === 'defeat' || report.outcome === 'surrender';
     if (report.jackal) {
-      const lines = report.outcome === 'defeat' || report.outcome === 'surrender' ? JACKAL.win : JACKAL.lose;
-      this.say('JACKAL', lines[s.threats.jackalEncounters % lines.length], 1500);
+      if (s.threats.jackalEncounters === 1 && !report.strike) {
+        this.say('JACKAL', pirateWon ? JACKAL.introWin : JACKAL.introLose, 1500, undefined, this.jackalName(s));
+      } else {
+        const set = JACKAL.lines[T.jackalMood(s)];
+        const lines = pirateWon ? set.win : set.lose;
+        this.say('JACKAL', lines[s.threats.jackalEncounters % lines.length], 1500, undefined, this.jackalName(s));
+      }
+    } else if (report.captain) {
+      const c = captainDef(report.captain);
+      const lines = pirateWon ? c.win : c.lose;
+      this.sayPirate(report.captain, lines[(s.threats.captains?.[report.captain] ?? 0) % lines.length], 1500);
     }
     if (s.threats.baseFound && !s.flags['baseFound']) {
       s.flags['baseFound'] = true;
@@ -1367,11 +1393,21 @@ export class GameService {
 
   // ------------------------------------------------------------ comms
 
-  say(from: Speaker, text: string, delayMs = 0, pilot?: PilotState, name?: string): void {
+  /** What the comm log calls the Jackal: her title, and her name once her face is known. */
+  private jackalName(s: GameState): string {
+    return (s.story?.watched ?? 0) >= JACKAL.revealEpisode ? 'REI VASHTI — THE JACKAL' : JACKAL.name.toUpperCase();
+  }
+
+  private sayPirate(id: CaptainId, text: string, delayMs = 0): void {
+    this.say('PIRATE', text, delayMs, undefined, captainDef(id).name.toUpperCase(), id);
+  }
+
+  say(from: Speaker, text: string, delayMs = 0, pilot?: PilotState, name?: string, look?: string): void {
     const push = () => {
       if (this.settings.settings().commBleeps) this.audio.comm(SPEAKER_PITCH[from]);
       const msg: CommMessage = { id: ++this.commId, from, text, at: Date.now() };
       if (name) msg.name = name;
+      if (look) msg.look = look;
       if (from === 'PILOT' && pilot) {
         msg.name = `${pilot.name} "${pilot.callsign}"`;
         msg.seed = pilot.portraitSeed;

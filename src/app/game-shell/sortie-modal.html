@@ -14,9 +14,11 @@
             <div class="enemy">
               @if (event()?.jackal) {
                 <fdm-pilot-portrait story="jackal" [size]="48" />
+              } @else if (event()?.captain; as cap) {
+                <fdm-pilot-portrait [story]="cap" [size]="48" />
               }
               <div>
-                <div class="enemy-name">{{ event()?.jackal ? 'The Vermilion Jackal + raiders' : v.strike ? 'Fortified pirate base' : v.escort ? 'Raiders shadowing the convoy' : 'Pirate raiders' }}</div>
+                <div class="enemy-name">{{ event()?.jackal ? 'The Vermilion Jackal + raiders' : event()?.captain ? captainName(event()!.captain!) + ' + raiders' : v.strike ? 'Fortified pirate base' : v.escort ? 'Raiders shadowing the convoy' : 'Pirate raiders' }}</div>
                 <div class="strength">HITS {{ game.fmt(strength()) }} / round · HULL {{ game.fmt(strength() * 6) }} HP</div>
               </div>
             </div>

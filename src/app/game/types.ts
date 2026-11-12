@@ -5,7 +5,7 @@ import type { DerelictClass, SpecialKind } from './special-data';
 import { OreId, ZoneId } from './config';
 import { BackgroundId, PostId, StatId } from './crew-data';
 import { DroneType, FrameId, SlotId } from './fleet-data';
-import { EventKind, StandingOrders } from './threat-data';
+import { CaptainId, EventKind, StandingOrders } from './threat-data';
 import { AnomalyKind, Approach } from './anomaly-data';
 import { BondType, ClanId, ContractType, CorpId, ItemKind, OutfitArchetype } from './trade-data';
 
@@ -205,6 +205,8 @@ export interface ActiveEvent {
   /** Raids: enemy strength and whether the Jackal leads them. */
   strength?: number;
   jackal?: boolean;
+  /** Raids: a rival pirate captain leading it (or flying as the Jackal's lieutenant). */
+  captain?: CaptainId;
   /** A Meridian Security raid (after Break the Cycle). */
   corporate?: boolean;
   /** Rogue asteroids: HP left and total. */
@@ -231,6 +233,8 @@ export interface SortieReport {
   enemy: string;
   units: { name: string; count: number }[];
   jackal: boolean;
+  /** A rival captain leading the enemy. */
+  captain?: CaptainId;
   strike: boolean;
   mechIds: number[];
   guardians: number;
@@ -265,6 +269,11 @@ export interface ThreatState {
   jackalEncounters: number;
   jackalDefeats: number;
   raidsSinceJackal: number;
+  /** Raids led by a named captain (the Jackal or a rival), and raids since the last one. */
+  captainRaids: number;
+  raidsSinceCaptain: number;
+  /** Encounters with each rival captain. */
+  captains: Partial<Record<CaptainId, number>>;
   lastSortie: SortieReport | null;
   /** Fractional wreck recovery by Salvagers carried between ticks. */
   salvageAcc: number;

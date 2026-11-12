@@ -1,3 +1,4 @@
+import { CaptainId, captainDef } from '../game/threat-data';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { frameDef } from '../game/fleet-data';
 import * as E from '../game/engine';
@@ -19,6 +20,7 @@ import { PilotPortrait } from '../ui/pilot-portrait';
   styleUrl: './sortie-modal.scss',
 })
 export class SortieModal {
+  protected readonly captainName = (id: CaptainId) => captainDef(id).name;
   protected readonly game = inject(GameService);
   private readonly audio = inject(AudioService);
   protected readonly view = this.game.sortie;

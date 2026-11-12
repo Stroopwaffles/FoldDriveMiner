@@ -185,6 +185,13 @@
   background: rgba(255, 59, 59, 0.05);
 }
 
+.wanted.rival {
+  margin-top: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px dashed var(--amber);
+  background: rgba(255, 210, 63, 0.04);
+}
+
 .wanted-title {
   font-family: var(--font-logo);
   color: var(--danger);

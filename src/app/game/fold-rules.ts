@@ -296,6 +296,8 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.threats.orders = { ...old.threats.orders };
   s.threats.jackalEncounters = old.threats.jackalEncounters;
   s.threats.jackalDefeats = old.threats.jackalDefeats;
+  s.threats.captainRaids = old.threats.captainRaids ?? 0;
+  s.threats.captains = { ...(old.threats.captains ?? {}) };
   s.threats.raids = old.threats.raids;
   s.threats.raidsWon = old.threats.raidsWon;
   s.threats.raidsLost = old.threats.raidsLost;

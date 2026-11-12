@@ -191,7 +191,8 @@ describe('milestone 7: the finale branches', () => {
     expect(F.resonanceGain(s)).toBe(Math.floor(base * 0.75));
     expect(T.heatPerSec(s)).toBeCloseTo(heat / 2, 9);
     expect(F.archiveSlots(s)).toBe(slots + 2);
-    s.threats.raids = 2; // the Jackal's first appearance would be the 3rd raid
+    s.threats.raids = 2; // a captain raid would be the 3rd raid
+    s.fold.jumps = 1; // and after a jump the Jackal would lead it
     const ev = T.startEvent(s, 'raid', E.emptyEvents());
     expect(ev.jackal).toBe(false);
     s.drones.prospector = 200;

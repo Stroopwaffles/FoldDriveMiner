@@ -2,7 +2,7 @@ import { Component, computed, inject, untracked } from '@angular/core';
 import * as E from '../game/engine';
 import { DRONES, droneDef } from '../game/fleet-data';
 import { formatDuration } from '../game/format';
-import { JACKAL, RaidOrder, FlareOrder, RogueOrder, THREAT } from '../game/threat-data';
+import { CAPTAINS, JACKAL, RaidOrder, FlareOrder, RogueOrder, THREAT } from '../game/threat-data';
 import * as T from '../game/threat-rules';
 import { GameService } from '../services/game.service';
 import { DroneSprite } from '../ui/drone-sprite';
@@ -21,6 +21,12 @@ export class DefensePanel {
   protected readonly s = computed(() => this.game.state()!);
   protected readonly t = computed(() => this.s().threats);
   protected readonly jackalName = JACKAL.name;
+  /** Rival captains met so far, for the wanted board. */
+  protected readonly rivals = computed(() =>
+    CAPTAINS.map((c) => ({ c, met: this.t().captains?.[c.id] ?? 0 })).filter((r) => r.met > 0),
+  );
+  /** Once the Jackal is out, the rivals fly for her. */
+  protected readonly jackalRules = computed(() => this.t().jackalEncounters > 0 && this.s().fold.jumps >= 1);
 
   protected readonly raidOrders: { id: RaidOrder; label: string; hint: string }[] = [
     { id: 'defend', label: 'Defend', hint: 'Mechs on DEFENSE standby + Guardians fight' },

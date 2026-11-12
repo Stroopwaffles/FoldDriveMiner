@@ -1,3 +1,4 @@
+import { CaptainId, captainDef } from '../game/threat-data';
 import { Component, computed, inject } from '@angular/core';
 import { THREAT, eventDef } from '../game/threat-data';
 import * as T from '../game/threat-rules';
@@ -16,7 +17,7 @@ import { GameService } from '../services/game.service';
         <div class="body">
           <div class="title">
             <span class="w">WARNING</span>
-            <span class="name">{{ w.def.name }}{{ w.ev.jackal ? ' — THE VERMILION JACKAL' : '' }}</span>
+            <span class="name">{{ w.def.name }}{{ w.ev.jackal ? ' — THE VERMILION JACKAL' : w.ev.captain ? ' — ' + captainName(w.ev.captain).toUpperCase() : '' }}</span>
             <span class="kana">{{ w.def.kana }}</span>
             <span class="count">{{ w.ev.remaining.toFixed(0) }}s</span>
           </div>
@@ -172,6 +173,7 @@ import { GameService } from '../services/game.service';
   `,
 })
 export class ThreatBanner {
+  protected readonly captainName = (id: CaptainId) => captainDef(id).name;
   protected readonly game = inject(GameService);
   private readonly s = computed(() => this.game.state()!);
 

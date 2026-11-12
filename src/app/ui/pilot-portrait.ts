@@ -23,6 +23,10 @@ const STORY_LOOKS: Record<string, Look> = {
   saffi: { skin: '#f2c29b', hair: '#1a1a2e', eyes: '#2a2a2a', suit: '#e8ecff', style: 1, accessory: 1 },
   ansel: { skin: '#8a5a3c', hair: '#c0c8d8', eyes: '#00a5b8', suit: '#9aa3c7', style: 2, accessory: 3 },
   hale: { skin: '#ffd8b8', hair: '#5a3420', eyes: '#1a3a8f', suit: '#ffb547', style: 3, accessory: 0 },
+  // Rival pirate captains.
+  corrigan: { skin: '#b97a55', hair: '#ff5a2b', eyes: '#7a3b12', suit: '#8a6a3a', style: 3, accessory: 2 },
+  ombra: { skin: '#f2c29b', hair: '#1a1a2e', eyes: '#00a5b8', suit: '#2a2f55', style: 1, accessory: 4 },
+  tollan: { skin: '#8a5a3c', hair: '#c0c8d8', eyes: '#2e7d4f', suit: '#6b5a2e', style: 2, accessory: 3 },
 };
 
 /** Cel-shaded 80s anime-style head-and-shoulders, generated from a seed. */

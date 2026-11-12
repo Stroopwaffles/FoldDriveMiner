@@ -172,6 +172,9 @@
               @case ('JACKAL') {
                 <fdm-pilot-portrait story="jackal" [size]="40" />
               }
+              @case ('PIRATE') {
+                <fdm-pilot-portrait [story]="m.look ?? 'corrigan'" [size]="40" />
+              }
               @case ('VESPER') {
                 <svg viewBox="0 0 40 40">
                   <rect width="40" height="40" fill="#061522" />

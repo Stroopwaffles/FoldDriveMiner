@@ -135,11 +135,21 @@ export const THREAT = {
   offlineDroneLossCap: 0.1,
   offlineCargoLossCap: 0.25,
 
-  jackal: {
+  /**
+   * Captain raids: a named pirate leads the attack. The first comes on the 3rd raid, then one can
+   * come every few raids while Heat is up. Before the first Fold Jump a rival captain leads them;
+   * from then on it's the Jackal (her entrance is the first raid after that jump), with a rival
+   * flying as her lieutenant every third captain raid.
+   */
+  captain: {
     firstRaid: 3,
     minHeat: 30,
     everyRaids: 4,
     chance: 0.5,
+    lieutenantEvery: 3,
+  },
+
+  jackal: {
     strengthMult: 1.6,
     perEncounter: 0.2,
     bountyMult: 2,
@@ -159,7 +169,7 @@ export const THREAT = {
 };
 
 export interface EnemyUnit {
-  id: 'skiff' | 'gunboat' | 'rogue_frame' | 'jackal';
+  id: 'skiff' | 'gunboat' | 'rogue_frame' | 'jackal' | 'captain';
   name: string;
   /** Share of total strength one unit represents. */
   weight: number;
@@ -170,21 +180,143 @@ export const ENEMY_UNITS: Record<EnemyUnit['id'], EnemyUnit> = {
   gunboat: { id: 'gunboat', name: 'Gunboat', weight: 4 },
   rogue_frame: { id: 'rogue_frame', name: 'Rogue Frame', weight: 10 },
   jackal: { id: 'jackal', name: '"Crimson Fang" — the Jackal\'s frame', weight: 25 },
+  captain: { id: 'captain', name: 'Captain\'s flagship', weight: 18 },
 };
+
+/** A pirate captain who leads raids before the Jackal takes over the lanes. */
+export interface CaptainDef {
+  id: 'corrigan' | 'ombra' | 'tollan';
+  name: string;
+  /** Their flagship, shown in the enemy roster. */
+  ship: string;
+  /** Raid strength multiplier. */
+  strengthMult: number;
+  bountyMult: number;
+  arrive: string[];
+  /** Said when the pirates win, and when they're driven off. */
+  win: string[];
+  lose: string[];
+  /** Said on raids they fly as the Jackal's lieutenant. */
+  underJackal: string;
+}
+export type CaptainId = CaptainDef['id'];
+
+export const CAPTAINS: readonly CaptainDef[] = [
+  {
+    id: 'corrigan',
+    name: 'Mag Corrigan',
+    ship: '"Junkjaw", Corrigan\'s salvage hauler',
+    strengthMult: 1.3,
+    bountyMult: 1.5,
+    arrive: [
+      'Mag Corrigan of the Rustbelt Reavers. Everything out here is salvage, Commander. Including you.',
+      'You again? Good. Your hull plating fetched a fine price last time.',
+      'I can smell a full cargo hold from three sectors away.',
+    ],
+    win: ['Pleasure doing business. Your scrap, my profit.', 'Hah! The Reavers eat well tonight.'],
+    lose: ['Fine. FINE. Junkjaw needed a new hull anyway.', "You'll keep. Everything keeps, out here."],
+    underJackal: 'The Jackal pays better than Meridian ever did. Nothing personal, Commander.',
+  },
+  {
+    id: 'ombra',
+    name: 'Dace Ombra',
+    ship: '"Quiet Knife", Ombra\'s stealth cutter',
+    strengthMult: 1.35,
+    bountyMult: 1.5,
+    arrive: [
+      "Dace Ombra. You won't remember the name. People rarely live long enough to.",
+      "Smile, Commander. You're on my scope.",
+      'Quiet Knife is already inside your perimeter. Just thought you should know.',
+    ],
+    win: ['Clean work. I do love clean work.', 'Thank you for your cooperation.'],
+    lose: ["Cut deeper than I expected. I'll remember that.", 'A retreat is just a long knife, Commander.'],
+    underJackal: "She says to go easy on you. I don't take orders well.",
+  },
+  {
+    id: 'tollan',
+    name: 'Old Tollan',
+    ship: '"Turnstile", Tollan\'s toll barge',
+    strengthMult: 1.25,
+    bountyMult: 1.6,
+    arrive: [
+      'This lane has a toll, youngster. Old Tollan collects it. Has for forty years.',
+      "Toll's gone up. Inflation. You understand.",
+      'Pay the toll, or pay the toll with interest. Your choice.',
+    ],
+    win: ['Toll paid in full. Safe travels!', 'Pleasure, as always. See you next lap.'],
+    lose: ["Ach. Waived, this once. Don't tell anyone.", "Forty years and nobody's run my toll like that."],
+    underJackal: 'The Jackal owns the lanes now. I just collect for her.',
+  },
+];
+
+export function captainDef(id: CaptainId): CaptainDef {
+  return CAPTAINS.find((c) => c.id === id)!;
+}
+
+/**
+ * The Jackal's mood follows the story: a showboating pirate at first, cryptic once her face is
+ * known (Episode 13), pleading once she's made her offer (Episode 22), bitter if you chose to
+ * master the cycle.
+ */
+export type JackalMood = 'pirate' | 'revealed' | 'offer' | 'bitter';
 
 export const JACKAL = {
   name: 'The Vermilion Jackal',
   callsign: 'Jackal',
-  /** Comm lines by situation. */
-  arrive: [
-    'Well, well. A Meridian prospector, all alone out here. Your cargo looks heavy, Commander — let me lighten it.',
-    'Miss me? I followed your fold wake. You leave such a pretty trail.',
-    'Again, Commander? You really should learn to share.',
-  ],
-  win: ['Ha! Thanks for the donation. Same time next week?', 'Too slow. Tell Meridian the Jackal sends regards.'],
-  lose: [
-    'Tch — not bad. This isn\'t over. I\'ll be waiting on the far side of your next fold.',
-    'You got lucky. Next time I bring the whole pack.',
-    'Run along, little prospector. You don\'t even know what that drive of yours really does.',
-  ],
+  /** Episodes that move her to the next mood. */
+  revealEpisode: 13,
+  offerEpisode: 22,
+  /** Her entrance, the first raid after your first Fold Jump: [speaker, line, delay ms]. */
+  intro: [
+    ['JACKAL', "So you're the new one. Fold-class, fresh paint, first jump still ringing in your hull.", 1200],
+    ['JACKAL', "I'm the Vermilion Jackal. Everything past the field edge pays toll to me now, little bird.", 4200],
+    ['JUNO', "That's no pirate scrap-frame. Commander, that's a Meridian chassis!", 7200],
+    ['VESPER', 'Her transponder is scrubbed. But her fold wake... matches our own drive signature.', 10200],
+    ['JACKAL', 'Of course it does. Ask your ship what it remembers. Then come and take it from me.', 13200],
+  ] as [string, string, number][],
+  /** Her parting words after the entrance raid. */
+  introWin: "First jump's the hardest. You'll get used to losing things.",
+  introLose: 'Ha! Good. You fly like someone I used to know. See you on the far side of the next fold.',
+  lines: {
+    pirate: {
+      arrive: [
+        'Miss me? I followed your fold wake. You leave such a pretty trail.',
+        'Again, Commander? You really should learn to share.',
+        'Your cargo looks heavy, little bird. Let me lighten it.',
+      ],
+      win: ['Ha! Thanks for the donation. Same time next week?', 'Too slow. Tell Meridian the Jackal sends regards.'],
+      lose: [
+        "Tch. Not bad. This isn't over.",
+        'You got lucky. Next time I bring the whole pack.',
+        "Run along, little prospector. You don't even know what that drive of yours really does.",
+      ],
+    },
+    revealed: {
+      arrive: [
+        "Hull eight. You're further along than I was at this point.",
+        "I'm not here for your cargo. I'm here to see if you've noticed yet.",
+        'Count the seconds on your next jump, little bird. Then come find me.',
+      ],
+      win: ["I've lost this fight a hundred times. Winning it feels worse.", 'Take it as a lesson. I took mine harder.'],
+      lose: ['Good. You have to be strong enough to break it.', 'Every time you beat me, I learn the shape of your next loop.'],
+    },
+    offer: {
+      arrive: [
+        "I won't ask twice. I'll ask every loop. Break the drive with me.",
+        'Is Saffi still flying with you? Keep her close. She sees the edges.',
+        'Hale is counting your jumps, Commander. So am I. For different reasons.',
+      ],
+      win: ["Don't make me keep doing this.", 'One way, Commander. No more loop. Think about it.'],
+      lose: ["You're ready. You were always ready.", 'Still fighting me. Still the wrong enemy.'],
+    },
+    bitter: {
+      arrive: [
+        "You chose the harvest. Then I'm the weed it can't kill.",
+        'Another loop, another hull eight. Was it worth it?',
+        'Hale must be so proud of you.',
+      ],
+      win: ['Every loop you get richer. Every loop I get angrier.', "Keep your profits. I'll keep coming."],
+      lose: ['See you next loop. And the one after that.', "You can't harvest me, Commander."],
+    },
+  } satisfies Record<JackalMood, { arrive: string[]; win: string[]; lose: string[] }>,
 };

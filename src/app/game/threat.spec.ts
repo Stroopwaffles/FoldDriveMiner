@@ -1,6 +1,6 @@
 import * as E from './engine';
 import { CURRENT_VERSION, migrate } from './save';
-import { THREAT } from './threat-data';
+import { CaptainId, JACKAL, THREAT, captainDef } from './threat-data';
 import * as T from './threat-rules';
 import { GameState, TickEvents } from './types';
 
@@ -189,13 +189,78 @@ describe('milestone 4: raids and sorties', () => {
     expect(s.drones.guardian + Math.round(s.wrecks.guardian)).toBe(20);
   });
 
-  it('the Jackal shows up on the third raid and is stronger', () => {
+  it('before the first jump, a rival captain leads the third raid', () => {
     const s = rich();
-    s.threats.raids = THREAT.jackal.firstRaid - 1;
+    s.fold.jumps = 0;
+    s.threats.raids = THREAT.captain.firstRaid - 1;
+    const plain = T.raidStrength(s);
+    const raid = T.startEvent(s, 'raid', ev());
+    expect(raid.jackal).toBe(false);
+    expect(raid.captain).toBeTruthy();
+    expect(raid.strength).toBeCloseTo(plain * captainDef(raid.captain!).strengthMult, 6);
+    T.advanceThreats(s, 46, ev());
+    expect(s.threats.captains[raid.captain!]).toBe(1);
+    expect(s.threats.captainRaids).toBe(1);
+    expect(s.threats.raidsSinceCaptain).toBe(0);
+  });
+
+  it('rival captains take turns', () => {
+    const s = rich();
+    s.fold.jumps = 0;
+    s.threats.raids = 10;
+    s.threats.heat = 100;
+    const seen = new Set<string>();
+    for (let i = 0; i < 3; i++) {
+      s.threats.raidsSinceCaptain = 99;
+      const lead = T.nextCaptain(s, { next: () => 0 } as never);
+      expect(lead).not.toBe('jackal');
+      seen.add(lead!);
+      s.threats.captains[lead as CaptainId] = (s.threats.captains[lead as CaptainId] ?? 0) + 1;
+    }
+    expect(seen.size).toBe(3);
+  });
+
+  it('the Jackal makes her entrance on the first raid after the first jump, and is stronger', () => {
+    const s = rich();
+    s.fold.jumps = 1;
+    s.threats.raids = 12;
+    s.threats.heat = 0;
+    s.threats.raidsSinceCaptain = 0;
     const plain = T.raidStrength(s);
     const raid = T.startEvent(s, 'raid', ev());
     expect(raid.jackal).toBe(true);
+    expect(raid.captain).toBeUndefined();
     expect(raid.strength).toBeCloseTo(plain * THREAT.jackal.strengthMult, 6);
+  });
+
+  it('after the jump the Jackal leads captain raids, with a rival lieutenant every third', () => {
+    const s = rich();
+    s.fold.jumps = 1;
+    s.threats.raids = 20;
+    s.threats.heat = 100;
+    s.threats.jackalEncounters = 1;
+    s.threats.raidsSinceCaptain = 99;
+    const always = { next: () => 0 } as never;
+    s.threats.captainRaids = 3;
+    expect(T.nextCaptain(s, always)).toBe('jackal');
+    s.threats.captainRaids = 4;
+    expect(T.nextCaptain(s, always)).toBe('jackal');
+    s.threats.captainRaids = 5;
+    expect(T.nextCaptain(s, always)).not.toBe('jackal');
+    s.threats.raidsSinceCaptain = 0;
+    expect(T.nextCaptain(s, always)).toBeNull();
+  });
+
+  it("the Jackal's lines follow the story", () => {
+    const s = rich();
+    s.story.watched = 5;
+    expect(T.jackalMood(s)).toBe('pirate');
+    s.story.watched = JACKAL.revealEpisode;
+    expect(T.jackalMood(s)).toBe('revealed');
+    s.story.watched = JACKAL.offerEpisode;
+    expect(T.jackalMood(s)).toBe('offer');
+    s.story.choice = 'master';
+    expect(T.jackalMood(s)).toBe('bitter');
   });
 
   it('enough wins reveal the pirate base; a strike resets Heat and gives a unique part', () => {

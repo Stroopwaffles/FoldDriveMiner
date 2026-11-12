@@ -142,6 +142,15 @@
           </div>
         </div>
       }
+      @for (r of rivals(); track r.c.id) {
+        <div class="wanted rival">
+          <fdm-pilot-portrait [story]="r.c.id" [size]="40" />
+          <div>
+            <div class="wanted-name">{{ r.c.name }}</div>
+            <div class="dim small">{{ r.c.ship }} · met {{ r.met }}×{{ jackalRules() ? ' · now flies for the Jackal' : '' }}</div>
+          </div>
+        </div>
+      }
       @if (th.lastSortie; as ls) {
         <button type="button" class="btn small" (click)="game.sortie.set({ mode: 'play', report: ls })">Replay last sortie</button>
       }

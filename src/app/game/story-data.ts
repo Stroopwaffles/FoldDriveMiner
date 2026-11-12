@@ -171,7 +171,7 @@ export const EPISODES: readonly EpisodeDef[] = [
     ],
   },
   {
-    n: 13, act: 2, title: "The Jackal's Face", hint: 'Meet the Vermilion Jackal four times.', trigger: (s) => s.threats.jackalEncounters >= 4,
+    n: 13, act: 2, title: "The Jackal's Face", hint: 'Meet the Vermilion Jackal three times.', trigger: (s) => s.threats.jackalEncounters >= 3,
     lines: [
       ['JACKAL', "You're getting good, {ship}. Good enough to keep jumping. That's the problem."],
       ['JUNO', 'Who ARE you?'],
