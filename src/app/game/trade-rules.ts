@@ -12,14 +12,14 @@ import { CURIO, CURIOS, CurioDef } from './curio-data';
 import { CORES } from './core-data';
 import { makeRelic } from './core-rules';
 import { choice } from './story-rules';
-import { CONFIG, ORES, ORE_IDS, OreId, oreDef } from './config';
+import { CONFIG, ORES, ORE_IDS, OreId, ZoneId, oreDef, zoneDef } from './config';
 import { currentZone, hasResearch, oreReachable, researchLevel, zoneUnlocked } from './common';
 import { generatePilot, pilotById, rosterCap } from './crew-rules';
 import { DroneType, PARTS, partDef, sectorPartId } from './fleet-data';
 import { droneCostOf, droneUnlocked, mechStats } from './fleet-rules';
 import { Rng } from './rng';
 import { SECTOR_NAMES } from './sector-data';
-import { sectorMods, sectorOf } from './sector-rules';
+import { sectorMods, sectorOf, sectorZones } from './sector-rules';
 import { startEvent } from './threat-rules';
 import {
   BOND_CHANCE,
@@ -673,6 +673,7 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
   let title = '';
   let deadline = rng.range(CONTRACT.deadlineMin, CONTRACT.deadlineMax);
   let materials: Contract['materials'];
+  let site: ZoneId | undefined;
   switch (type) {
     case 'delivery': {
       // Energy firms want the fuel ores; others want the best ore you can reach.
@@ -724,7 +725,10 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
       for (const [a, n] of Object.entries(materials.alloys)) value += n! * alloyPrice(state, a as AlloyId);
       reward = value * IMPROVEMENT.rewardMult;
       target = 1;
-      title = `Build a ${build!.name} in this sector`;
+      // The corporation picks a charted zone for it.
+      const zones = sectorZones(state).filter((z) => zoneUnlocked(state, z.id));
+      site = zones[Math.floor(rng.next() * zones.length)]?.id ?? state.zone;
+      title = `Build a ${build!.name} in ${zoneDef(site).name}`;
       deadline *= IMPROVEMENT.deadlineMult;
       break;
     }
@@ -743,7 +747,7 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
     reward: { credits: Math.max(CONTRACT.minReward, Math.round(reward * meridianBonus(state, issuer))), surveyData: sd, dataCores: rng.next() < 0.15 ? 1 : 0 },
     baseline: 0,
     held: 0,
-    ...(build ? { improvement: build.id, materials } : {}),
+    ...(build ? { improvement: build.id, materials, zone: site } : {}),
   };
 }
 

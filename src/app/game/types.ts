@@ -386,6 +386,8 @@ export interface Contract {
   /** Construction contracts: what to build, and the ingots/alloys it takes. */
   improvement?: ImprovementId;
   materials?: { ingots: Partial<Record<OreId, number>>; alloys: Partial<Record<AlloyId, number>> };
+  /** Construction contracts: the zone the corporation wants it built in. */
+  zone?: ZoneId;
 }
 
 export interface LocalOutfit {
@@ -556,7 +558,7 @@ export interface GameState {
   asteroid: AsteroidState;
   sector: SectorInfo;
   /** Sector improvements built in the current sector (key = sector seed:depth; reset by a jump). */
-  improvements?: { key: string; built: ImprovementId[] };
+  improvements?: { key: string; built: ImprovementId[]; zones?: Partial<Record<ImprovementId, ZoneId>> };
   /** Zone names this save has used, so none repeats until the whole pool has been used. */
   zoneNamesUsed?: string[];
   zone: ZoneId;

@@ -34,6 +34,29 @@
     </div>
   </div>
 
+  <!-- Merchant convoys holding station in the background, one cluster per convoy -->
+  @for (cv of convoys(); track cv.clan) {
+    <div class="convoy-cluster" [style.--cc]="cv.color" [style.left.%]="cv.x" [style.top.%]="cv.y" [title]="cv.name" aria-hidden="true">
+      @for (sh of convoyShips; track $index) {
+        <svg class="trader" viewBox="0 0 60 24" [style.left.px]="sh.dx" [style.top.px]="sh.dy" [style.--s]="sh.s" [style.animation-delay.s]="sh.delay">
+          <polygon points="0,12 10,5 46,4 60,12 46,20 10,19" class="t-hull" />
+          <rect x="16" y="8" width="10" height="8" class="t-pod" />
+          <rect x="30" y="8" width="10" height="8" class="t-pod" />
+          <circle cx="2" cy="12" r="2.5" class="t-thrust" />
+        </svg>
+      }
+    </div>
+  }
+
+  <!-- Sector improvements standing in this zone -->
+  @if (structures().length) {
+    <div class="structures" aria-hidden="true">
+      @for (id of structures(); track id) {
+        <fdm-improvement-art [id]="id" [size]="structures().length > 4 ? 56 : 68" [still]="settings.reducedMotion()" />
+      }
+    </div>
+  }
+
   <!-- Orbiting drones (pinned down while pirates harass the fleet) -->
   <div class="orbit-center" [class.pinned]="harassed()" aria-hidden="true">
     @for (d of drones(); track $index) {

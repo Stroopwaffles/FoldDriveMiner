@@ -121,7 +121,10 @@
         </div>
         @if (v.build; as b) {
           <div class="build">
-            <div class="small">{{ b.def.effect }}</div>
+            <div class="build-head">
+              <fdm-improvement-art [id]="b.def.id" [size]="36" />
+              <div class="small">{{ b.def.effect }}<br /><span class="dim">Site: {{ b.zone }}</span></div>
+            </div>
             <div class="mats">
               @for (m of b.mats; track m.name) {
                 <span class="mat" [class.ok]="m.have >= m.need">{{ m.name }} {{ game.fmt(Math.min(m.have, m.need)) }}/{{ game.fmt(m.need) }}</span>
@@ -156,7 +159,10 @@
           <div class="c-kind">{{ v.kind }}</div>
           <div class="c-title">{{ v.c.title }}</div>
           @if (v.build; as b) {
-            <div class="small build-effect">{{ b.def.effect }}</div>
+            <div class="build-head">
+              <fdm-improvement-art [id]="b.def.id" [size]="36" />
+              <div class="small build-effect">{{ b.def.effect }}<br /><span class="dim">Site: {{ b.zone }}</span></div>
+            </div>
             <div class="mats">
               @for (m of b.mats; track m.name) {
                 <span class="mat" [class.ok]="m.have >= m.need">{{ m.name }} {{ game.fmt(m.need) }}</span>
@@ -176,11 +182,17 @@
   <!-- Sector improvements -->
   <div class="section">
     <div class="sub">SECTOR IMPROVEMENTS <span class="kana">せつび</span> <span class="dim small sector-note">{{ st.sector.code }} · lost when you Fold Jump</span></div>
-    @for (i of improvements(); track i.id) {
+    @for (i of improvements(); track i.def.id) {
       <div class="improvement">
-        <span class="imp-name">{{ i.name }}</span>
-        <span class="kana">{{ i.kana }}</span>
-        <span class="small ok">{{ i.effect }}</span>
+        <fdm-improvement-art [id]="i.def.id" [size]="40" />
+        <div>
+          <span class="imp-name">{{ i.def.name }}</span>
+          <span class="kana">{{ i.def.kana }}</span>
+          @if (i.zone) {
+            <span class="dim small"> · {{ i.zone }}</span>
+          }
+          <div class="small ok">{{ i.def.effect }}</div>
+        </div>
       </div>
     } @empty {
       <p class="dim small">Nothing built here yet. Corporations post construction contracts on the board: refine ingots, forge alloys and build their facilities for sector-wide bonuses.</p>

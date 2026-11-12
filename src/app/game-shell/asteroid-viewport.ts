@@ -1,3 +1,6 @@
+import { clanDef } from '../game/trade-data';
+import * as IR from '../game/improvement-rules';
+import { ImprovementArt } from '../ui/improvement-art';
 import { Component, DestroyRef, computed, inject, signal, untracked } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
 import { drillTier, holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult, specialName } from '../game/engine';
@@ -99,7 +102,7 @@ function buildShape(a: AsteroidState): Shape {
 
 @Component({
   selector: 'fdm-asteroid-viewport',
-  imports: [ZoneBackdrop, MechPortrait, DroneSprite],
+  imports: [ImprovementArt, ZoneBackdrop, MechPortrait, DroneSprite],
   templateUrl: './asteroid-viewport.html',
   styleUrl: './asteroid-viewport.scss',
 })
@@ -153,6 +156,29 @@ export class AsteroidViewport {
   /** Threats shown in the viewport. */
   protected readonly rogue = computed(() => this.game.state()?.threats.events.find((e) => e.kind === 'rogue' && e.phase === 'warning') ?? null);
   protected readonly flare = computed(() => this.game.state()?.threats.events.find((e) => e.kind === 'flare') ?? null);
+  /** Docked merchant convoys: a cluster of ships each, in the clan's colour, along the top. */
+  protected readonly convoys = computed(() => {
+    const fleets = this.game.state()?.trade.fleets ?? [];
+    // Upper sky, clear of the labels (top left) and the improvements (bottom right).
+    const spots = [
+      { x: 70, y: 9 },
+      { x: 84, y: 27 },
+      { x: 58, y: 3 },
+    ];
+    return fleets.slice(0, spots.length).map((f, i) => ({ clan: f.clan, color: clanDef(f.clan).color, name: clanDef(f.clan).name, ...spots[i] }));
+  });
+  protected readonly convoyShips = [
+    { dx: 0, dy: 0, s: 1, delay: 0 },
+    { dx: 34, dy: 16, s: 0.75, delay: -1.3 },
+    { dx: -18, dy: 22, s: 0.6, delay: -2.4 },
+    { dx: 52, dy: -6, s: 0.55, delay: -0.7 },
+  ];
+  /** Improvements built in the zone you're looking at. */
+  protected readonly structures = computed(() => {
+    const s = this.game.state();
+    return s ? IR.builtInZone(s, s.zone) : [];
+  });
+
   /** Pirate harassment after a lost or surrendered fight: skiffs buzz the asteroid, drones are pinned. */
   protected readonly harassed = computed(() => (this.game.state()?.threats.harassSec ?? 0) > 0);
   protected readonly harassLeft = computed(() => Math.ceil(this.game.state()?.threats.harassSec ?? 0));

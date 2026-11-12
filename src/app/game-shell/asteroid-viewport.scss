@@ -1032,3 +1032,57 @@
   background: rgba(20, 4, 10, 0.75);
   animation: thrust 1.2s steps(2) infinite;
 }
+
+/* ---------- merchant convoys in the background ---------- */
+.convoy-cluster {
+  position: absolute;
+  z-index: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0.85;
+
+  .trader {
+    position: absolute;
+    width: calc(54px * var(--s));
+    animation: hover-ship 5s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--cc) 60%, transparent));
+
+    .t-hull {
+      fill: #10142e;
+      stroke: var(--cc);
+      stroke-width: 1.5;
+    }
+    .t-pod {
+      fill: color-mix(in srgb, var(--cc) 35%, #10142e);
+    }
+    .t-thrust {
+      fill: #fff6c8;
+      animation: t-flicker 0.3s steps(2) infinite;
+    }
+  }
+}
+@keyframes hover-ship {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes t-flicker {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ---------- sector improvements standing in this zone ---------- */
+.structures {
+  position: absolute;
+  z-index: 0;
+  right: 14px;
+  bottom: 54px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  pointer-events: none;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px rgba(79, 227, 255, 0.25));
+}

@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
-import { OreId, oreDef } from '../game/config';
+import { OreId, oreDef, zoneDef } from '../game/config';
+import { ImprovementArt } from '../ui/improvement-art';
 import { AlloyId, alloyDef } from '../game/alloy-data';
 import { improvementDef } from '../game/improvement-data';
 import { formatDuration } from '../game/format';
@@ -12,6 +13,7 @@ import { GameService } from '../services/game.service';
 /** The BOARD tab: the merchant convoy in the sector, the contract board, corporate and local standing. */
 @Component({
   selector: 'fdm-board-panel',
+  imports: [ImprovementArt],
   templateUrl: './board-panel.html',
   styleUrl: './board-panel.scss',
 })
@@ -101,11 +103,22 @@ export class BoardPanel {
       ...Object.entries(cost.ingots).map(([o, n]) => ({ name: `${oreDef(o as never).name} ingots`, need: n!, have: Math.floor(s.ingots[o as OreId]) })),
       ...Object.entries(cost.alloys).map(([a, n]) => ({ name: alloyDef(a as AlloyId).name, need: n!, have: Math.floor(s.alloys[a as AlloyId] ?? 0) })),
     ];
-    return { def: improvementDef(c.improvement), mats, blocker: IR.buildBlocker(s, c), needsAlloys: Object.keys(cost.alloys).length > 0 };
+    return {
+      def: improvementDef(c.improvement),
+      mats,
+      blocker: IR.buildBlocker(s, c),
+      needsAlloys: Object.keys(cost.alloys).length > 0,
+      zone: c.zone ? zoneDef(c.zone).name : 'anywhere in the sector',
+    };
   }
 
   /** Improvements standing in this sector. */
-  protected readonly improvements = computed(() => IR.builtHere(this.s()).map((id) => improvementDef(id)));
+  protected readonly improvements = computed(() =>
+    IR.builtHere(this.s()).map((id) => {
+      const z = IR.improvementZone(this.s(), id);
+      return { def: improvementDef(id), zone: z ? zoneDef(z).name : '' };
+    }),
+  );
 
   protected oreName(id: string | undefined): string {
     return id ? oreDef(id as never).name : '';

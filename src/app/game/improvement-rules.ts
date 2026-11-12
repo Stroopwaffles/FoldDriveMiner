@@ -5,7 +5,7 @@
 import { ALLOY_IDS, AlloyId, alloyDef } from './alloy-data';
 import { hasForge, recipeOpen } from './alloy-rules';
 import { hasResearch, oreReachable } from './common';
-import { ORE_IDS, OreId } from './config';
+import { ORE_IDS, OreId, ZoneId } from './config';
 import { IMPROVEMENT, IMPROVEMENTS, ImprovementDef, ImprovementId, ImprovementKind } from './improvement-data';
 import { CorpId } from './trade-data';
 import { Contract, GameState } from './types';
@@ -95,7 +95,19 @@ export function construct(state: GameState, c: Contract): boolean {
   for (const [o, n] of Object.entries(cost.ingots)) state.ingots[o as OreId] -= n!;
   for (const [a, n] of Object.entries(cost.alloys)) state.alloys[a as AlloyId] -= n!;
   const key = sectorKey(state);
-  if (!state.improvements || state.improvements.key !== key) state.improvements = { key, built: [] };
+  if (!state.improvements || state.improvements.key !== key) state.improvements = { key, built: [], zones: {} };
   if (!state.improvements.built.includes(c.improvement)) state.improvements.built.push(c.improvement);
+  state.improvements.zones = { ...(state.improvements.zones ?? {}), [c.improvement]: c.zone ?? state.zone };
   return true;
+}
+
+/** Improvements standing in a zone of this sector (for the viewport). */
+export function builtInZone(state: GameState, zone: ZoneId): ImprovementId[] {
+  const zones = state.improvements?.zones ?? {};
+  return builtHere(state).filter((id) => (zones[id] ?? zone) === zone);
+}
+
+/** The zone an improvement here was built in. */
+export function improvementZone(state: GameState, id: ImprovementId): ZoneId | undefined {
+  return builtHere(state).includes(id) ? state.improvements?.zones?.[id] : undefined;
 }

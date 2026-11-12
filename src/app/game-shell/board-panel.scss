@@ -379,9 +379,8 @@
 }
 .improvement {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: baseline;
+  gap: 0.6rem;
+  align-items: center;
   padding: 0.3rem 0.5rem;
   margin-bottom: 4px;
   border-left: 3px solid var(--ok);
@@ -395,4 +394,10 @@
 
 .sector-note {
   margin-left: 0.5rem;
+}
+
+.build-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }

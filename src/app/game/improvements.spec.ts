@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as E from './engine';
+import { zoneDef } from './config';
 import * as F from './fold-rules';
 import { partDef } from './fleet-data';
 import { IMPROVEMENT, improvementDef } from './improvement-data';
@@ -57,6 +58,17 @@ describe('sector improvements', () => {
     expect(s.contracts.active.length).toBe(0);
     expect(IR.builtHere(s)).toContain('research_lab');
     expect(E.researchSpeed(s)).toBeCloseTo(before * 1.3, 6);
+  });
+
+  it('a construction contract names a charted zone, and the improvement stands there', () => {
+    const s = industrial();
+    const c = takeConstruction(s);
+    expect(c.zone).toBeTruthy();
+    expect(c.title).toContain(zoneDef(c.zone!).name);
+    stock(s, c);
+    TR.buildContract(s, c.id, E.emptyEvents());
+    expect(IR.improvementZone(s, c.improvement!)).toBe(c.zone);
+    expect(IR.builtInZone(s, c.zone!)).toContain(c.improvement);
   });
 
   it('each improvement is offered once per sector, and only when its materials can be made', () => {
