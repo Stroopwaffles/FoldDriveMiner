@@ -19,11 +19,14 @@ function ready(): GameState {
 }
 
 describe('milestone 6: charging the Fold Drive', () => {
-  it('a full charge is 1 billion Helium-3 or 100 million Voidglass; ingots count 20x their ore', () => {
+  it('a full charge is 5 million Helium-3 at home, x4 per depth; ingots count 20x their ore', () => {
     const s = ready();
     const need = F.chargeNeeded(s);
-    expect(need).toBe(1e9);
-    expect(need / F.fuelUnits(s, 'voidglass', false)).toBe(1e8);
+    expect(need).toBe(5e6);
+    expect(need / F.fuelUnits(s, 'voidglass', false)).toBe(5e5);
+    s.sector.depth = 4;
+    expect(F.chargeNeeded(s)).toBe(1.28e9);
+    s.sector.depth = 0;
     s.cargo.helium3 = need / 2;
     F.feedDrive(s);
     expect(s.fold.charge).toBeCloseTo(0.5, 6);
@@ -56,7 +59,7 @@ describe('milestone 6: charging the Fold Drive', () => {
 
   it('charge stops at the cap; over-charge research raises it', () => {
     const s = ready();
-    s.cargo.helium3 = 1e10;
+    s.cargo.helium3 = 1e9;
     F.feedDrive(s);
     expect(s.fold.charge).toBeCloseTo(1, 6);
     s.research.levels['overcharge_cap'] = 2;

@@ -3,10 +3,13 @@
  */
 
 export const FOLD = {
-  /** Helium-3 units for a full charge in the home sector (1 billion); ×growth per depth. */
-  baseCharge: 1e9,
-  chargeGrowth: 1.6,
-  /** Fuel values in Helium-3 units: Voidglass is worth 10 (a full charge is 100 million of it). */
+  /**
+   * Helium-3 units for a full charge in the home sector; ×growth per depth:
+   * 5M, 20M, 80M, 320M, 1.28B, 5.1B... so every jump costs a few hours as production climbs.
+   */
+  baseCharge: 5e6,
+  chargeGrowth: 4,
+  /** Fuel values in Helium-3 units: Voidglass is worth 10. */
   voidglassUnits: 10,
   /** An ingot is worth this many tonnes of its raw ore. */
   ingotFuelMult: 20,
