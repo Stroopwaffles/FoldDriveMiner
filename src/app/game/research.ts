@@ -220,7 +220,7 @@ export const RESEARCH: readonly ResearchNode[] = [
   N({
     id: 'hyperthought', name: 'Hyperthought Engine', branch: 'station', maxLevel: 3,
     sd: 25, cr: 40000, sec: 300, growth: 3, requires: ['lab_slot_2'],
-    effect: 'Burns Survey Data for +30% research speed per level (switch it on in OPS)',
+    effect: 'Burns Survey Data hard for +30% research speed per level (switch it on in OPS)',
     flavor: 'Feed me the data and I will dream faster. Please do not ask what I dream about.',
   }),
   N({

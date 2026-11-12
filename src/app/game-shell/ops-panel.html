@@ -332,6 +332,7 @@
         <div class="ht-grid">
           <span>Research boost</span><b class="ok">+{{ b.bonusPct }}%</b>
           <span>Burn</span><b>{{ b.burnMin }} SD/min</b>
+          <span>Net Survey Data</span><b [class.ok]="b.net >= 0" [class.warn]="b.net < 0">{{ b.net >= 0 ? '+' : '' }}{{ b.netMin }} SD/min</b>
           <span>Reserve</span>
           <b><button type="button" class="btn tiny" (click)="game.cycleBoosterReserve()" title="Never burn below this much Survey Data">keep {{ game.fmt(b.reserve) }} SD ▸</button></b>
           <span>Runway</span><b>{{ b.runway }}</b>

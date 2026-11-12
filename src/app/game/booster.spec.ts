@@ -35,7 +35,7 @@ describe('Hyperthought Engine', () => {
     E.tick(s, 1);
     expect(s.booster.status).toBe('running');
     expect(sd - s.surveyData).toBeCloseTo(E.boosterBurn(s), 6);
-    expect(E.boosterBurn(s)).toBeCloseTo(0.2, 9);
+    expect(E.boosterBurn(s)).toBeCloseTo(2, 9);
     expect(E.researchSpeed(s)).toBeCloseTo(base * 1.6, 9);
   });
 
@@ -78,6 +78,20 @@ describe('Hyperthought Engine', () => {
     expect(s.booster.status).toBe('starved');
     expect(s.surveyData).toBeGreaterThanOrEqual(50);
     expect(E.researchSpeed(s)).toBeCloseTo(base, 9);
+  });
+
+  it('a Surveyor fleet cannot run it for free: level 1 eats the flow, higher levels run at a loss', () => {
+    const s = lab(1);
+    s.drones.surveyor = 25;
+    const income = E.passiveSdIncome(s);
+    expect(income).toBeGreaterThan(0.9);
+    expect(E.boosterBurn(s)).toBeGreaterThanOrEqual(income * 0.6 - 1e-9);
+    expect(E.boosterBurn(s)).toBeGreaterThanOrEqual(1);
+    s.research.levels['hyperthought'] = 2;
+    expect(E.boosterBurn(s)).toBeGreaterThan(income);
+    // Bigger fleets don't outgrow it: the burn tracks income.
+    s.drones.surveyor = 500;
+    expect(E.boosterBurn(s)).toBeGreaterThan(E.passiveSdIncome(s));
   });
 
   it('burns more in deeper sectors', () => {

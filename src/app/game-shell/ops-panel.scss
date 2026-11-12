@@ -507,5 +507,13 @@ th {
     font-family: var(--font-mono);
     font-weight: normal;
     text-align: right;
+
+    &.ok {
+      color: var(--ok);
+    }
+
+    &.warn {
+      color: var(--warn);
+    }
   }
 }

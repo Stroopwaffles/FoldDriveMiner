@@ -4,13 +4,18 @@
  * is empty, never burns below the reserve you set, and stalls (no bonus) when it can't pay.
  */
 import { researchLevel } from './common';
+import { codexSurveyBonus } from './anomaly-rules';
+import { passiveSdRate } from './fleet-rules';
+import { surveyMult } from './trade-rules';
 import { GameState } from './types';
 
 export const BOOSTER = {
   /** Research speed per Hyperthought level while it runs. */
   bonusPerLevel: 0.3,
-  /** Survey Data per second per level, before sector depth. */
-  burnPerLevel: 0.1,
+  /** Survey Data per second per level, at least (before sector depth). */
+  burnPerLevel: 1,
+  /** ...or this share of your passive Survey Data income per level, whichever is more. */
+  incomeSharePerLevel: 0.6,
   /** Deeper sectors pay more Survey Data, so the engine burns more. */
   depthScale: 0.5,
   /** Reserve presets: the engine never burns below this. */
@@ -42,9 +47,19 @@ export function boosterBonus(state: GameState): number {
   return boosterLevel(state) * BOOSTER.bonusPerLevel;
 }
 
-/** Survey Data per second while running. */
+/** Passive Survey Data per second (drones, mechs, posts and bonuses), as the tick pays it. */
+export function passiveSdIncome(state: GameState): number {
+  return passiveSdRate(state) * codexSurveyBonus(state) * surveyMult(state);
+}
+
+/**
+ * Survey Data per second while running. Each level burns a floor (more in deep sectors) or a share
+ * of your passive income, whichever is more, so a Surveyor fleet can't run it for free.
+ */
 export function boosterBurn(state: GameState): number {
-  return boosterLevel(state) * BOOSTER.burnPerLevel * (1 + state.sector.depth * BOOSTER.depthScale);
+  const floor = BOOSTER.burnPerLevel * (1 + state.sector.depth * BOOSTER.depthScale);
+  const share = BOOSTER.incomeSharePerLevel * passiveSdIncome(state);
+  return boosterLevel(state) * Math.max(floor, share);
 }
 
 /** Bonus to research speed right now (0 unless it paid this tick). */

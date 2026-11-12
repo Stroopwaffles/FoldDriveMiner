@@ -176,6 +176,9 @@ export class OpsPanel {
       hint: labels[b.status][1],
       bonusPct: Math.round(E.boosterBonus(s) * 100),
       burnMin: (burn * 60).toFixed(burn * 60 < 10 ? 1 : 0),
+      // Passive income minus the burn while it runs.
+      net: E.passiveSdIncome(s) - burn,
+      netMin: ((E.passiveSdIncome(s) - burn) * 60).toFixed(Math.abs(E.passiveSdIncome(s) - burn) * 60 < 10 ? 1 : 0),
       reserve: b.reserve,
       burned: b.burned,
       runway: burn > 0 ? (spare > 0 ? formatDuration(spare / burn) : 'none') : '—',
