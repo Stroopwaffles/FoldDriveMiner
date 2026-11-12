@@ -226,7 +226,7 @@
     <div class="panel-title"><span class="led amber"></span>Drill Rig <span class="kana">ドリル</span></div>
     <div class="card-body">
       <div class="stat-line">
-        <span>DRILL MK.{{ roman[st.drill.tier - 1] }}</span>
+        <span>DRILL MK.{{ roman[drillTier() - 1] }}</span>
         <span class="cyan">{{ game.fmt(game.power()) }} ore / click</span>
       </div>
       <div class="stat-line sub">

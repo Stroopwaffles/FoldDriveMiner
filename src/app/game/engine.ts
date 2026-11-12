@@ -7,6 +7,7 @@ import { CONFIG, ORE_IDS, OreId, ZONES, ZoneDef, ZoneId, oreDef } from './config
 import {
   addOre,
   currentZone,
+  drillTier,
   zoneBoost,
   emptyFlags,
   emptyOre,
@@ -417,7 +418,7 @@ export function drillPowerCost(state: GameState): number {
 }
 
 export function nextTierUpgrade(state: GameState) {
-  return CONFIG.drill.tierUpgrades.find((t) => t.tier === state.drill.tier + 1) ?? null;
+  return CONFIG.drill.tierUpgrades.find((t) => t.tier === drillTier(state) + 1) ?? null;
 }
 
 export function heatSinkCost(state: GameState): number | null {
@@ -690,7 +691,7 @@ export function researchStatus(state: GameState, id: string): ResearchStatus {
   if (researchLevel(state, id) >= n.maxLevel) return 'maxed';
   if (state.research.active.some((j) => j.id === id)) return 'active';
   const prereqs = n.requires.every((r) => hasResearch(state, r));
-  const tier = !n.requiresTier || state.drill.tier >= n.requiresTier;
+  const tier = !n.requiresTier || drillTier(state) >= n.requiresTier;
   const zones = !n.requiresZones || sectorZones(state).filter((z) => zoneUnlocked(state, z.id)).length >= n.requiresZones;
   const ore = !n.requiresOre || oreCharted(state, n.requiresOre);
   return prereqs && tier && zones && ore ? 'available' : 'locked';
@@ -709,7 +710,7 @@ export function researchBlocker(state: GameState, id: string): string | null {
   if (n.requiresOre && !oreCharted(state, n.requiresOre)) return `Scan the sector until a zone with ${oreDef(n.requiresOre).name} is charted (MAP)`;
   if (n.requiresZones && sectorZones(state).filter((z) => zoneUnlocked(state, z.id)).length < n.requiresZones)
     return `Chart ${n.requiresZones} zones with sector scans (MAP)`;
-  if (n.requiresTier && state.drill.tier < n.requiresTier) return `Requires Drill Mk.${['I', 'II', 'III', 'IV', 'V'][n.requiresTier - 1]}`;
+  if (n.requiresTier && drillTier(state) < n.requiresTier) return `Requires Drill Mk.${['I', 'II', 'III', 'IV', 'V'][n.requiresTier - 1]}`;
   if (state.research.active.length >= labSlots(state)) return 'All lab benches busy';
   const cost = researchCost(state, id);
   if (state.surveyData < cost.sd) return 'Not enough Survey Data';
@@ -787,26 +788,19 @@ function advanceResearch(state: GameState, dt: number): ResearchDone[] {
   return done;
 }
 
-function applyResearchEffect(state: GameState, id: string): void {
-  switch (id) {
-    case 'drill_mk3':
-      state.drill.tier = Math.max(state.drill.tier, 3);
-      break;
-    case 'drill_mk4':
-      state.drill.tier = Math.max(state.drill.tier, 4);
-      break;
-    case 'drill_mk5':
-      state.drill.tier = Math.max(state.drill.tier, 5);
-      break;
-    case 'refinery':
-    case 'refinery_slots':
-      syncRefinerySlots(state);
-      break;
-    case 'hangar':
-    case 'repair_bay':
-      ensureCrew(state);
-      break;
-  }
+function applyResearchEffect(state: GameState, _id: string): void {
+  syncResearchEffects(state);
+}
+
+/**
+ * Brings everything research builds into line with the research levels. Safe to run any time:
+ * after research finishes, after loading a save, and after a Fold Jump (where archived and
+ * permanent research arrive without ever "finishing"). Effects that are simple multipliers are
+ * read from the levels directly and need nothing here; the drill tier is derived (drillTier).
+ */
+export function syncResearchEffects(state: GameState): void {
+  syncRefinerySlots(state);
+  ensureCrew(state);
 }
 
 // ---------------------------------------------------------------- refinery

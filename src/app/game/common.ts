@@ -36,9 +36,27 @@ export function zoneUnlocked(state: GameState, id: ZoneId): boolean {
   return zoneDef(id).index < Math.max(1, state.sector?.charted ?? 1);
 }
 
+/** Research that refits the drill, and the tier each one gives. */
+export const DRILL_RESEARCH: readonly { id: string; tier: number }[] = [
+  { id: 'drill_mk3', tier: 3 },
+  { id: 'drill_mk4', tier: 4 },
+  { id: 'drill_mk5', tier: 5 },
+];
+
+/**
+ * The drill's working tier. `state.drill.tier` only holds what was bought with credits (Mk.II)
+ * or given by the Jump Core; Drill Mk research counts for as long as it's researched, so
+ * research kept through a Fold Jump (archive, permanent nodes) can never fall out of step.
+ */
+export function drillTier(state: GameState): number {
+  let tier = state.drill.tier;
+  for (const r of DRILL_RESEARCH) if (r.tier > tier && hasResearch(state, r.id)) tier = r.tier;
+  return tier;
+}
+
 /** Can the drill (and drones and mechs) collect this ore? */
 export function oreReachable(state: GameState, ore: OreId): boolean {
-  return oreDef(ore).tier <= state.drill.tier;
+  return oreDef(ore).tier <= drillTier(state);
 }
 
 /** Splits an ore/s total by a zone's mix, dropping ores the drill can't reach. */

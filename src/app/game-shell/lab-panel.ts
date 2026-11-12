@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { MATRIX } from '../game/core-data';
 import * as E from '../game/engine';
+import * as F from '../game/fold-rules';
+import { FOLD, PERMANENT_NODES } from '../game/fold-data';
 import { formatDuration } from '../game/format';
 import { BRANCHES, RESEARCH, ResearchNode, researchNode } from '../game/research';
 import { AudioService } from '../services/audio.service';
@@ -21,6 +23,8 @@ interface NodeView {
   progress: number | null;
   cost: { sd: number; cr: number; sec: number; cores: number };
   affordable: boolean;
+  /** QoL research kept for good through every Fold Jump. */
+  permanent: boolean;
 }
 
 /** The LAB tab: lab benches plus the research tree as a circuit-board schematic. */
@@ -56,6 +60,7 @@ export class LabPanel {
 
   protected readonly nodes = computed<NodeView[]>(() => {
     const s = this.s();
+    const permanent = new Set(F.permanentNodes(s));
     return RESEARCH.map((node) => {
       const p = this.layout.pos.get(node.id)!;
       const job = s.research.active.find((j) => j.id === node.id);
@@ -69,6 +74,7 @@ export class LabPanel {
         progress: job ? 1 - job.remaining / job.duration : null,
         cost,
         affordable: s.surveyData >= cost.sd && s.credits >= cost.cr && s.dataCores >= cost.cores,
+        permanent: permanent.has(node.id),
       };
     });
   });
@@ -98,6 +104,14 @@ export class LabPanel {
 
   protected readonly selectedId = signal<string>('refinery');
   protected readonly selected = computed(() => this.nodes().find((n) => n.node.id === this.selectedId())!);
+  /** For QoL nodes: permanent already, or how many runs until it is. */
+  protected readonly qol = computed(() => {
+    const id = this.selectedId();
+    if (!PERMANENT_NODES.includes(id)) return null;
+    const runs = this.s().fold.qolCounts[id] ?? 0;
+    return { permanent: runs >= FOLD.permanentAfter, runs: Math.min(runs, FOLD.permanentAfter), need: FOLD.permanentAfter };
+  });
+
   protected readonly blocker = computed(() => E.researchBlocker(this.s(), this.selectedId()));
 
   /** Research seconds per real second, and where the bonus comes from. */

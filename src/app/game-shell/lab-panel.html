@@ -75,6 +75,15 @@
       </div>
       <div class="detail-effect">{{ sel.node.effect }}</div>
       <div class="detail-flavor">“{{ sel.node.flavor }}” — VESPER</div>
+      @if (qol(); as q) {
+        <div class="detail-qol" [class.on]="q.permanent">
+          @if (q.permanent) {
+            ★ PERMANENT · kept through every Fold Jump
+          } @else {
+            QoL research · becomes permanent after {{ q.need }} runs with it ({{ q.runs }}/{{ q.need }})
+          }
+        </div>
+      }
     </div>
     <div class="detail-side">
       @if (sel.status !== 'teaser' && sel.status !== 'maxed') {
@@ -122,6 +131,8 @@
           [class]="'node status-' + n.status"
           [class.selected]="n.node.id === selectedId()"
           [class.affordable]="n.status === 'available' && n.affordable"
+          [class.permanent]="n.permanent"
+          [title]="n.permanent ? 'Permanent: kept through every Fold Jump' : ''"
           [style.left.px]="n.x"
           [style.top.px]="n.y"
           [style.width.px]="nodeW"
@@ -133,6 +144,8 @@
           <span class="node-name">{{ n.status === 'teaser' ? 'CLASSIFIED' : n.node.name }}</span>
           @if (n.node.maxLevel > 1) {
             <span class="node-lvl">LV {{ n.level }}/{{ n.node.maxLevel }}</span>
+          } @else if (n.permanent) {
+            <span class="node-lvl">★ PERMANENT</span>
           } @else if (n.status === 'maxed') {
             <span class="node-lvl">✔ DONE</span>
           }

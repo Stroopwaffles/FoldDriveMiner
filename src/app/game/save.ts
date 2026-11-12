@@ -2,7 +2,7 @@
  * Save format, migrations and export/import encoding.
  * Pure functions so they can be tested without a browser.
  */
-import { ensureCrew, newGame, syncRefinerySlots, syncSector } from './engine';
+import { newGame, syncResearchEffects, syncSector } from './engine';
 import { ensureAnomalies } from './anomaly-rules';
 import { ensureStoryBonds, ensureTradeSector } from './trade-rules';
 import { GameState } from './types';
@@ -118,8 +118,8 @@ function fillDefaults(saved: Partial<GameState>): GameState {
   if (!merged.asteroid || typeof merged.asteroid.mass !== 'number') {
     throw new SaveError('Save data is corrupt (asteroid).');
   }
-  syncRefinerySlots(merged);
-  ensureCrew(merged);
+  // Research effects follow the research levels (fixes saves where they fell out of step).
+  syncResearchEffects(merged);
   syncSector(merged);
   ensureAnomalies(merged);
   ensureTradeSector(merged);

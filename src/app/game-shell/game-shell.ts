@@ -163,7 +163,7 @@ export class GameShell {
     return ORES.map((o) => ({
       ore: o,
       // Same visibility as the cargo table: current tier plus the next one up.
-      known: o.tier <= Math.max(s.drill.tier + 1, 2) && o.tier <= 4,
+      known: o.tier <= Math.max(E.drillTier(s) + 1, 2) && o.tier <= 4,
       price: E.orePrice(s, o.id),
       trend: E.priceTrend(s, o.id),
     }));

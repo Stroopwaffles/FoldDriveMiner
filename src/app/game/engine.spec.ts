@@ -233,7 +233,7 @@ describe('milestone 2: zones, research, refinery, auto-sell', () => {
     E.buyDrillTier(s);
     expect(E.startResearch(s, 'drill_mk3')).toBe(true);
     finishAll(s);
-    expect(s.drill.tier).toBe(3);
+    expect(E.drillTier(s)).toBe(3);
   });
 
   it('Alloy Smelting needs Parallel Furnaces first', () => {

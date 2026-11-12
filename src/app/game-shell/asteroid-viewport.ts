@@ -1,6 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal, untracked } from '@angular/core';
 import { CONFIG, ORES, ORE_IDS, oreDef, zoneDef } from '../game/config';
-import { holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult, specialName } from '../game/engine';
+import { drillTier, holdInterval, holdShouldWait, isHot, mechOperable, overdriveMult, specialName } from '../game/engine';
 import { specialDef } from '../game/special-data';
 import { MechPortrait } from '../ui/mech-portrait';
 import { DroneSprite } from '../ui/drone-sprite';
@@ -240,7 +240,8 @@ export class AsteroidViewport {
 
   protected readonly composition = computed(() => {
     const a = this.asteroid();
-    const tier = this.game.state()?.drill.tier ?? 1;
+    const st = this.game.state();
+    const tier = st ? drillTier(st) : 1;
     if (!a) return [];
     return ORES.filter((o) => a.composition[o.id] > 0.001).map((o) => ({
       ore: o,

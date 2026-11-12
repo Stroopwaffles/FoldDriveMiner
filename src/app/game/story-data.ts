@@ -2,6 +2,7 @@
  * Story content: the 26 episodes in three acts, side stories after the finale
  * and the finale's two branches. Text uses {ship} and {cmdr} placeholders.
  */
+import { drillTier } from './common';
 import { GameState } from './types';
 
 export type StoryVoice = 'VESPER' | 'JUNO' | 'KIT' | 'SAFFI' | 'ANSEL' | 'HALE' | 'JACKAL' | 'SYSTEM';
@@ -54,7 +55,7 @@ export const EPISODES: readonly EpisodeDef[] = [
     ],
   },
   {
-    n: 3, act: 1, title: 'Blue Glint', hint: 'Refit to a Drill Mk.II.', trigger: (s) => s.drill.tier >= 2,
+    n: 3, act: 1, title: 'Blue Glint', hint: 'Refit to a Drill Mk.II.', trigger: (s) => drillTier(s) >= 2,
     lines: [
       ['JUNO', 'See that blue? Titanite. Back on the racing circuit we used to coat engine bells with it.'],
       ['VESPER', 'Titanite sells for eight times the price of Ferrite. I recommend not coating anything with it.'],

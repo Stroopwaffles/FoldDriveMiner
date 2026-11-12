@@ -5,7 +5,7 @@
 import { SITES, SPECIAL } from './special-data';
 import { ORES, ORE_IDS, OreId, ZONES, ZoneDef, oreDef, registerZones } from './config';
 import { Rng } from './rng';
-import { researchLevel } from './common';
+import { drillTier, researchLevel } from './common';
 import {
   NEUTRAL_MODS,
   PROFILES,
@@ -282,7 +282,7 @@ export function scanBlocker(state: GameState): string | null {
   if (!z) return 'Sector fully charted';
   if (state.sector.scan) return 'Scan in progress';
   const c = scanCost(state, z.index);
-  if (state.drill.tier < c.tier) return `Needs Drill Mk.${['I', 'II', 'III', 'IV', 'V'][c.tier - 1]} to reach it`;
+  if (drillTier(state) < c.tier) return `Needs Drill Mk.${['I', 'II', 'III', 'IV', 'V'][c.tier - 1]} to reach it`;
   if (state.surveyData < c.sd) return 'Not enough Survey Data';
   return null;
 }

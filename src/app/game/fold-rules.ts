@@ -16,7 +16,7 @@ import { RESEARCH } from './research';
 import { ensureAnomalies } from './anomaly-rules';
 import { ensureTradeSector } from './trade-rules';
 // Engine helpers (cyclic import, only used at call time).
-import { newGame, oreRatio, spawnAsteroid, syncRefinerySlots, syncSector } from './engine';
+import { newGame, oreRatio, spawnAsteroid, syncResearchEffects, syncSector } from './engine';
 
 export function emptyFold(): FoldState {
   return {
@@ -343,7 +343,7 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.anomalies.sectorKey = '';
   ensureAnomalies(s);
   ensureTradeSector(s);
-  syncRefinerySlots(s);
+  syncResearchEffects(s);
   carryStory(old, s, gained);
   s.asteroid = spawnAsteroid(s);
 
