@@ -84,7 +84,12 @@ function perUnit(state: GameState): number {
 /** Helium-3 units an ore or ingot is worth as fuel (0 if it isn't fuel). */
 export function fuelUnits(state: GameState, ore: OreId, ingot: boolean): number {
   const base = ore === 'helium3' ? 1 : ore === 'voidglass' ? FOLD.voidglassUnits : 0;
-  return ingot ? base * oreRatio(state) : base;
+  return ingot ? base * FOLD.ingotFuelMult : base;
+}
+
+/** Helium-3 units one Nullsteel alloy is worth as fuel. */
+export function nullsteelFuelUnits(): number {
+  return FOLD.voidglassUnits * FOLD.nullsteelFuelMult;
 }
 
 /** Feed as much fuel from the hold as the drive will take. Returns charge added. */
@@ -94,6 +99,14 @@ export function feedDrive(state: GameState): number {
   const before = f.charge;
   const cap = chargeCap(state);
   const unit = perUnit(state);
+  // Densest fuel first: Nullsteel, then Voidglass, then Helium-3 (ingots before raw ore).
+  const alloyValue = nullsteelFuelUnits() * unit;
+  const bars = Math.floor(state.alloys?.nullsteel ?? 0);
+  const burn = Math.min(bars, (cap - f.charge) / alloyValue);
+  if (burn > 0 && f.charge < cap) {
+    state.alloys.nullsteel -= burn;
+    f.charge = Math.min(cap, f.charge + burn * alloyValue);
+  }
   for (const ore of ['voidglass', 'helium3'] as OreId[]) {
     for (const ingot of [true, false]) {
       const value = fuelUnits(state, ore, ingot) * unit;

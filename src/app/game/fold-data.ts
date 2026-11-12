@@ -3,13 +3,17 @@
  */
 
 export const FOLD = {
-  /** Helium-3 units for a full charge in the home sector; ×growth per depth. */
-  baseCharge: 3000,
+  /** Helium-3 units for a full charge in the home sector (1 billion); ×growth per depth. */
+  baseCharge: 1e9,
   chargeGrowth: 1.6,
-  /** Fuel values in Helium-3 units. Ingots count as the ore that made them. */
-  voidglassUnits: 8,
+  /** Fuel values in Helium-3 units: Voidglass is worth 10 (a full charge is 100 million of it). */
+  voidglassUnits: 10,
+  /** An ingot is worth this many tonnes of its raw ore. */
+  ingotFuelMult: 20,
+  /** A Nullsteel alloy (Helium-3 + Voidglass) is worth this many tonnes of raw Voidglass. */
+  nullsteelFuelMult: 50,
   /** A merchant's fold charge cell adds this share of a full charge. */
-  cellCharge: 0.05,
+  cellCharge: 0.2,
   /** Charge Efficiency research and Fold Harmonics: +% per level. */
   efficiencyPerLevel: 0.2,
   harmonicsPerLevel: 0.15,

@@ -58,7 +58,7 @@ export class InventoryPanel {
     return [
       { id: 'repair_kit', name: 'Repair kit', count: inv.repair_kit, desc: 'Instantly repairs one mech.', use: 'hangar' as Tab, useLabel: 'Use in HANGAR' },
       { id: 'medkit', name: 'Med kit', count: inv.medkit, desc: 'Instantly heals one injured pilot.', use: 'crew' as Tab, useLabel: 'Use in CREW' },
-      { id: 'fold_cell', name: 'Fold charge cell', count: inv.fold_cell, desc: 'Adds charge to the Fold Drive.', use: null, useLabel: '' },
+      { id: 'fold_cell', name: 'Fold charge cell', count: inv.fold_cell, desc: 'Adds 20% of a full charge to the Fold Drive (use it on the FOLD screen).', use: null, useLabel: '' },
     ];
   });
   protected readonly canUseCell = computed(() => {

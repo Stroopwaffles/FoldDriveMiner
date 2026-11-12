@@ -39,6 +39,9 @@ export class FoldPanel {
       ingotUnits: F.fuelUnits(s, o.id, true),
     }));
   });
+  /** Nullsteel bars on hand and what each is worth as fuel. */
+  protected readonly nullsteel = computed(() => ({ held: Math.floor(this.s().alloys?.nullsteel ?? 0), units: F.nullsteelFuelUnits() }));
+  protected readonly cellShare = Math.round(FOLD.cellCharge * 100);
   protected readonly gain = computed(() => F.resonanceGain(this.s()));
   protected readonly runCredits = computed(() => F.runCredits(this.s()));
   protected readonly mult = computed(() => F.resonanceMult(this.s()));

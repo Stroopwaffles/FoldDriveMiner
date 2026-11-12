@@ -19,9 +19,11 @@ function ready(): GameState {
 }
 
 describe('milestone 6: charging the Fold Drive', () => {
-  it('Helium-3 and Voidglass charge the drive; ingots count as the ore that made them', () => {
+  it('a full charge is 1 billion Helium-3 or 100 million Voidglass; ingots count 20x their ore', () => {
     const s = ready();
     const need = F.chargeNeeded(s);
+    expect(need).toBe(1e9);
+    expect(need / F.fuelUnits(s, 'voidglass', false)).toBe(1e8);
     s.cargo.helium3 = need / 2;
     F.feedDrive(s);
     expect(s.fold.charge).toBeCloseTo(0.5, 6);
@@ -29,14 +31,32 @@ describe('milestone 6: charging the Fold Drive', () => {
     s.ingots.helium3 = 10;
     const before = s.fold.charge;
     F.feedDrive(s);
-    expect(s.fold.charge - before).toBeCloseTo((10 * E.oreRatio(s)) / need, 6);
-    expect(F.fuelUnits(s, 'voidglass', false)).toBe(FOLD.voidglassUnits);
+    expect(s.fold.charge - before).toBeCloseTo((10 * 20) / need, 9);
+    expect(F.fuelUnits(s, 'voidglass', true)).toBe(FOLD.voidglassUnits * 20);
     expect(F.fuelUnits(s, 'ferrite', false)).toBe(0);
+  });
+
+  it('Nullsteel alloy counts 50x raw Voidglass and burns first', () => {
+    const s = ready();
+    s.alloys.nullsteel = 1000;
+    s.cargo.helium3 = 1000;
+    F.feedDrive(s);
+    expect(s.fold.charge).toBeCloseTo((1000 * 50 * FOLD.voidglassUnits + 1000) / F.chargeNeeded(s), 12);
+    expect(s.alloys.nullsteel).toBe(0);
+    expect(s.cargo.helium3).toBe(0);
+  });
+
+  it('a fold charge cell adds 20% of a full charge', () => {
+    const s = ready();
+    s.trade.inventory.fold_cell = 2;
+    expect(F.useFoldCell(s)).toBe(true);
+    expect(s.fold.charge).toBeCloseTo(0.2, 9);
+    expect(s.trade.inventory.fold_cell).toBe(1);
   });
 
   it('charge stops at the cap; over-charge research raises it', () => {
     const s = ready();
-    s.cargo.helium3 = 1e9;
+    s.cargo.helium3 = 1e10;
     F.feedDrive(s);
     expect(s.fold.charge).toBeCloseTo(1, 6);
     s.research.levels['overcharge_cap'] = 2;

@@ -32,12 +32,17 @@
               <span>{{ x.ingots }} ingots × {{ x.ingotUnits }}</span>
             </div>
           }
+          <div class="fuel-row" style="--oc: #ff9bf0">
+            <span class="fuel-name">Nullsteel</span>
+            <span>{{ nullsteel().held }} alloy × {{ nullsteel().units }}</span>
+            <span></span>
+          </div>
         </div>
         <div class="row">
           <button type="button" class="btn btn-amber small" (click)="game.feedDrive()">Load fuel now</button>
           <button type="button" class="auto" [class.on]="f.autoFeed" (click)="game.toggleAutoFeed()">AUTO-FEED {{ f.autoFeed ? 'ON' : 'OFF' }}</button>
           @if (st.trade.inventory.fold_cell > 0) {
-            <button type="button" class="btn small" (click)="game.useFoldCell()">Use fold cell ({{ st.trade.inventory.fold_cell }})</button>
+            <button type="button" class="btn small" (click)="game.useFoldCell()">Use fold cell +{{ cellShare }}% ({{ st.trade.inventory.fold_cell }})</button>
           }
         </div>
       </div>

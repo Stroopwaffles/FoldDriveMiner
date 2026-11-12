@@ -86,7 +86,7 @@ export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBou
   medkit: { name: 'Med kit', desc: 'Instantly heals one injured pilot (use from CREW).' },
   overdrive_cell: { name: 'Overdrive cell', desc: 'For 60 s every click hits at Overdrive, whatever the heat.', contraband: true },
   deterrent: { name: 'Deterrent beacon', desc: 'Pirate Heat −30 and no raids for 10 minutes.' },
-  fold_cell: { name: 'Fold charge cell', desc: 'Stored for the Fold Drive (Milestone 6).', contraband: true },
+  fold_cell: { name: 'Fold charge cell', desc: 'Adds 20% of a full Fold Drive charge. Use it from the FOLD screen.', contraband: true },
   pilot: { name: 'Pilot contract', desc: 'A pilot looking for work joins your crew.' },
   curio: { name: 'Curio', desc: 'A strange relic. Adds Survey Data and a Codex note.' },
   data_cores: { name: 'Data Cores', desc: 'Pristine Data Cores.' },
