@@ -2,6 +2,8 @@ import { CaptainId, captainDef } from '../game/threat-data';
 import { Component, computed, inject } from '@angular/core';
 import { THREAT, eventDef } from '../game/threat-data';
 import * as T from '../game/threat-rules';
+import { hasResearch } from '../game/common';
+import { formatDuration } from '../game/format';
 import { GameService } from '../services/game.service';
 
 /**
@@ -44,8 +46,11 @@ import { GameService } from '../services/game.service';
         </div>
       </div>
     }
-    @if (chips().length) {
+    @if (chips().length || forecast()) {
       <div class="chips">
+        @if (forecast(); as f) {
+          <span class="chip intel" [class.raid]="f.raid" [title]="f.title">{{ f.text }}</span>
+        }
         @for (c of chips(); track c.id) {
           <span class="chip" [class.good]="c.good">{{ c.text }} · {{ c.left }}s</span>
         }
@@ -147,6 +152,16 @@ import { GameService } from '../services/game.service';
       flex-wrap: wrap;
       margin-bottom: 6px;
     }
+    .chip.intel {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: rgba(79, 227, 255, 0.08);
+      &.raid {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: rgba(255, 59, 59, 0.1);
+      }
+    }
     .chip {
       font-size: 0.68rem;
       letter-spacing: 0.06em;
@@ -216,6 +231,19 @@ export class ThreatBanner {
         }
       }),
   ]);
+
+  /** Pirate Comms Intercept: a countdown to the next raid, or how long it's quiet for. */
+  protected readonly forecast = computed(() => {
+    const s = this.s();
+    if (!hasResearch(s, 'raid_forecast')) return null;
+    // A raid already on its way has its own warning banner.
+    if (s.threats.events.some((e) => e.kind === 'raid')) return null;
+    const f = T.raidForecast(s);
+    if (!f) return null;
+    return f.raid
+      ? { raid: true, text: `INTERCEPT — PIRATE RAID IN ${formatDuration(f.inSec)}`, title: 'Raiders launch then, with the usual 45 s warning before they arrive.' }
+      : { raid: false, text: `INTERCEPT — NO RAID FOR ${formatDuration(f.clearFor)}+`, title: 'The next incident is not a raid, so none can come before this.' };
+  });
 
   protected raidOrderText(): string {
     const o = this.orders().raid;

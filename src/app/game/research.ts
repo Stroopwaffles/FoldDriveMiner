@@ -198,6 +198,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'Every rock is a library. We are learning to read faster.',
   }),
   N({
+    id: 'raid_forecast', name: 'Pirate Comms Intercept', branch: 'survey', maxLevel: 1,
+    sd: 12, cr: 10000, sec: 180, requires: ['signature_scanner'],
+    effect: 'Shows when the next incident comes and whether it is a pirate raid',
+    flavor: 'They talk too much on open channels. I have started taking notes.',
+  }),
+  N({
     id: 'deep_scan', name: 'Deep Scan Array', branch: 'survey', maxLevel: 3,
     sd: 10, cr: 15000, sec: 180, growth: 2.6, requiresZones: 2,
     effect: '+50% anomaly and sector scan speed',

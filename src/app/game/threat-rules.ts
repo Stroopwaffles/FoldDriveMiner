@@ -15,6 +15,7 @@ import {
   CaptainId,
   DEFAULT_ORDERS,
   ENEMY_UNITS,
+  EventDef,
   EventKind,
   JACKAL,
   JackalMood,
@@ -810,16 +811,35 @@ function resolveRogue(state: GameState, ev: ActiveEvent, events: TickEvents, ctx
 
 // ---------------------------------------------------------------- events
 
-function pickEvent(state: GameState, rng: Rng): EventKind | null {
+/** Whether an incident of this kind could start right now. */
+function eventAllowed(state: GameState, kind: EventKind): boolean {
   const t = state.threats;
-  const options = EVENTS.filter((e) => {
-    if (e.hostile && inGrace(state)) return false;
-    if (e.kind === 'raid' && deterrentActive(state)) return false;
-    if (t.events.some((x) => x.kind === e.kind)) return false;
-    // Only one hostile event at a time.
-    if (e.hostile && t.events.some((x) => eventDef(x.kind).hostile)) return false;
-    return true;
-  });
+  const e = eventDef(kind);
+  if (e.hostile && inGrace(state)) return false;
+  if (kind === 'raid' && deterrentActive(state)) return false;
+  if (t.events.some((x) => x.kind === kind)) return false;
+  // Only one hostile event at a time.
+  if (e.hostile && t.events.some((x) => eventDef(x.kind).hostile)) return false;
+  return true;
+}
+
+/**
+ * Rolls the incident for the next event roll, ahead of time. Only the grace period (as it will be
+ * then) rules kinds out here; anything else that blocks it then re-rolls among what's allowed, so
+ * the odds of each kind are the same as rolling on the spot.
+ */
+function forecastEvent(state: GameState, rng: Rng): EventKind | null {
+  const t = state.threats;
+  const graceThen = t.clock + Math.max(0, t.nextIn) < THREAT.graceSec;
+  return weightedEvent(state, rng, EVENTS.filter((e) => !(e.hostile && graceThen)));
+}
+
+function pickEvent(state: GameState, rng: Rng): EventKind | null {
+  return weightedEvent(state, rng, EVENTS.filter((e) => eventAllowed(state, e.kind)));
+}
+
+function weightedEvent(state: GameState, rng: Rng, options: readonly EventDef[]): EventKind | null {
+  const t = state.threats;
   if (!options.length) return null;
   const sectorWeights = sectorMods(state).eventWeights;
   const weight = (k: EventKind) => {
@@ -833,6 +853,23 @@ function pickEvent(state: GameState, rng: Rng): EventKind | null {
     if (roll <= 0) return e.kind;
   }
   return options[options.length - 1].kind;
+}
+
+function rollForecast(state: GameState): void {
+  const rng = new Rng(state.rng);
+  state.threats.nextKind = forecastEvent(state, rng);
+  state.rng = rng.state;
+}
+
+/** What Pirate Comms Intercept can see: when the next incident comes and whether it's a raid. */
+export function raidForecast(state: GameState): { inSec: number; raid: boolean; clearFor: number } | null {
+  const t = state.threats;
+  if (t.nextKind === undefined || !Number.isFinite(t.nextIn)) return null;
+  const inSec = Math.max(0, t.nextIn);
+  const raid = t.nextKind === 'raid';
+  // Not a raid: the roll after it is at least the shortest gap later.
+  const clearFor = inSec + THREAT.intervalMin * sectorMods(state).eventInterval;
+  return { inSec, raid, clearFor };
 }
 
 export function startEvent(state: GameState, kind: EventKind, events: TickEvents, rng = new Rng(state.rng)): ActiveEvent {
@@ -922,14 +959,17 @@ export function advanceThreats(state: GameState, dt: number, events: TickEvents,
   t.heat = Math.min(THREAT.heat.max, t.heat + heatPerSec(state) * dt);
   if (t.harassSec > 0) t.harassSec = Math.max(0, t.harassSec - dt);
 
-  // Roll the next event.
+  // Roll the next event (the incident was rolled ahead; re-roll it if it can't happen now).
+  if (t.nextKind === undefined) rollForecast(state);
   t.nextIn -= dt;
   if (t.nextIn <= 0) {
     const rng = new Rng(state.rng);
-    const kind = pickEvent(state, rng);
+    const ahead = t.nextKind;
+    const kind = ahead && eventAllowed(state, ahead) ? ahead : pickEvent(state, rng);
     t.nextIn = rng.range(THREAT.intervalMin, THREAT.intervalMax) * sectorMods(state).eventInterval;
     state.rng = rng.state;
     if (kind) startEvent(state, kind, events);
+    rollForecast(state);
   }
 
   // Count down warnings and effects.

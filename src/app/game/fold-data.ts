@@ -66,6 +66,7 @@ export const PERMANENT_NODES = [
   'lab_assistant',
   // Pure convenience: rebuilding the hangar by hand every run adds nothing.
   'loadout_memory',
+  'raid_forecast',
 ];
 
 export interface CoreUpgrade {

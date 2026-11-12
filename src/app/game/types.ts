@@ -282,6 +282,11 @@ export interface ThreatState {
   events: ActiveEvent[];
   /** Seconds until the next event roll. */
   nextIn: number;
+  /**
+   * The incident already rolled for when nextIn runs out (Pirate Comms Intercept shows it).
+   * Rolled ahead, then re-rolled at that moment if it can't happen then; undefined = not rolled yet.
+   */
+  nextKind?: EventKind | null;
   /** Game seconds elapsed (including offline), for the grace period. */
   clock: number;
   heat: number;
