@@ -1,6 +1,7 @@
 import type { AssistantState } from './assistant-rules';
 import type { BoosterState } from './booster-rules';
 import type { AlloyId } from './alloy-data';
+import type { ImprovementId } from './improvement-data';
 import type { DerelictClass, SpecialKind } from './special-data';
 import { OreId, ZoneId } from './config';
 import { BackgroundId, PostId, StatId } from './crew-data';
@@ -382,6 +383,9 @@ export interface Contract {
   baseline: number;
   /** Sustain contracts: seconds above the target so far. */
   held: number;
+  /** Construction contracts: what to build, and the ingots/alloys it takes. */
+  improvement?: ImprovementId;
+  materials?: { ingots: Partial<Record<OreId, number>>; alloys: Partial<Record<AlloyId, number>> };
 }
 
 export interface LocalOutfit {
@@ -551,6 +555,8 @@ export interface GameState {
   story: StoryState;
   asteroid: AsteroidState;
   sector: SectorInfo;
+  /** Sector improvements built in the current sector (key = sector seed:depth; reset by a jump). */
+  improvements?: { key: string; built: ImprovementId[] };
   /** Zone names this save has used, so none repeats until the whole pool has been used. */
   zoneNamesUsed?: string[];
   zone: ZoneId;

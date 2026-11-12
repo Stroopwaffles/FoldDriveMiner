@@ -4,6 +4,10 @@
  * pilot bonds.
  */
 import { THREAT } from './threat-data';
+import { AlloyId } from './alloy-data';
+import { alloyPrice } from './alloy-rules';
+import { IMPROVEMENT, ImprovementDef, improvementDef } from './improvement-data';
+import { construct, constructionOptions, improvementBonus, materialsFor } from './improvement-rules';
 import { CURIO, CURIOS, CurioDef } from './curio-data';
 import { CORES } from './core-data';
 import { makeRelic } from './core-rules';
@@ -66,7 +70,7 @@ export function emptyContracts(): ContractsState {
     board: [],
     active: [],
     refreshIn: 0,
-    standing: { meridian: 0, aster_lune: 0, orrery: 0, vanguard: 0 },
+    standing: { meridian: 0, aster_lune: 0, orrery: 0, vanguard: 0, colonial: 0 },
     exclusives: [],
     local: [],
     localKey: '',
@@ -114,7 +118,7 @@ function news(events: TickEvents, text: string, good: boolean, from: 'merchant' 
 
 /** Sector ore contracts bought from merchants. */
 export function tradeSellMult(state: GameState, ore: OreId): number {
-  let m = 1 + (state.trade.sectorBuffs.sell[ore] ?? 0);
+  let m = (1 + (state.trade.sectorBuffs.sell[ore] ?? 0)) * (1 + improvementBonus(state, 'sell'));
   if (corpPerk(state, 'aster_lune') && (ore === 'helium3' || ore === 'voidglass')) m *= 1.05;
   return m;
 }
@@ -137,11 +141,11 @@ export function droneCostMult(state: GameState): number {
 }
 
 export function surveyMult(state: GameState): number {
-  return (corpPerk(state, 'orrery') ? 1.1 : 1) * (1 + researchLevel(state, 'core_decryption') * CORES.decryptionPerLevel);
+  return (corpPerk(state, 'orrery') ? 1.1 : 1) * (1 + researchLevel(state, 'core_decryption') * CORES.decryptionPerLevel) * (1 + improvementBonus(state, 'survey'));
 }
 
 export function raidMult(state: GameState): number {
-  return corpPerk(state, 'vanguard') ? 0.9 : 1;
+  return (corpPerk(state, 'vanguard') ? 0.9 : 1) * Math.max(0.1, 1 - improvementBonus(state, 'raids'));
 }
 
 export function overdriveCellActive(state: GameState): boolean {
@@ -601,7 +605,7 @@ function advanceMerchants(state: GameState, dt: number, events: TickEvents, offl
   // Convoys are a fixed part of the economy only once you have something to trade.
   if (state.stats.creditsEarned < 2000) return;
   const traits = sectorOf(state).traits;
-  t.nextIn -= dt * (traits.includes('trade_hub') ? 1.5 : 1) * (traits.includes('trade_nexus') ? MERCHANT.nexusArrivalMult : 1);
+  t.nextIn -= dt * (traits.includes('trade_hub') ? 1.5 : 1) * (traits.includes('trade_nexus') ? MERCHANT.nexusArrivalMult : 1) * (1 + improvementBonus(state, 'convoys'));
   if (t.nextIn > 0) return;
   const rng = new Rng(state.rng);
   t.nextIn = rng.range(MERCHANT.intervalMin, MERCHANT.intervalMax);
@@ -653,6 +657,13 @@ function counterFor(state: GameState, type: ContractType): number {
 
 function makeContract(state: GameState, issuer: Contract['issuer'], type: ContractType, rng: Rng): Contract {
   const C = state.contracts;
+  // A construction job needs something left to build here; otherwise ask for ingots instead.
+  let build: ImprovementDef | undefined;
+  if (type === 'construction') {
+    const options = issuer.kind === 'corp' ? constructionOptions(state, issuer.id as CorpId) : [];
+    if (options.length) build = options[Math.floor(rng.next() * options.length)];
+    else type = 'refinement';
+  }
   const reachable = ORE_IDS.filter((o) => oreReachable(state, o));
   const issuerName = issuer.kind === 'corp' ? corpDef(issuer.id as CorpId).name : C.local.find((l) => l.id === issuer.id)?.name ?? 'Local outfit';
   const valueSec = Math.max(1, productionValuePerSec(state));
@@ -661,6 +672,7 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
   let reward = 0;
   let title = '';
   let deadline = rng.range(CONTRACT.deadlineMin, CONTRACT.deadlineMax);
+  let materials: Contract['materials'];
   switch (type) {
     case 'delivery': {
       // Energy firms want the fuel ores; others want the best ore you can reach.
@@ -705,6 +717,17 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
       title = `Hold ${target.toLocaleString()} ore/s for ${CONTRACT.sustainSec / 60} minutes`;
       break;
     }
+    case 'construction': {
+      materials = materialsFor(state, build!);
+      let value = 0;
+      for (const [o, n] of Object.entries(materials.ingots)) value += n! * ingotPrice(state, o as OreId);
+      for (const [a, n] of Object.entries(materials.alloys)) value += n! * alloyPrice(state, a as AlloyId);
+      reward = value * IMPROVEMENT.rewardMult;
+      target = 1;
+      title = `Build a ${build!.name} in this sector`;
+      deadline *= IMPROVEMENT.deadlineMult;
+      break;
+    }
   }
   const sd = rng.next() < 0.5 ? Math.round(5 + state.sector.depth * 5 + rng.next() * 10) : 0;
   return {
@@ -720,6 +743,7 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
     reward: { credits: Math.max(CONTRACT.minReward, Math.round(reward * meridianBonus(state, issuer))), surveyData: sd, dataCores: rng.next() < 0.15 ? 1 : 0 },
     baseline: 0,
     held: 0,
+    ...(build ? { improvement: build.id, materials } : {}),
   };
 }
 
@@ -775,6 +799,17 @@ export function refreshBoard(state: GameState): void {
   state.rng = rng.state;
 }
 
+/** Builds the improvement for an accepted construction contract, spending the materials. */
+export function buildContract(state: GameState, id: number, events: TickEvents): boolean {
+  const c = state.contracts.active.find((x) => x.id === id);
+  if (!c || c.type !== 'construction' || !construct(state, c)) return false;
+  c.progress = c.target;
+  const def = improvementDef(c.improvement!);
+  news(events, `${def.name} complete. ${def.effect}.`, true, 'corp');
+  complete(state, c, events);
+  return true;
+}
+
 export function rerollBoard(state: GameState): boolean {
   if (state.credits < CONTRACT.rerollCost) return false;
   state.credits -= CONTRACT.rerollCost;
@@ -821,7 +856,7 @@ function complete(state: GameState, c: Contract, events: TickEvents): void {
   state.stats.creditsEarned += c.reward.credits;
   state.surveyData += c.reward.surveyData;
   state.dataCores += c.reward.dataCores;
-  changeStanding(state, c, c.issuer.kind === 'corp' ? 2 : 3);
+  changeStanding(state, c, c.type === 'construction' ? IMPROVEMENT.standing : c.issuer.kind === 'corp' ? 2 : 3);
   const bits = [`+${c.reward.credits.toLocaleString()} cr`];
   if (c.reward.surveyData) bits.push(`+${c.reward.surveyData} Survey Data`);
   if (c.reward.dataCores) bits.push('+1 Data Core');
@@ -831,7 +866,8 @@ function complete(state: GameState, c: Contract, events: TickEvents): void {
     const id = c.issuer.id as CorpId;
     const s = C.standing[id];
     const def = corpDef(id);
-    if (s >= STANDING.trusted && s - 2 < STANDING.trusted) news(events, `${def.name} now trusts you: ${def.perk}.`, true, 'corp');
+    const gained = c.type === 'construction' ? IMPROVEMENT.standing : 2;
+    if (s >= STANDING.trusted && s - gained < STANDING.trusted) news(events, `${def.name} now trusts you: ${def.perk}.`, true, 'corp');
     if (s >= STANDING.partner && !C.exclusives.includes(id)) {
       C.exclusives.push(id);
       state.parts[def.exclusive] = (state.parts[def.exclusive] ?? 0) + 1;
@@ -915,6 +951,9 @@ function advanceContracts(state: GameState, dt: number, events: TickEvents, offl
       case 'sustain':
         c.held = rate >= c.target ? c.held + dt : 0;
         c.progress = Math.min(CONTRACT.sustainSec, c.held);
+        break;
+      case 'construction':
+        // Built by hand from the BOARD (buildContract); nothing to track meanwhile.
         break;
       default:
         c.progress = Math.min(c.target, counterFor(state, c.type) - c.baseline);

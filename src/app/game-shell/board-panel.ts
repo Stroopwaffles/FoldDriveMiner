@@ -1,8 +1,11 @@
 import { Component, computed, inject } from '@angular/core';
-import { oreDef } from '../game/config';
+import { OreId, oreDef } from '../game/config';
+import { AlloyId, alloyDef } from '../game/alloy-data';
+import { improvementDef } from '../game/improvement-data';
 import { formatDuration } from '../game/format';
 import { CONTRACT, CORPS, ITEM_INFO, OUTFITS, REP_TIERS, STANDING, clanDef } from '../game/trade-data';
 import * as TR from '../game/trade-rules';
+import * as IR from '../game/improvement-rules';
 import { Contract } from '../game/types';
 import { GameService } from '../services/game.service';
 
@@ -64,6 +67,7 @@ export class BoardPanel {
     const local = c.issuer.kind === 'local' ? this.s().contracts.local.find((l) => l.id === c.issuer.id) : null;
     return {
       c,
+      build: this.build(c),
       frac: Math.min(1, c.progress / goal),
       color: corp?.color ?? '#6dff9b',
       issuer: corp?.name ?? local?.name ?? 'Local outfit',
@@ -87,6 +91,21 @@ export class BoardPanel {
   protected readonly locals = computed(() =>
     this.s().contracts.local.map((o) => ({ o, label: OUTFITS[o.archetype].label, legacy: OUTFITS[o.archetype].legacy })),
   );
+
+  /** Construction contracts: what they build, and the materials (have / need). */
+  private build(c: Contract) {
+    if (c.type !== 'construction' || !c.improvement) return null;
+    const s = this.s();
+    const cost = IR.buildCost(s, c);
+    const mats = [
+      ...Object.entries(cost.ingots).map(([o, n]) => ({ name: `${oreDef(o as never).name} ingots`, need: n!, have: Math.floor(s.ingots[o as OreId]) })),
+      ...Object.entries(cost.alloys).map(([a, n]) => ({ name: alloyDef(a as AlloyId).name, need: n!, have: Math.floor(s.alloys[a as AlloyId] ?? 0) })),
+    ];
+    return { def: improvementDef(c.improvement), mats, blocker: IR.buildBlocker(s, c), needsAlloys: Object.keys(cost.alloys).length > 0 };
+  }
+
+  /** Improvements standing in this sector. */
+  protected readonly improvements = computed(() => IR.builtHere(this.s()).map((id) => improvementDef(id)));
 
   protected oreName(id: string | undefined): string {
     return id ? oreDef(id as never).name : '';

@@ -11,6 +11,7 @@ import { FOLD, PERMANENT_NODES, coreDef } from './fold-data';
 import { partDef } from './fleet-data';
 import { destinationSeeds, generateSector } from './sector-rules';
 import { assignZoneNames } from './zone-names';
+import { improvementBonus } from './improvement-rules';
 import { THREAT } from './threat-data';
 import { FoldState, GameState } from './types';
 import { RESEARCH } from './research';
@@ -78,7 +79,7 @@ export function chargeAtDepth(depth: number): number {
 }
 
 export function chargeEfficiency(state: GameState): number {
-  return 1 + researchLevel(state, 'charge_efficiency') * FOLD.efficiencyPerLevel + coreLevel(state, 'core_harmonics') * FOLD.harmonicsPerLevel;
+  return 1 + researchLevel(state, 'charge_efficiency') * FOLD.efficiencyPerLevel + coreLevel(state, 'core_harmonics') * FOLD.harmonicsPerLevel + improvementBonus(state, 'fuel');
 }
 
 export function chargeCap(state: GameState): number {

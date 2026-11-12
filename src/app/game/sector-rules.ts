@@ -2,6 +2,7 @@
  * Sector generation (seed + depth → star, ore profile, traits, survey zones,
  * fixed anomalies) and the combined modifiers a sector applies.
  */
+import { improvementBonus } from './improvement-rules';
 import { SITES, SPECIAL } from './special-data';
 import { ORES, ORE_IDS, OreId, ZONES, ZoneDef, oreDef, registerZones } from './config';
 import { Rng } from './rng';
@@ -295,7 +296,7 @@ export function nextChartZone(state: GameState): ZoneDef | null {
 
 export function scanCost(state: GameState, index: number): { sd: number; sec: number; tier: number } {
   const i = Math.min(index, SCAN.cost.length - 1);
-  const speed = 1 + researchLevel(state, 'deep_scan') * SCAN.deepScanPerLevel;
+  const speed = (1 + researchLevel(state, 'deep_scan') * SCAN.deepScanPerLevel) * (1 + improvementBonus(state, 'scan'));
   return {
     sd: Math.ceil(SCAN.cost[i] * (1 + state.sector.depth * SCAN.depthScale)),
     sec: Math.ceil(SCAN.sec[i] / speed),

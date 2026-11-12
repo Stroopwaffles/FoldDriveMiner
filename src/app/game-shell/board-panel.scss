@@ -350,3 +350,49 @@
 .convoy + .convoy {
   margin-top: 0.6rem;
 }
+
+.build {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.3rem 0;
+}
+.build-effect {
+  color: var(--ok);
+  margin: 0.15rem 0;
+}
+.mats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0.2rem 0;
+}
+.mat {
+  font-size: 0.62rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #2a3168;
+  color: var(--text-dim);
+
+  &.ok {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+}
+.improvement {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 4px;
+  border-left: 3px solid var(--ok);
+  background: rgba(109, 255, 155, 0.05);
+
+  .imp-name {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+  }
+}
+
+.sector-note {
+  margin-left: 0.5rem;
+}

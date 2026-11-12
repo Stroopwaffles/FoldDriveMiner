@@ -1122,6 +1122,18 @@ export class GameService {
     this.publish();
   }
 
+  /** Builds a construction contract's improvement from ingots and alloys. */
+  buildContract(id: number): void {
+    const s = this._state();
+    if (!s) return;
+    const events = this.blankEvents();
+    if (TR.buildContract(s, id, events)) this.audio.buy();
+    else this.audio.denied();
+    for (const t of events.trade) this.tradeSay(t);
+    this.publish();
+    this.save();
+  }
+
   deliverFavor(clan?: ClanId): void {
     const s = this._state();
     if (!s) return;

@@ -167,10 +167,11 @@ export const PARTS: readonly PartDef[] = [
   { id: 'vermilion_plating', name: 'Vermilion Plating', slot: 'armor', cost: 0, stats: { armor: 160, speed: 2 }, draw: 1, rarity: 'unique' },
   // Clan and corporate exclusives (Milestone 5b).
   { id: 'halcyon_chrome', name: 'Halcyon Chrome Plating', slot: 'armor', cost: 0, stats: { armor: 130, speed: 6 }, draw: 1, rarity: 'unique' },
-  { id: 'meridian_core', name: 'Meridian Prototype Core', slot: 'reactor', cost: 0, stats: {}, draw: 0, supply: 48, rarity: 'unique' },
-  { id: 'aster_capacitor', name: 'Aster-Lune Fold Capacitor', slot: 'reactor', cost: 0, stats: { speed: 4 }, draw: 0, supply: 40, rarity: 'unique' },
-  { id: 'orrery_array', name: 'Orrery Deep Array', slot: 'sensor', cost: 0, stats: { sensors: 24 }, draw: 3, rarity: 'unique' },
-  { id: 'vanguard_aegis', name: 'Vanguard Aegis', slot: 'offhand', cost: 0, stats: { armor: 80, combat: 12 }, draw: 4, rarity: 'unique' },
+  { id: 'meridian_core', name: 'Meridian Prototype Core', slot: 'reactor', cost: 0, stats: { mining: 8, combat: 4 }, draw: 0, supply: 60, rarity: 'unique' },
+  { id: 'aster_capacitor', name: 'Aster-Lune Fold Capacitor', slot: 'reactor', cost: 0, stats: { speed: 10, sensors: 4 }, draw: 0, supply: 54, rarity: 'unique' },
+  { id: 'orrery_array', name: 'Orrery Deep Array', slot: 'sensor', cost: 0, stats: { sensors: 34, speed: 4 }, draw: 2, rarity: 'unique' },
+  { id: 'vanguard_aegis', name: 'Vanguard Aegis', slot: 'offhand', cost: 0, stats: { armor: 120, combat: 18 }, draw: 3, rarity: 'unique' },
+  { id: 'pioneer_thrusters', name: 'Verdant Pioneer Thrusters', slot: 'thrusters', cost: 0, stats: { speed: 14, armor: 30, mining: 6 }, draw: 3, rarity: 'unique' },
   // Legendary parts: merchants sell them only for Data Cores.
   { id: 'ancestor_bore', name: 'Ancestor Bore', slot: 'drill', cost: 0, stats: { mining: 60, combat: 6 }, draw: 8, rarity: 'legendary' },
   { id: 'lattice_aegis', name: 'Lattice Aegis', slot: 'offhand', cost: 0, stats: { armor: 100, combat: 18 }, draw: 5, rarity: 'legendary' },

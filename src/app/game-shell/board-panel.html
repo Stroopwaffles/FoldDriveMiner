@@ -119,9 +119,23 @@
           <span class="c-title">{{ v.c.title }}</span>
           <span class="deadline" [class.soon]="v.c.deadline < 120">⏳ {{ duration(v.c.deadline) }}</span>
         </div>
-        <div class="c-bar"><div [style.width.%]="v.frac * 100"></div></div>
+        @if (v.build; as b) {
+          <div class="build">
+            <div class="small">{{ b.def.effect }}</div>
+            <div class="mats">
+              @for (m of b.mats; track m.name) {
+                <span class="mat" [class.ok]="m.have >= m.need">{{ m.name }} {{ game.fmt(Math.min(m.have, m.need)) }}/{{ game.fmt(m.need) }}</span>
+              }
+            </div>
+            <button type="button" class="btn small btn-primary" [disabled]="!!b.blocker" [title]="b.blocker ?? ''" (click)="game.buildContract(v.c.id)">
+              {{ b.blocker ? 'Gathering materials…' : 'Build ' + b.def.name }}
+            </button>
+          </div>
+        } @else {
+          <div class="c-bar"><div [style.width.%]="v.frac * 100"></div></div>
+        }
         <div class="c-foot">
-          <span class="small">{{ v.progressText }}{{ v.c.type === 'delivery' || v.c.type === 'refinement' ? ' — taken from the hold automatically' : '' }}</span>
+          <span class="small">{{ v.build ? (v.build.needsAlloys ? 'Refine the ingots and forge the alloys, then build' : 'Refine the ingots, then build') : v.progressText }}{{ v.c.type === 'delivery' || v.c.type === 'refinement' ? ' — taken from the hold automatically' : '' }}</span>
           <span class="reward small">+{{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · +' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · +1 Data Core' : '' }}</span>
           <button type="button" class="btn tiny" (click)="game.abandonContract(v.c.id)" title="Costs a little standing">Abandon</button>
         </div>
@@ -141,6 +155,14 @@
           <div class="stamp" aria-hidden="true">OFFER</div>
           <div class="c-kind">{{ v.kind }}</div>
           <div class="c-title">{{ v.c.title }}</div>
+          @if (v.build; as b) {
+            <div class="small build-effect">{{ b.def.effect }}</div>
+            <div class="mats">
+              @for (m of b.mats; track m.name) {
+                <span class="mat" [class.ok]="m.have >= m.need">{{ m.name }} {{ game.fmt(m.need) }}</span>
+              }
+            </div>
+          }
           <div class="dim small">Deadline {{ duration(v.c.duration) }} of play time · deadlines pause while you're away</div>
           <div class="reward small">Reward: {{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · ' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · 1 Data Core' : '' }}</div>
           <button type="button" class="btn small btn-primary" [disabled]="st.contracts.active.length >= slots()" (click)="game.acceptContract(v.c.id)">Accept</button>
@@ -149,6 +171,20 @@
         <p class="dim small">The board is empty. Offers arrive once your operation is earning.</p>
       }
     </div>
+  </div>
+
+  <!-- Sector improvements -->
+  <div class="section">
+    <div class="sub">SECTOR IMPROVEMENTS <span class="kana">せつび</span> <span class="dim small sector-note">{{ st.sector.code }} · lost when you Fold Jump</span></div>
+    @for (i of improvements(); track i.id) {
+      <div class="improvement">
+        <span class="imp-name">{{ i.name }}</span>
+        <span class="kana">{{ i.kana }}</span>
+        <span class="small ok">{{ i.effect }}</span>
+      </div>
+    } @empty {
+      <p class="dim small">Nothing built here yet. Corporations post construction contracts on the board: refine ingots, forge alloys and build their facilities for sector-wide bonuses.</p>
+    }
   </div>
 
   <!-- Standing -->

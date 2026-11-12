@@ -38,6 +38,7 @@ import { applySalvage, crackSalvage, rollSpecial, specialComposition, specialNam
 import { specialDef } from './special-data';
 import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
 import { advanceAnomalies, bloomHarvesting, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
+import { improvementBonus } from './improvement-rules';
 import { advanceScan, applyZoneNames, generateSector, oreCharted, pulsarSurge, sectorHasOre, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
   advanceTrade,
@@ -83,6 +84,7 @@ export * from './common';
 export * from './crew-rules';
 export * from './fleet-rules';
 export * from './alloy-rules';
+export * from './improvement-rules';
 export * from './core-rules';
 export * from './special-rules';
 export * from './booster-rules';
@@ -326,7 +328,7 @@ export function perDroneRate(state: GameState): number {
 export function droneRates(state: GameState): OreAmounts {
   return miningDroneRates(
     state,
-    sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production'),
+    sectorMods(state).droneOutput * (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production') * (1 + improvementBonus(state, 'production')),
   );
 }
 
@@ -767,8 +769,10 @@ export function researchSpeedParts(state: GameState): {
   grant: number;
   fellowship: number;
   booster: number;
+  sector: number;
 } {
   return {
+    sector: improvementBonus(state, 'research'),
     booster: boosterActiveBonus(state),
     science: postBonus(state, 'science'),
     medals: medalBonus(state, 'research'),
@@ -781,7 +785,7 @@ export function researchSpeedParts(state: GameState): {
 /** Research seconds that pass per real second. Grants and the Hyperthought Engine multiply everything else. */
 export function researchSpeed(state: GameState): number {
   const p = researchSpeedParts(state);
-  return (1 + p.science) * (1 + p.medals + p.matrix + p.fellowship) * (1 + p.grant) * (1 + p.booster);
+  return (1 + p.science) * (1 + p.medals + p.matrix + p.fellowship + p.sector) * (1 + p.grant) * (1 + p.booster);
 }
 
 function advanceResearch(state: GameState, dt: number): ResearchDone[] {
@@ -871,7 +875,8 @@ export function batchDuration(state: GameState): number {
   const r = CONFIG.refinery;
   return (
     (r.baseDurationSec * r.speedFactor ** researchLevel(state, 'refinery_speed') * (1 - postBonus(state, 'refinery'))) /
-    sectorMods(state).refinerySpeed
+    sectorMods(state).refinerySpeed /
+    (1 + improvementBonus(state, 'refinery'))
   );
 }
 
@@ -960,7 +965,7 @@ function advance(
   // Hazards: sheltering from a flare stops drones; a reactor fault slows everything.
   const hazard = productionMult(state);
   const m = sectorMods(state);
-  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production') * hazard.all;
+  const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production') * hazard.all * (1 + improvementBonus(state, 'production'));
   const amounts = miningDroneRates(state, efficiency * hazard.drones * m.droneOutput * boost);
   for (const id of ORE_IDS) amounts[id] *= dt;
   addOre(amounts, advanceFleet(state, dt, efficiency * boost * hazard.mechs, events));

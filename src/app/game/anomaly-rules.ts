@@ -2,6 +2,7 @@
  * Anomalies: detection, scanning, responses (missions, decoding, harvest
  * rigs), rewards, the Codex and the Silent Beacon lore.
  */
+import { improvementBonus } from './improvement-rules';
 import { medalMult } from './story-rules';
 import { CONFIG, ORE_IDS, zoneDef } from './config';
 import { emptyOre, researchLevel, zoneUnlocked } from './common';
@@ -75,7 +76,7 @@ export function lensMult(state: GameState): number {
 
 export function scanSpeed(state: GameState): number {
   const surveyors = Math.min(ANOMALY.surveyorScanCap, state.drones.surveyor * ANOMALY.surveyorScan);
-  return (1 + researchLevel(state, 'deep_scan') * ANOMALY.deepScanPerLevel + surveyors + postBonus(state, 'sensor')) * sectorMods(state).scanSpeed;
+  return (1 + researchLevel(state, 'deep_scan') * ANOMALY.deepScanPerLevel + surveyors + postBonus(state, 'sensor')) * sectorMods(state).scanSpeed * (1 + improvementBonus(state, 'scan'));
 }
 
 export function scanDuration(state: GameState, a: AnomalyState): number {

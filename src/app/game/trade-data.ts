@@ -153,8 +153,8 @@ export const MERCHANT = {
 
 // ---------------------------------------------------------------- contracts
 
-export type CorpId = 'meridian' | 'aster_lune' | 'orrery' | 'vanguard';
-export type ContractType = 'delivery' | 'refinement' | 'bounty' | 'survey' | 'blitz' | 'sustain';
+export type CorpId = 'meridian' | 'aster_lune' | 'orrery' | 'vanguard' | 'colonial';
+export type ContractType = 'delivery' | 'refinement' | 'bounty' | 'survey' | 'blitz' | 'sustain' | 'construction';
 
 export interface CorpDef {
   id: CorpId;
@@ -168,10 +168,11 @@ export interface CorpDef {
 }
 
 export const CORPS: readonly CorpDef[] = [
-  { id: 'meridian', name: 'Meridian Heavy Industries', kana: 'メリディアン', color: '#ffb547', liaison: 'Director Hale', types: ['delivery', 'refinement', 'sustain'], perk: 'Drones cost 5% less', exclusive: 'meridian_core' },
-  { id: 'aster_lune', name: 'Aster-Lune Energy', kana: 'アスター・ルーン', color: '#9dff8a', liaison: 'Dr. Ines Calloway', types: ['delivery', 'refinement'], perk: 'Helium-3 and Voidglass sell 5% higher', exclusive: 'aster_capacitor' },
-  { id: 'orrery', name: 'Orrery Survey Institute', kana: 'オーラリー', color: '#4fe3ff', liaison: 'Archivist Thorne', types: ['survey', 'blitz'], perk: '+10% Survey Data', exclusive: 'orrery_array' },
-  { id: 'vanguard', name: 'Vanguard Security Concern', kana: 'ヴァンガード', color: '#ff3d9a', liaison: 'Major Wyke', types: ['bounty', 'blitz'], perk: 'Raids 10% weaker', exclusive: 'vanguard_aegis' },
+  { id: 'meridian', name: 'Meridian Heavy Industries', kana: 'メリディアン', color: '#ffb547', liaison: 'Director Hale', types: ['delivery', 'refinement', 'sustain', 'construction'], perk: 'Drones cost 5% less', exclusive: 'meridian_core' },
+  { id: 'aster_lune', name: 'Aster-Lune Energy', kana: 'アスター・ルーン', color: '#9dff8a', liaison: 'Dr. Ines Calloway', types: ['delivery', 'refinement', 'construction'], perk: 'Helium-3 and Voidglass sell 5% higher', exclusive: 'aster_capacitor' },
+  { id: 'orrery', name: 'Orrery Survey Institute', kana: 'オーラリー', color: '#4fe3ff', liaison: 'Archivist Thorne', types: ['survey', 'blitz', 'construction'], perk: '+10% Survey Data', exclusive: 'orrery_array' },
+  { id: 'vanguard', name: 'Vanguard Security Concern', kana: 'ヴァンガード', color: '#ff3d9a', liaison: 'Major Wyke', types: ['bounty', 'blitz', 'construction'], perk: 'Raids 10% weaker', exclusive: 'vanguard_aegis' },
+  { id: 'colonial', name: 'Verdant Horizon Colonial Trust', kana: 'ヴァーダント', color: '#ff9f6b', liaison: 'Governor Aya Ndiaye', types: ['construction', 'construction', 'refinement', 'delivery'], perk: 'Sector improvements need 20% fewer materials', exclusive: 'pioneer_thrusters' },
 ];
 
 export function corpDef(id: CorpId): CorpDef {
