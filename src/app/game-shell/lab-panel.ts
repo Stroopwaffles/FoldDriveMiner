@@ -100,9 +100,25 @@ export class LabPanel {
   protected readonly selected = computed(() => this.nodes().find((n) => n.node.id === this.selectedId())!);
   protected readonly blocker = computed(() => E.researchBlocker(this.s(), this.selectedId()));
 
+  /** Research seconds per real second, and where the bonus comes from. */
+  protected readonly speed = computed(() => {
+    const s = this.s();
+    const mult = E.researchSpeed(s);
+    const p = E.researchSpeedParts(s);
+    const pct = (x: number) => `+${Math.round(x * 100)}%`;
+    const lines = [
+      `Science Officer: ${p.science ? pct(p.science) : 'none posted (CREW)'}`,
+      `Commendations: ${p.medals ? pct(p.medals) : 'none yet'}`,
+      `Core Cache (Core Matrix): ${p.matrix ? pct(p.matrix) : 'not built'}`,
+    ];
+    if (p.science && (p.medals || p.matrix)) lines.push('The Science Officer bonus multiplies the others.');
+    return { mult, bonus: mult - 1, tip: lines.join('\n') };
+  });
+
   protected readonly benches = computed(() => {
     const s = this.s();
     const slots = E.labSlots(s);
+    const speed = E.researchSpeed(s);
     return Array.from({ length: slots }, (_, i) => {
       const job = s.research.active[i];
       return job
@@ -110,7 +126,7 @@ export class LabPanel {
             job,
             name: researchNode(job.id).name,
             progress: 1 - job.remaining / job.duration,
-            remaining: formatDuration(job.remaining),
+            remaining: formatDuration(Math.max(0, job.remaining) / speed),
             rush: E.rushCost(job),
             done: job.remaining <= 0,
           }
@@ -148,6 +164,11 @@ export class LabPanel {
 
   protected duration(sec: number): string {
     return formatDuration(sec);
+  }
+
+  /** Real time for a job of `sec` research seconds at the current speed. */
+  protected realDuration(sec: number): string {
+    return formatDuration(sec / this.speed().mult);
   }
 
   protected branchColor(id: string): string {

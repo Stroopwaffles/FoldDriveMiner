@@ -8,8 +8,27 @@
   flex-direction: column;
 }
 
-.sd {
+/* Research speed sits before the resources, and owns the push to the right. */
+.speed {
   margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  cursor: help;
+
+  b {
+    color: var(--text);
+    font-weight: normal;
+    font-size: 0.95rem;
+  }
+
+  &.boosted b {
+    color: var(--ok);
+  }
+}
+
+.sd {
+  margin-left: 1rem;
   font-family: var(--font-mono);
   color: var(--text-dim);
   letter-spacing: 0.1em;
@@ -407,4 +426,12 @@
   font-family: var(--font-display);
   font-size: 0.65rem;
   color: var(--ok);
+}
+
+/* The base time, struck through, next to the sped-up time. */
+.was {
+  margin-left: 0.25rem;
+  color: var(--text-dim);
+  text-decoration: line-through;
+  font-size: 0.72rem;
 }

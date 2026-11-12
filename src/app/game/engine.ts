@@ -49,7 +49,8 @@ import {
   tradeSellMult,
 } from './trade-rules';
 import { advanceFold, coreLevel, depthMult, emptyFold, resonanceMult } from './fold-rules';
-import { advanceStory, emptyStory, medalMult, openLog } from './story-rules';
+import { advanceStory, emptyStory, medalBonus, medalMult, openLog } from './story-rules';
+import { matrixBonus } from './core-rules';
 import {
   LossContext,
   ONLINE,
@@ -743,9 +744,19 @@ export function cancelResearch(state: GameState, index: number): boolean {
   return true;
 }
 
+/** Where research speed comes from: each part is a bonus fraction (0.2 = +20%). */
+export function researchSpeedParts(state: GameState): { science: number; medals: number; matrix: number } {
+  return { science: postBonus(state, 'science'), medals: medalBonus(state, 'research'), matrix: matrixBonus(state, 'research') };
+}
+
+/** Research seconds that pass per real second. */
+export function researchSpeed(state: GameState): number {
+  return (1 + postBonus(state, 'science')) * medalMult(state, 'research');
+}
+
 function advanceResearch(state: GameState, dt: number): ResearchDone[] {
   const done: ResearchDone[] = [];
-  const speed = (1 + postBonus(state, 'science')) * medalMult(state, 'research');
+  const speed = researchSpeed(state);
   for (const job of state.research.active) job.remaining -= dt * speed;
   const finished = state.research.active.filter((j) => j.remaining <= 0);
   if (!finished.length) return done;

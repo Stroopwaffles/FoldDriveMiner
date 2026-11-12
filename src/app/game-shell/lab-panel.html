@@ -2,6 +2,9 @@
 <section class="panel lab">
   <div class="panel-title">
     <span class="led" [class.amber]="st.research.active.length > 0"></span>Research Lab <span class="kana">けんきゅうじょ</span>
+    <span class="speed" [class.boosted]="speed().bonus > 0.0005" [title]="speed().tip">
+      RESEARCH SPEED <b>{{ speed().bonus > 0.0005 ? '+' + (speed().bonus * 100).toFixed(0) + '%' : 'BASE' }}</b>
+    </span>
     <span class="sd">SURVEY DATA <b>{{ game.fmt(st.surveyData) }}</b> · DATA CORES <b class="cores">{{ st.dataCores }}</b></span>
   </div>
 
@@ -81,7 +84,11 @@
           @if (sel.cost.cores) {
             <span class="cores" [class.short]="st.dataCores < sel.cost.cores">◆ {{ sel.cost.cores }} cores</span>
           }
-          <span>⏱ {{ duration(sel.cost.sec) }}</span>
+          @if (speed().bonus > 0.0005) {
+            <span [title]="'Base time ' + duration(sel.cost.sec) + ', sped up by your research speed'">⏱ {{ realDuration(sel.cost.sec) }} <span class="was">{{ duration(sel.cost.sec) }}</span></span>
+          } @else {
+            <span>⏱ {{ duration(sel.cost.sec) }}</span>
+          }
         </div>
       }
       <button type="button" class="btn btn-primary" [disabled]="blocker() !== null" (click)="start()">
