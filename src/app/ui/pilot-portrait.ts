@@ -27,6 +27,8 @@ const STORY_LOOKS: Record<string, Look> = {
   corrigan: { skin: '#b97a55', hair: '#ff5a2b', eyes: '#7a3b12', suit: '#8a6a3a', style: 3, accessory: 2 },
   ombra: { skin: '#f2c29b', hair: '#1a1a2e', eyes: '#00a5b8', suit: '#2a2f55', style: 1, accessory: 4 },
   tollan: { skin: '#8a5a3c', hair: '#c0c8d8', eyes: '#2e7d4f', suit: '#6b5a2e', style: 2, accessory: 3 },
+  // A nameless raider for ordinary pirate comms.
+  raider: { skin: '#d9a07a', hair: '#1a1a2e', eyes: '#8a1f4a', suit: '#3a1a22', style: 3, accessory: 4 },
 };
 
 /** Cel-shaded 80s anime-style head-and-shoulders, generated from a seed. */

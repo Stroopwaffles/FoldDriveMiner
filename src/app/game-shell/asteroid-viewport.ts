@@ -153,6 +153,20 @@ export class AsteroidViewport {
   /** Threats shown in the viewport. */
   protected readonly rogue = computed(() => this.game.state()?.threats.events.find((e) => e.kind === 'rogue' && e.phase === 'warning') ?? null);
   protected readonly flare = computed(() => this.game.state()?.threats.events.find((e) => e.kind === 'flare') ?? null);
+  /** Pirate harassment after a lost or surrendered fight: skiffs buzz the asteroid, drones are pinned. */
+  protected readonly harassed = computed(() => (this.game.state()?.threats.harassSec ?? 0) > 0);
+  protected readonly harassLeft = computed(() => Math.ceil(this.game.state()?.threats.harassSec ?? 0));
+  protected readonly circlers = [
+    { r: 120, dur: 6, delay: 0 },
+    { r: 150, dur: 8, delay: -3 },
+    { r: 105, dur: 5, delay: -2.2 },
+    { r: 170, dur: 9.5, delay: -6 },
+  ];
+  protected readonly strafers = [
+    { y: 18, dur: 4.5, delay: 0 },
+    { y: 68, dur: 6, delay: -2.5 },
+    { y: 40, dur: 7.5, delay: -5 },
+  ];
   protected readonly meteors = computed(() => !!this.game.state()?.threats.events.some((e) => e.kind === 'micrometeor' && e.phase === 'active'));
   protected readonly meteorLines = Array.from({ length: 14 }, (_, i) => ({ top: (i * 37) % 100, delay: -(i * 0.31) % 1.2, len: 40 + ((i * 23) % 60) }));
   protected readonly rogueFloats = signal<{ id: number; text: string; x: number; y: number }[]>([]);

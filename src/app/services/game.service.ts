@@ -19,7 +19,7 @@ import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
 import { clanDef } from '../game/trade-data';
 import { Approach } from '../game/anomaly-data';
-import { CaptainId, JACKAL, StandingOrders, captainDef, eventDef } from '../game/threat-data';
+import { CORP_TAUNTS, CaptainId, JACKAL, RAIDER_TAUNTS, StandingOrders, captainDef, eventDef } from '../game/threat-data';
 import { DroneType as DT } from '../game/fleet-data';
 import { PostId, postDef } from '../game/crew-data';
 import { DroneType, FrameId, SlotId, frameDef } from '../game/fleet-data';
@@ -927,6 +927,15 @@ export class GameService {
       const c = captainDef(report.captain);
       const lines = pirateWon ? c.win : c.lose;
       this.sayPirate(report.captain, lines[(s.threats.captains?.[report.captain] ?? 0) % lines.length], 1500);
+    } else if (pirateWon) {
+      // Ordinary raiders (and Meridian's security wings) always rub it in.
+      const n = s.threats.raidsLost + s.threats.raids;
+      if (report.enemy === 'Meridian Security') {
+        this.say('CORP', CORP_TAUNTS[n % CORP_TAUNTS.length], 1500, undefined, 'MERIDIAN SECURITY');
+      } else {
+        const lines = report.outcome === 'surrender' ? RAIDER_TAUNTS.surrender : RAIDER_TAUNTS.defeat;
+        this.say('PIRATE', lines[n % lines.length], 1500, undefined, 'PIRATE RAIDER', 'raider');
+      }
     }
     if (s.threats.baseFound && !s.flags['baseFound']) {
       s.flags['baseFound'] = true;
@@ -984,9 +993,12 @@ export class GameService {
     if (!s) return;
     const events = this.blankEvents();
     if (T.surrenderRaid(s, eventId, events)) {
-      for (const r of events.threatResolved) this.say('VESPER', r.text);
       this.sortie.set(null);
-      this.audio.denied();
+      for (const r of events.threatResolved) {
+        this.say('VESPER', r.text);
+        // Taunts (Jackal, captains, raiders) and the defeat sting, as for any other lost fight.
+        if (r.sortie) this.afterSortie(r.sortie, false);
+      }
     }
     this.publish();
   }

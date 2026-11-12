@@ -34,8 +34,8 @@
     </div>
   </div>
 
-  <!-- Orbiting drones -->
-  <div class="orbit-center" aria-hidden="true">
+  <!-- Orbiting drones (pinned down while pirates harass the fleet) -->
+  <div class="orbit-center" [class.pinned]="harassed()" aria-hidden="true">
     @for (d of drones(); track $index) {
       <div class="drone-orbit" [style.--r.px]="d.r" [style.--dur.s]="d.dur" [style.--delay.s]="d.delay">
         <fdm-drone-sprite class="drone" [type]="d.type" [size]="d.type === 'hauler' ? 18 : 15" />
@@ -149,6 +149,22 @@
   <!-- Hazards -->
   @if (flare(); as f) {
     <div class="flare" [class.warning]="f.phase === 'warning'" aria-hidden="true"></div>
+  }
+  @if (harassed()) {
+    <div class="pirates" [class.still]="settings.reducedMotion()" aria-hidden="true">
+      @for (p of circlers; track $index) {
+        <div class="pirate-orbit" [style.--r.px]="p.r" [style.--dur.s]="p.dur" [style.--delay.s]="p.delay">
+          <svg class="skiff" viewBox="0 0 40 20"><polygon points="0,10 14,3 40,7 30,10 40,13 14,17" /><circle cx="2" cy="10" r="2.5" class="thrust" /></svg>
+          <span class="bolt"></span>
+        </div>
+      }
+      @for (p of strafers; track $index) {
+        <div class="strafer" [style.top.%]="p.y" [style.--dur.s]="p.dur" [style.animation-delay.s]="p.delay">
+          <svg class="skiff big" viewBox="0 0 40 20"><polygon points="0,10 14,3 40,7 30,10 40,13 14,17" /><circle cx="2" cy="10" r="2.5" class="thrust" /></svg>
+        </div>
+      }
+      <div class="harass-tag">PIRATES HARASSING THE FLEET · {{ harassLeft() }}s</div>
+    </div>
   }
   @if (meteors()) {
     <div class="meteors" aria-hidden="true">

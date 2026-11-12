@@ -189,6 +189,33 @@ export const ENEMY_UNITS: Record<EnemyUnit['id'], EnemyUnit> = {
   captain: { id: 'captain', name: 'Captain\'s flagship', weight: 18 },
 };
 
+/** What ordinary raiders say when they win (or you hand over the hold). */
+export const RAIDER_TAUNTS = {
+  defeat: [
+    'Ha! Is that a mining fleet or a scrap delivery? Thanks for the parts.',
+    'Your mechs fold faster than your ship does, Commander.',
+    'Next time, bring something that shoots back.',
+    'We\'ll be sure to tell the whole belt how easy you were.',
+    'Was that your best pilot? Was that ALL your pilots?',
+    'Lovely ore. Lovely drones. Lovely of you to share.',
+  ],
+  surrender: [
+    'Didn\'t even put up a fight. We love customers like you.',
+    'Hands up, hold open. Good little prospector.',
+    'Pleasure doing business! Same time next raid?',
+    'Smartest thing you\'ve done all day, Commander. Also the saddest.',
+    'Every last tonne? You\'re too kind. Really. Too kind.',
+    'Keep mining, we\'ll keep collecting. Teamwork!',
+  ],
+};
+
+/** What Meridian Security says when it wins (after Break the Cycle). */
+export const CORP_TAUNTS = [
+  'Asset recovery complete. Meridian thanks you for your compliance.',
+  'You broke our cycle, Commander. We\'re simply invoicing you for it.',
+  'Resistance logged and billed. Have a productive day.',
+];
+
 /** A pirate captain who leads raids before the Jackal takes over the lanes. */
 export interface CaptainDef {
   id: 'corrigan' | 'ombra' | 'tollan';
