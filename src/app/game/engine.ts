@@ -38,7 +38,7 @@ import { applySalvage, crackSalvage, rollSpecial, specialComposition, specialNam
 import { specialDef } from './special-data';
 import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
 import { advanceAnomalies, bloomHarvesting, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
-import { advanceScan, generateSector, oreCharted, pulsarSurge, sectorHasOre, sectorMods, sectorZones, starLabel } from './sector-rules';
+import { advanceScan, applyZoneNames, generateSector, oreCharted, pulsarSurge, sectorHasOre, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
   advanceTrade,
   emptyContracts,
@@ -190,7 +190,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
 
 /** Keeps the stored sector labels in step with the generated sector. */
 export function syncSector(state: GameState): void {
-  const def = generateSector(state.sector.seed, state.sector.depth);
+  const def = applyZoneNames(state, generateSector(state.sector.seed, state.sector.depth));
   state.sector.code = def.code;
   state.sector.name = def.name;
   state.sector.star = starLabel(def);

@@ -51,6 +51,18 @@ function pickWeighted<T extends { weight: number }>(rng: Rng, list: readonly T[]
   return list[list.length - 1];
 }
 
+/** A zone's one-line description from its ore mix: what it's mostly made of, and its best ore. */
+function zoneDesc(comp: Partial<Record<OreId, number>>, byShare: readonly { id: OreId; name: string }[], best: { id: OreId; name: string }): string {
+  const [a, b] = byShare;
+  const share = (id: OreId) => comp[id] ?? 0;
+  let text: string;
+  if (share(a.id) >= 0.6) text = `Mostly ${a.name}`;
+  else if (b && share(b.id) >= 0.2) text = `Mixed ${a.name} and ${b.name}`;
+  else text = `Mainly ${a.name}`;
+  if (best.id !== a.id && !(share(a.id) < 0.6 && b && best.id === b.id && share(b.id) >= 0.2)) text += `, with some ${best.name}`;
+  return `${text}.`;
+}
+
 /** Deterministic: the same seed and depth always make the same sector. */
 export function generateSector(seed: number, depth: number): SectorDef {
   const key = `${seed}:${depth}`;
@@ -134,11 +146,12 @@ function buildSector(seed: number, depth: number): SectorDef {
     for (const id of Object.keys(comp) as OreId[]) comp[id] = comp[id]! / total;
     const scale = 1 + depth * 0.25;
     const top = [...ORES].reverse().find((o) => (comp[o.id] ?? 0) > 0.05) ?? ORES[0];
+    const main = [...ORES].sort((a, b) => (comp[b.id] ?? 0) - (comp[a.id] ?? 0));
     zones.push({
       id: `${code}:${i}`,
       name: names[i][0],
       kana: names[i][1],
-      desc: `${profile.name}. Richest in ${top.name}.`,
+      desc: zoneDesc(comp, main, top),
       composition: comp,
       massMult: ZONE_MASS[i] * scale,
       surveyData: ZONE_SURVEY[i] * scale,
@@ -170,7 +183,21 @@ function buildSector(seed: number, depth: number): SectorDef {
 // ---------------------------------------------------------------- the current sector
 
 export function sectorOf(state: GameState): SectorDef {
-  return generateSector(state.sector.seed, state.sector.depth);
+  return applyZoneNames(state, generateSector(state.sector.seed, state.sector.depth));
+}
+
+/** Puts the names this save gave the sector's zones onto the (shared) zone definitions. */
+export function applyZoneNames(state: GameState, def: SectorDef): SectorDef {
+  const names = state.sector.zoneNames;
+  if (!names) return def;
+  def.zones.forEach((z, i) => {
+    const n = names[i];
+    if (n && z.name !== n[0]) {
+      z.name = n[0];
+      z.kana = n[1];
+    }
+  });
+  return def;
 }
 
 export function sectorZones(state: GameState): ZoneDef[] {

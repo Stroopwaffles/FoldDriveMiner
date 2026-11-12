@@ -10,6 +10,7 @@ import { hasResearch, researchLevel } from './common';
 import { FOLD, PERMANENT_NODES, coreDef } from './fold-data';
 import { partDef } from './fleet-data';
 import { destinationSeeds, generateSector } from './sector-rules';
+import { assignZoneNames } from './zone-names';
 import { THREAT } from './threat-data';
 import { FoldState, GameState } from './types';
 import { RESEARCH } from './research';
@@ -366,7 +367,9 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   // Break the Cycle: gentler jumps keep a tenth of the drone fleet.
   if (choice(old) === 'break') for (const t of DRONE_IDS) s.drones[t] += Math.floor(old.drones[t] * 0.1);
 
-  // Build the new sector: labels, zones, anomalies, local outfits, first asteroid.
+  // Build the new sector: labels, fresh zone names, anomalies, local outfits, first asteroid.
+  s.zoneNamesUsed = [...(old.zoneNamesUsed ?? [])];
+  if (s.sector.depth > 0) assignZoneNames(s, generateSector(s.sector.seed, s.sector.depth).zones);
   syncSector(s);
   s.anomalies.sectorKey = '';
   ensureAnomalies(s);

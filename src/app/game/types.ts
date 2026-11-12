@@ -73,6 +73,8 @@ export interface SectorInfo {
   charted: number;
   /** A sector scan underway, charting the next zone. */
   scan: { remaining: number; duration: number; paidSd: number } | null;
+  /** Names given to this sector's zones on arrival ([name, kana]); older sectors keep their generated names. */
+  zoneNames?: [string, string][];
 }
 
 export interface AnomalyState {
@@ -533,6 +535,8 @@ export interface GameState {
   story: StoryState;
   asteroid: AsteroidState;
   sector: SectorInfo;
+  /** Zone names this save has used, so none repeats until the whole pool has been used. */
+  zoneNamesUsed?: string[];
   zone: ZoneId;
 
   research: {
