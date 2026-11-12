@@ -311,6 +311,7 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.contracts.nextId = old.contracts.nextId;
   s.anomalies.codex = { ...old.anomalies.codex };
   s.anomalies.lore = old.anomalies.lore;
+  s.anomalies.curios = [...(old.anomalies.curios ?? [])];
   s.anomalies.nextId = old.anomalies.nextId;
 
   // The Jackal follows you through the fold; your orders stay the same.

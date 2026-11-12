@@ -1,10 +1,13 @@
 import { Component, computed, inject } from '@angular/core';
 import { ANOMALIES, BEACON_LORE, CODEX_SETS, RARITY_COLOR } from '../game/anomaly-data';
+import { CURIOS } from '../game/curio-data';
 import { GameService } from '../services/game.service';
+import { CurioArt } from '../ui/curio-art';
 
-/** MAP › CODEX: every anomaly type found, set bonuses, and the Silent Beacon's lore. */
+/** MAP › CODEX: every anomaly type found, set bonuses, the Silent Beacon's lore and curios. */
 @Component({
   selector: 'fdm-codex-panel',
+  imports: [CurioArt],
   template: `
     <div class="codex">
       <div class="howto">
@@ -56,6 +59,22 @@ import { GameService } from '../services/game.service';
         @if (lore().length && lore().length < 5) {
           <div class="frag locked">#{{ lore().length + 1 }} ▒▒▒▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒▒▒▒</div>
         }
+      </div>
+
+      <div class="curios">
+        <div class="sub">CURIOS <span class="kana">きぶつ</span> <span class="dim count">{{ curioCount() }}/{{ curios().length }}</span></div>
+        <div class="dim small">Relics sold by Grey Tithe and Starward Collegium traders. Each one you buy is identified here. Curios stay with you through every Fold Jump.</div>
+        <div class="curio-grid">
+          @for (c of curios(); track c.def.id) {
+            <div class="curio" [class.unknown]="!c.found">
+              <fdm-curio-art [id]="c.def.id" [found]="c.found" [size]="64" />
+              <div>
+                <div class="c-name">{{ c.found ? c.def.name : '???' }}</div>
+                <div class="c-note">{{ c.found ? c.note : 'Not yet found. Look for curios in trader convoys.' }}</div>
+              </div>
+            </div>
+          }
+        </div>
       </div>
     </div>
   `,
@@ -186,6 +205,43 @@ import { GameService } from '../services/game.service';
       background: repeating-linear-gradient(0deg, rgba(255, 181, 71, 0.03) 0 1px, transparent 1px 3px), #0a0a10;
       padding: 0.6rem 0.75rem;
     }
+    .curios {
+      border: 1px solid #2a3168;
+      padding: 0.6rem 0.75rem;
+      background: rgba(10, 13, 34, 0.6);
+    }
+    .count {
+      margin-left: 0.5rem;
+    }
+    .curio-grid {
+      margin-top: 0.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 6px;
+    }
+    .curio {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 0.6rem;
+      align-items: start;
+      padding: 0.45rem;
+      border: 1px solid #232a5c;
+      border-left: 3px solid #c77dff;
+      &.unknown {
+        opacity: 0.5;
+        border-left-color: #3a4178;
+      }
+    }
+    .c-name {
+      font-family: var(--font-display);
+      font-size: 0.78rem;
+      color: #c77dff;
+    }
+    .c-note {
+      margin-top: 0.2rem;
+      font-size: 0.72rem;
+      font-style: italic;
+    }
     .frag {
       font-family: var(--font-mono);
       color: var(--amber);
@@ -227,6 +283,13 @@ export class CodexPanel {
       return { ...set, members, found, total: set.kinds.length, done: found === set.kinds.length };
     });
   });
+
+  protected readonly curios = computed(() => {
+    const s = this.s();
+    const have = new Set(s.anomalies.curios ?? []);
+    return CURIOS.map((def) => ({ def, found: have.has(def.id), note: def.note.replaceAll('{ship}', s.ship) }));
+  });
+  protected readonly curioCount = computed(() => this.curios().filter((c) => c.found).length);
 
   protected readonly lore = computed(() => {
     const s = this.s();

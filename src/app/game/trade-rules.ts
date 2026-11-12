@@ -3,6 +3,7 @@
  * escorts), the contract board (megacorps and sector-local outfits) and
  * pilot bonds.
  */
+import { CURIO, CURIOS, CurioDef } from './curio-data';
 import { CORES } from './core-data';
 import { makeRelic } from './core-rules';
 import { choice } from './story-rules';
@@ -90,6 +91,18 @@ export function ensureTradeSector(state: GameState): void {
   }
   // Older saves could run past the cap.
   for (const o of state.contracts.local) o.standing = Math.min(CONTRACT.localLegacy, o.standing);
+}
+
+/** Adds a random not-yet-found curio to the Codex. Returns it, or null when the set is complete. */
+export function identifyCurio(state: GameState): CurioDef | null {
+  const have = new Set(state.anomalies.curios ?? []);
+  const left = CURIOS.filter((c) => !have.has(c.id));
+  if (!left.length) return null;
+  const rng = new Rng(state.rng);
+  const pick = left[Math.floor(rng.next() * left.length)];
+  state.rng = rng.state;
+  state.anomalies.curios = [...(state.anomalies.curios ?? []), pick.id];
+  return pick;
 }
 
 function news(events: TickEvents, text: string, good: boolean, from: 'merchant' | 'corp' | 'vesper' = 'vesper'): void {
@@ -420,10 +433,19 @@ function applyItem(state: GameState, item: StockItem, events: TickEvents): void 
       news(events, `${p.name} "${p.callsign}" signs on (level ${p.level} ${p.background}).`, true);
       break;
     }
-    case 'curio':
-      state.surveyData += 30;
-      news(events, 'The curio hums faintly near the Fold Drive housing. +30 Survey Data.', true);
+    case 'curio': {
+      const sd = CURIO.surveyData * (1 + state.sector.depth);
+      state.surveyData += sd;
+      const found = identifyCurio(state);
+      news(
+        events,
+        found
+          ? `Curio identified: ${found.name}. Added to the Codex (MAP › CODEX). +${sd} Survey Data.`
+          : `Another curio for the shelf. Nothing new for the Codex. +${sd} Survey Data.`,
+        true,
+      );
       break;
+    }
     case 'data_cores':
       state.dataCores += item.count!;
       break;

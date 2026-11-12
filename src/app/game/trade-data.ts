@@ -88,7 +88,7 @@ export const ITEM_INFO: Record<ItemKind, { name: string; desc: string; sectorBou
   deterrent: { name: 'Deterrent beacon', desc: 'Pirate Heat −30 and no raids for 10 minutes.' },
   fold_cell: { name: 'Fold charge cell', desc: 'Adds 20% of a full Fold Drive charge. Use it from the FOLD screen.', contraband: true },
   pilot: { name: 'Pilot contract', desc: 'A pilot looking for work joins your crew.' },
-  curio: { name: 'Curio', desc: 'A strange relic. Adds Survey Data and a Codex note.' },
+  curio: { name: 'Curio', desc: 'A strange relic. Adds Survey Data, and a new one goes in the Codex with a note and a sketch.' },
   data_cores: { name: 'Data Cores', desc: 'Pristine Data Cores.' },
   survey_data: { name: 'Survey archive', desc: 'Survey Data from another expedition.' },
   exclusive: { name: 'Clan exclusive', desc: 'Only for the clan\'s partners.' },

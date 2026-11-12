@@ -114,6 +114,8 @@ export interface AnomaliesState {
   codex: Partial<Record<AnomalyKind, number>>;
   /** Silent Beacon fragments decoded (lore). */
   lore: number;
+  /** Curios identified, in the order they were found (the Codex's Curios section). */
+  curios: string[];
   nextId: number;
   /** Which sector the fixed list belongs to. */
   sectorKey: string;

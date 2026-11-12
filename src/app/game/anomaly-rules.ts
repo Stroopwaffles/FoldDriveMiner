@@ -17,7 +17,7 @@ import { AnomaliesState, AnomalyState, GameState, MechState, MissionState, TickE
 import { addToCargo, baseDrillPower, drillPower, droneRates, mechRateTotal, orePrice, overdriveMult } from './engine';
 
 export function emptyAnomalies(): AnomaliesState {
-  return { list: [], nextIn: ANOMALY.intervalMin, scan: null, missions: [], codex: {}, lore: 0, nextId: 1, sectorKey: '' };
+  return { list: [], nextIn: ANOMALY.intervalMin, scan: null, missions: [], codex: {}, lore: 0, curios: [], nextId: 1, sectorKey: '' };
 }
 
 function sectorKey(state: GameState): string {
