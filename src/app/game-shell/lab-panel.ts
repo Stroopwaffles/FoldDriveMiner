@@ -120,9 +120,9 @@ export class LabPanel {
       owned: E.hasAssistant(s),
       on: a.on && E.hasAssistant(s),
       mode: a.mode,
-      queue: a.queue.map((id) => {
+      queue: a.queue.map((id, i) => {
         const why = E.researchBlocker(s, id);
-        return { id, name: researchNode(id).name, ready: why === null, why: why ?? '' };
+        return { id, name: researchNode(id).name, ready: why === null, why: why ?? '', next: i === E.nextInQueue(s) };
       }),
     };
   });

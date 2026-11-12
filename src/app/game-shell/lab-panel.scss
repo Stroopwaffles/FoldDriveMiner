@@ -557,6 +557,12 @@
     border-color: rgba(157, 255, 138, 0.5);
   }
 
+  /* The project ARIA starts next (or is waiting to afford). */
+  &.next {
+    border-color: var(--amber);
+    box-shadow: 0 0 6px rgba(255, 181, 71, 0.4);
+  }
+
   .x {
     appearance: none;
     border: 0;

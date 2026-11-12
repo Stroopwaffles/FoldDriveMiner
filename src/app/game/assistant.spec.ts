@@ -60,6 +60,33 @@ describe('ARIA, the research assistant', () => {
     expect(s.research.assistant.queue).toEqual(['refinery_speed']);
   });
 
+  it('is first in, first out: a front project she cannot afford yet holds the line', () => {
+    const s = lab();
+    delete s.research.levels['lab_slot_2'];
+    E.enqueue(s, 'signature_scanner'); // first in: 8 SD
+    E.enqueue(s, 'cargo_compression'); // added later: 3 SD
+    s.surveyData = 5; // enough for the later one only
+    E.setAssistant(s, true);
+    E.tick(s, 1);
+    // She waits for the first project instead of letting the later, cheaper one jump ahead.
+    expect(s.research.active.length).toBe(0);
+    expect(s.research.assistant.queue).toEqual(['signature_scanner', 'cargo_compression']);
+    s.surveyData = 1e5;
+    E.tick(s, 1);
+    expect(s.research.active.map((j) => j.id)).toEqual(['signature_scanner']);
+  });
+
+  it('Queue + cheapest does not fill in while a queued project is waiting for money', () => {
+    const s = lab();
+    delete s.research.levels['lab_slot_2'];
+    E.enqueue(s, 'signature_scanner');
+    s.surveyData = 5;
+    E.setAssistantMode(s, 'auto');
+    E.setAssistant(s, true);
+    E.tick(s, 1);
+    expect(s.research.active.length).toBe(0);
+  });
+
   it('does nothing when switched off, and waits when it cannot pay', () => {
     const s = lab();
     E.enqueue(s, 'depletion_bonus');

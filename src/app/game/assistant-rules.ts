@@ -109,10 +109,11 @@ export function runAssistant(state: GameState): string[] {
   pruneQueue(state);
   const started: string[] = [];
   while (state.research.active.length < labSlots(state)) {
-    // First queued project that can start right now; the rest keep their place.
-    const i = a.queue.findIndex((id) => researchBlocker(state, id) === null);
+    const i = nextInQueue(state);
     let id: string | null = null;
     if (i >= 0) {
+      // First in, first out: the oldest open project goes next, or the queue waits for it.
+      if (researchBlocker(state, a.queue[i]) !== null) break;
       id = a.queue[i];
       a.queue.splice(i, 1);
     } else if (a.mode === 'auto') {
@@ -122,4 +123,14 @@ export function runAssistant(state: GameState): string[] {
     started.push(researchNode(id).name);
   }
   return started;
+}
+
+/**
+ * The queue entry ARIA works on next: the oldest one that's open to research. Entries that can't
+ * run at all yet (missing a prerequisite, an uncharted zone, or another level already on a bench)
+ * are stepped over and keep their place; an open entry that's only short of Survey Data, credits
+ * or cores is NOT stepped over: the queue waits for it, so it stays first in, first out.
+ */
+export function nextInQueue(state: GameState): number {
+  return state.research.assistant.queue.findIndex((id) => researchStatus(state, id) === 'available');
 }
