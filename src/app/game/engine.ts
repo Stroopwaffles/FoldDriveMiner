@@ -958,7 +958,7 @@ function advance(
   const boost = (pulsarSurge(state) ? 2 : 1) * codexProductionBonus(state) * resonanceMult(state) * depthMult(state) * medalMult(state, 'production') * hazard.all;
   const amounts = miningDroneRates(state, efficiency * hazard.drones * m.droneOutput * boost);
   for (const id of ORE_IDS) amounts[id] *= dt;
-  addOre(amounts, advanceFleet(state, dt, efficiency * boost, events));
+  addOre(amounts, advanceFleet(state, dt, efficiency * boost * hazard.mechs, events));
   const { added, lost } = addToCargo(state, amounts);
   state.surveyData += passiveSdRate(state) * dt * efficiency * codexSurveyBonus(state) * surveyMult(state);
 

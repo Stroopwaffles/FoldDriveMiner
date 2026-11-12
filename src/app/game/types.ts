@@ -274,6 +274,8 @@ export interface ThreatState {
   raidsSinceCaptain: number;
   /** Encounters with each rival captain. */
   captains: Partial<Record<CaptainId, number>>;
+  /** Seconds left of pirate harassment (no drone or mech mining). */
+  harassSec: number;
   lastSortie: SortieReport | null;
   /** Fractional wreck recovery by Salvagers carried between ticks. */
   salvageAcc: number;

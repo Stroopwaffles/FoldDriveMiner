@@ -31,7 +31,7 @@ export class DefensePanel {
   protected readonly raidOrders: { id: RaidOrder; label: string; hint: string }[] = [
     { id: 'defend', label: 'Defend', hint: 'Mechs on DEFENSE standby + Guardians fight' },
     { id: 'defend_all', label: 'Scramble all', hint: 'Mining mechs join the fight too' },
-    { id: 'surrender', label: 'Surrender', hint: `Hand over ${THREAT.raid.surrenderCargo * 100}% of the hold` },
+    { id: 'surrender', label: 'Surrender', hint: `Hand over all your ore; mining stops for ${THREAT.raid.harassSec / 60} min` },
   ];
   protected readonly flareOrders: { id: FlareOrder; label: string; hint: string }[] = [
     { id: 'shelter', label: 'Shelter', hint: 'Drones stop mining for the flare' },

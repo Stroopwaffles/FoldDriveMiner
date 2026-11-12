@@ -31,7 +31,7 @@ export interface EventDef {
 }
 
 export const EVENTS: readonly EventDef[] = [
-  { kind: 'raid', name: 'Pirate Raid', kana: 'かいぞくしゅうげき', hostile: true, warning: 45, duration: 0, weight: 3, desc: 'Pirates are coming for your cargo. Defend with mechs and Guardian drones, or hand over a share of the hold.' },
+  { kind: 'raid', name: 'Pirate Raid', kana: 'かいぞくしゅうげき', hostile: true, warning: 45, duration: 0, weight: 3, desc: 'Pirates are coming for your cargo. Lose or surrender and they take all your ore and pin down your fleet. Defend with mechs and Guardian drones.' },
   { kind: 'flare', name: 'Solar Flare', kana: 'たいようフレア', hostile: true, warning: 60, duration: 45, weight: 2, desc: 'Radiation is about to sweep the belt. Shelter the drones (they stop mining) or ride it out (some are lost).' },
   { kind: 'rogue', name: 'Rogue Asteroid', kana: 'きけんしょうわくせい', hostile: true, warning: 40, duration: 0, weight: 1.5, desc: 'A huge rock is on a collision course. Crack it by clicking it, or let a mech intercept. Success pays big.' },
   { kind: 'micrometeor', name: 'Micrometeor Storm', kana: 'びせきうんう', hostile: true, warning: 0, duration: 60, weight: 1.5, desc: 'Grit is shredding drones. Guardians shield the swarm.' },
@@ -76,9 +76,15 @@ export const THREAT = {
     /** Enemy HP is strength × this; they hit for `strength` per round. */
     hpPerStrength: 6,
     rounds: 6,
-    surrenderCargo: 0.2,
-    defeatCargo: 0.25,
+    /** Losing or surrendering: the pirates take every tonne of raw ore in the hold... */
+    surrenderCargo: 1,
+    defeatCargo: 1,
+    /** ...a share of your refined ingots... */
+    surrenderIngots: 0.2,
+    defeatIngots: 0.25,
     defeatDrones: 0.03,
+    /** ...and harass the fleet: drones and mining mechs stop mining for this long. */
+    harassSec: 120,
     bountyPerStrength: 60,
     dataCoreChance: 0.25,
     xpBase: 200,

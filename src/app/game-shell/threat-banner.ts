@@ -192,8 +192,11 @@ export class ThreatBanner {
     return T.defensePower(s, T.defenders(s, s.threats.orders.raid === 'defend_all'), true);
   });
 
-  protected readonly chips = computed(() =>
-    this.s()
+  protected readonly chips = computed(() => [
+    ...(this.s().threats.harassSec > 0
+      ? [{ id: -1, left: Math.ceil(this.s().threats.harassSec), good: false, text: 'PIRATE HARASSMENT — drones and mechs pinned down, mining paused' }]
+      : []),
+    ...this.s()
       .threats.events.filter((e) => e.phase === 'active')
       .map((e) => {
         const left = Math.max(0, Math.ceil(e.remaining));
@@ -212,7 +215,7 @@ export class ThreatBanner {
             return { id: e.id, left, good: false, text: `MARKET CRASH — ${e.ore ? T.oreName(e.ore) : ''} ×0.5 price` };
         }
       }),
-  );
+  ]);
 
   protected raidOrderText(): string {
     const o = this.orders().raid;

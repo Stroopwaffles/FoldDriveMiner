@@ -191,6 +191,7 @@ describe('milestone 3: crew', () => {
     const { m, juno } = mechWithJuno(s);
     unlock(s, 'repair_bay', 'auto_repair');
     s.cargo.ferrite = 1e9;
+    s.threats.nextIn = Infinity; // no raids: losing one pins the mechs down
     E.setMechJob(s, m.id, 'mining');
     let total = 0;
     for (let l = 1; l < 10; l++) total += xpForLevel(l);

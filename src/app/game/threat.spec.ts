@@ -130,15 +130,32 @@ describe('milestone 4: events and heat', () => {
 });
 
 describe('milestone 4: raids and sorties', () => {
-  it('with no defenders a raid takes cargo', () => {
+  it('with no defenders a raid takes all the ore, a share of ingots, and pins the fleet down', () => {
     const s = rich();
     s.cargo.ferrite = 1000;
+    s.ingots.ferrite = 100;
     T.startEvent(s, 'raid', ev());
     const e = ev();
     T.advanceThreats(s, 46, e);
     expect(s.threats.lastSortie?.outcome).toBe('surrender');
-    expect(s.cargo.ferrite).toBeCloseTo(800, 3);
+    expect(s.cargo.ferrite).toBeCloseTo(0, 6);
+    expect(s.ingots.ferrite).toBeCloseTo(100 * (1 - THREAT.raid.surrenderIngots), 6);
     expect(e.threatResolved.length).toBe(1);
+    expect(s.threats.harassSec).toBe(THREAT.raid.harassSec);
+    expect(T.productionMult(s)).toMatchObject({ drones: 0, mechs: 0 });
+  });
+
+  it('harassment stops drone mining for two minutes, then lifts', () => {
+    const s = rich();
+    s.drones.prospector = 50;
+    s.cargoLevel = 20;
+    s.threats.harassSec = THREAT.raid.harassSec;
+    E.tick(s, 60);
+    expect(E.cargoUsed(s)).toBe(0);
+    E.tick(s, 61);
+    expect(s.threats.harassSec).toBe(0);
+    E.tick(s, 10);
+    expect(E.cargoUsed(s)).toBeGreaterThan(0);
   });
 
   it('a strong defender wins, earns a bounty and cools Heat', () => {
@@ -168,7 +185,8 @@ describe('milestone 4: raids and sorties', () => {
     expect(m.armor).toBe(0);
     expect(E.mechCondition(s, m).id).toBe('disabled');
     expect(pilot.injuredRemaining).toBeGreaterThan(0);
-    expect(s.cargo.ferrite).toBeLessThan(1000);
+    expect(s.cargo.ferrite).toBeCloseTo(0, 6);
+    expect(s.threats.harassSec).toBe(THREAT.raid.harassSec);
   });
 
   it('the risk preview tracks the odds', () => {

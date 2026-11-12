@@ -59,6 +59,7 @@ export function emptyThreats(): ThreatState {
     captainRaids: 0,
     raidsSinceCaptain: 0,
     captains: {},
+    harassSec: 0,
     lastSortie: null,
     salvageAcc: 0,
     nextEventId: 1,
@@ -80,11 +81,22 @@ function isActive(state: GameState, kind: EventKind): ActiveEvent | undefined {
 }
 
 /** Production multipliers from active hazards. */
-export function productionMult(state: GameState): { drones: number; all: number } {
+export function productionMult(state: GameState): { drones: number; mechs: number; all: number } {
   const flare = isActive(state, 'flare');
-  const drones = flare && flare.response !== 'ride' ? 0 : 1;
+  const pinned = harassed(state);
+  const drones = pinned || (flare && flare.response !== 'ride') ? 0 : 1;
   const all = isActive(state, 'reactor') ? THREAT.reactor.output : 1;
-  return { drones, all };
+  return { drones, mechs: pinned ? 0 : 1, all };
+}
+
+/** Pirates harassing the fleet after a lost or surrendered fight: drone and mech mining stop. */
+export function harassed(state: GameState): boolean {
+  return (state.threats.harassSec ?? 0) > 0;
+}
+
+function harass(state: GameState): string {
+  state.threats.harassSec = Math.max(state.threats.harassSec ?? 0, THREAT.raid.harassSec);
+  return `Pirates harassing the fleet: drone and mech mining paused for ${THREAT.raid.harassSec / 60} min`;
 }
 
 /** Booms and crashes. */
@@ -420,14 +432,15 @@ function removeDrones(state: GameState, frac: number, ctx: LossContext, types: D
   return total;
 }
 
-function removeCargo(state: GameState, frac: number, ctx: LossContext): number {
+/** Takes a share of raw ore and of ingots (within the offline loss cap). Returns tonnes taken. */
+function removeCargo(state: GameState, oreFrac: number, ingotFrac: number, ctx: LossContext): number {
   let want = 0;
-  for (const id of ORE_IDS) want += (state.cargo[id] + state.ingots[id]) * frac;
+  for (const id of ORE_IDS) want += state.cargo[id] * oreFrac + state.ingots[id] * ingotFrac;
   const scale = want > ctx.cargoBudget ? Math.max(0, ctx.cargoBudget) / want : 1;
   let lost = 0;
   for (const id of ORE_IDS) {
-    const a = state.cargo[id] * frac * scale;
-    const b = state.ingots[id] * frac * scale;
+    const a = state.cargo[id] * oreFrac * scale;
+    const b = state.ingots[id] * ingotFrac * scale;
     state.cargo[id] -= a;
     state.ingots[id] -= b;
     lost += a + b;
@@ -546,10 +559,11 @@ function runSortie(
     t.heat = opts.strike ? 0 : Math.max(0, t.heat - THREAT.heat.victoryDrop);
     rewards.push(opts.strike ? 'Pirate Heat reset to zero' : `Pirate Heat −${THREAT.heat.victoryDrop}`);
   } else {
-    const cargo = removeCargo(state, THREAT.raid.defeatCargo, ctx);
+    const cargo = removeCargo(state, THREAT.raid.defeatCargo, THREAT.raid.defeatIngots, ctx);
     const drones = removeDrones(state, THREAT.raid.defeatDrones, ctx, ['prospector', 'cutter', 'hauler', 'surveyor', 'salvager']);
     if (cargo > 0) losses.push(`${Math.round(cargo).toLocaleString()} t of cargo stolen`);
     if (drones > 0) losses.push(`${drones} drones lost (wrecks recoverable)`);
+    losses.push(harass(state));
     t.heat = Math.max(0, t.heat - THREAT.heat.defeatDrop);
   }
 
@@ -602,7 +616,8 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
   }
 
   if (mechs.length === 0 && guardians === 0) {
-    const lost = removeCargo(state, THREAT.raid.surrenderCargo, ctx);
+    const lost = removeCargo(state, THREAT.raid.surrenderCargo, THREAT.raid.surrenderIngots, ctx);
+    const pinned = harass(state);
     t.heat = Math.max(0, t.heat - THREAT.heat.surrenderDrop);
     t.raidsLost++;
     const report: SortieReport = {
@@ -618,7 +633,7 @@ function resolveRaid(state: GameState, ev: ActiveEvent, events: TickEvents, ctx:
       rounds: [],
       outcome: 'surrender',
       rewards: [`Pirate Heat −${THREAT.heat.surrenderDrop}`],
-      losses: [`${Math.round(lost).toLocaleString()} t of cargo handed over`],
+      losses: [`${Math.round(lost).toLocaleString()} t of cargo handed over`, pinned],
     };
     t.lastSortie = report;
     log(state, 'raid', `Raid: cargo surrendered (${Math.round(lost).toLocaleString()} t).`, false, events, report);
@@ -754,7 +769,7 @@ function rogueReward(state: GameState, scale: number, events: TickEvents, what: 
 
 function rogueImpact(state: GameState, events: TickEvents, ctx: LossContext): void {
   const r = THREAT.rogue;
-  const cargo = removeCargo(state, r.impactCargo, ctx);
+  const cargo = removeCargo(state, r.impactCargo, r.impactCargo, ctx);
   const drones = removeDrones(state, r.impactDrones, ctx);
   const hit: string[] = [];
   for (const m of state.mechs) {
@@ -905,6 +920,7 @@ export function advanceThreats(state: GameState, dt: number, events: TickEvents,
   const t = state.threats;
   t.clock += dt;
   t.heat = Math.min(THREAT.heat.max, t.heat + heatPerSec(state) * dt);
+  if (t.harassSec > 0) t.harassSec = Math.max(0, t.harassSec - dt);
 
   // Roll the next event.
   t.nextIn -= dt;

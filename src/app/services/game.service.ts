@@ -157,7 +157,8 @@ export class GameService {
   readonly capacity = computed(() => this.withState(E.cargoCapacity, 0));
   readonly used = computed(() => this.withState(E.cargoUsed, 0));
   readonly cargoFull = computed(() => this.used() >= this.capacity() - 1e-6);
-  readonly droneRate = computed(() => this.withState(E.droneRateTotal, 0));
+  /** Drone ore per second right now (0 while a flare or pirate harassment pins them down). */
+  readonly droneRate = computed(() => this.withState((s) => E.droneRateTotal(s) * T.productionMult(s).drones, 0));
   readonly mechRate = computed(() => this.withState(E.mechRateTotal, 0));
   readonly overdrive = computed(() => this.withState(E.isOverdrive, false));
 
