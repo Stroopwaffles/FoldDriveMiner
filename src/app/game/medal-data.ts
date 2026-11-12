@@ -84,7 +84,7 @@ export const MEDALS: readonly MedalDef[] = [
     [50, 5000, 5e5], (s) => s.stats.alloysForged ?? 0, (n) => `Forge ${n} alloys.`, S(0.01)),
   // Fleet
   ...tiers('drones', 'fleet', ['Swarm Seed', 'Hive Keeper', 'Cloud Commander', 'Flock Admiral', 'Living Nebula'],
-    [10, 100, 500, 2000, 10000], (s) => sum(s.drones), (n) => `Command ${n} drones at once.`, P(0.01)),
+    [10, 100, 300, 600, 1000], (s) => sum(s.drones), (n) => `Command ${n} drones at once.`, P(0.01)),
   ...tiers('mechs', 'fleet', ['First Frame', 'Hangar Full', 'Mech Foundry'],
     [1, 5, 15], (s) => s.stats.mechsBuilt, (n) => `Build ${n} mechs.`, P(0.01)),
   {
