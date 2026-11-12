@@ -64,6 +64,8 @@ export const PERMANENT_NODES = [
   'repair_bay',
   'auto_repair',
   'lab_assistant',
+  // Pure convenience: rebuilding the hangar by hand every run adds nothing.
+  'loadout_memory',
 ];
 
 export interface CoreUpgrade {

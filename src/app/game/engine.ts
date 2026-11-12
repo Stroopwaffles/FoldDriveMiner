@@ -56,6 +56,7 @@ import { advanceStory, emptyStory, medalBonus, medalMult, openLog } from './stor
 import { matrixBonus } from './core-rules';
 import { advanceBooster, boosterActiveBonus, emptyBooster } from './booster-rules';
 import { emptyAssistant, runAssistant } from './assistant-rules';
+import { advanceLoadouts } from './loadout-rules';
 import {
   LossContext,
   ONLINE,
@@ -86,6 +87,7 @@ export * from './core-rules';
 export * from './special-rules';
 export * from './booster-rules';
 export * from './assistant-rules';
+export * from './loadout-rules';
 
 function emptyDrones(): Record<DroneType, number> {
   const d = {} as Record<DroneType, number>;
@@ -100,6 +102,7 @@ export function emptyEvents(): TickEvents {
     syncUps: [],
     autoRepairs: [],
     repairStalled: [],
+    rebuilt: [],
     assistantStarted: [],
     threatStarted: [],
     threatResolved: [],
@@ -141,6 +144,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     dispatch: {},
     mechs: [],
     parts: {},
+    loadouts: { saved: [], auto: false, pending: false, nextId: 1 },
     pilots: [],
     recruits: [],
     recruitRefresh: 0,
@@ -973,6 +977,7 @@ function advance(
   events.assistantStarted = runAssistant(state);
   advanceTrade(state, dt, events, ctx.offline);
   advanceFold(state);
+  events.rebuilt = advanceLoadouts(state);
   events.autoSoldCredits = runAutoSell(state);
   advanceThreats(state, dt, events, ctx);
   advanceAnomalies(state, dt, events, ctx.offline);

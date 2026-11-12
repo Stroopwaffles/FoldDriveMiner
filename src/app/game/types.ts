@@ -173,6 +173,29 @@ export interface MechState {
   cooldown: number;
 }
 
+/** A saved mech build (Loadout Memory research), kept through Fold Jumps. */
+export interface SavedLoadout {
+  id: number;
+  name: string;
+  frame: FrameId;
+  parts: Partial<Record<SlotId, string>>;
+  /** Optional crew and orders: pilot, standing job and zone. */
+  pilotId: number | null;
+  job: 'idle' | 'mining' | 'defense';
+  zone: ZoneId | null;
+  /** The mech this loadout was saved from or last rebuilt as (stale after a jump). */
+  mechId: number | null;
+}
+
+export interface LoadoutsState {
+  saved: SavedLoadout[];
+  /** Rebuild saved loadouts automatically after a Fold Jump once credits allow. */
+  auto: boolean;
+  /** Set by a Fold Jump while auto is on; cleared when every loadout is built. */
+  pending: boolean;
+  nextId: number;
+}
+
 export interface PilotState {
   id: number;
   name: string;
@@ -489,6 +512,8 @@ export interface GameState {
   dispatch: Partial<Record<ZoneId, number>>;
   mechs: MechState[];
   parts: Record<string, number>;
+  /** Saved mech loadouts (Loadout Memory). */
+  loadouts: LoadoutsState;
   pilots: PilotState[];
   recruits: PilotState[];
   recruitRefresh: number;
@@ -556,6 +581,8 @@ export interface TickEvents {
   trade: { text: string; good: boolean; from?: 'merchant' | 'corp' | 'vesper' }[];
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
+  /** Saved loadouts that auto-rebuild built this tick (loadout names). */
+  rebuilt?: string[];
   /** Research ARIA started on empty benches this tick. */
   assistantStarted?: string[];
   /** Mechs whose repair just stalled for lack of credits or ore. */

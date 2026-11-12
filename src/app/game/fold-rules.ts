@@ -282,6 +282,14 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   s.dataCores = old.dataCores;
   s.matrix = { ...(old.matrix ?? {}) };
   s.parts = vault;
+  // Saved loadouts live in the core's memory; their mechs stayed behind.
+  const lo = old.loadouts;
+  s.loadouts = {
+    saved: (lo?.saved ?? []).map((l) => ({ ...l, parts: { ...l.parts }, mechId: null })),
+    auto: !!lo?.auto,
+    pending: !!lo?.auto && (lo?.saved.length ?? 0) > 0,
+    nextId: lo?.nextId ?? 1,
+  };
 
   // The crew comes along, healed by the fold; posts are on the core hull.
   s.pilots = old.pilots.map((p) => ({ ...p, injuredRemaining: 0 }));

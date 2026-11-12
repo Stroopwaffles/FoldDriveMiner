@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { ZoneId, zoneDef } from '../game/config';
 import { CREW } from '../game/crew-data';
 import * as E from '../game/engine';
@@ -20,6 +20,7 @@ import { PilotPortrait } from '../ui/pilot-portrait';
 export class HangarPanel {
   protected readonly game = inject(GameService);
   private readonly audio = inject(AudioService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly s = computed(() => this.game.state()!);
 
   protected readonly frames = FRAMES;
@@ -31,6 +32,89 @@ export class HangarPanel {
   protected readonly repairCost = E.repairCostPerPoint();
 
   protected readonly selectedId = signal<number | null>(null);
+
+  // ---------------------------------------------------------------- saved loadouts
+  protected readonly hasLoadouts = computed(() => E.loadoutsUnlocked(this.s()));
+  protected readonly saveCrew = signal(true);
+  protected readonly renamingId = signal<number | null>(null);
+  protected readonly maxLoadouts = E.LOADOUT.maxSaved;
+  protected readonly maxName = E.LOADOUT.maxName;
+
+  protected readonly loadouts = computed(() => {
+    const s = this.s();
+    return s.loadouts.saved.map((l) => {
+      const mech = E.loadoutMech(s, l);
+      const cost = E.rebuildCost(s, [l.id]);
+      const pilot = l.pilotId !== null ? E.pilotById(s, l.pilotId) : null;
+      return {
+        l,
+        mech,
+        frame: frameDef(l.frame),
+        parts: SLOTS.map((slot) => (l.parts[slot.id] ? this.partName(l.parts[slot.id]!) : null)).filter((x): x is string => !!x),
+        pilot,
+        cost,
+        // Built with every saved part fitted: nothing left to do.
+        done: !!mech && cost.credits === 0 && cost.fromStores.length === 0 && cost.blocked.length === 0,
+      };
+    });
+  });
+  protected readonly allCost = computed(() => E.rebuildCost(this.s()));
+
+  private partName(id: string): string {
+    try {
+      const p = partDef(id);
+      return (p.rarity !== 'standard' ? '★ ' : '') + p.name;
+    } catch {
+      return 'unknown part';
+    }
+  }
+
+  protected selectedLoadout(mechId: number) {
+    return E.mechLoadout(this.s(), mechId);
+  }
+
+  protected saveLoadout(mechId: number): void {
+    this.game.saveLoadout(mechId, this.saveCrew());
+  }
+
+  protected setSaveCrew(e: Event): void {
+    this.saveCrew.set((e.target as HTMLInputElement).checked);
+  }
+
+  protected startRename(id: number): void {
+    this.renamingId.set(id);
+    // Focus the name field once it renders, with the old name selected.
+    setTimeout(() => {
+      const input = this.host.nativeElement.querySelector<HTMLInputElement>('.lo-rename');
+      input?.focus();
+      input?.select();
+    });
+  }
+
+  protected costLabel(cost: E.RebuildCost): string {
+    const n = cost.buy.length;
+    const parts = n ? `${n} part${n === 1 ? '' : 's'}` : '';
+    const what = cost.frames && parts ? `Frame + ${parts}` : cost.frames ? 'Frame' : parts ? parts : 'Fit from storage';
+    return `${what}: ${this.game.fmt(cost.credits)} cr`;
+  }
+
+  protected rename(id: number, e: Event): void {
+    if (this.renamingId() !== id) return;
+    this.renamingId.set(null);
+    this.game.renameLoadout(id, (e.target as HTMLInputElement).value);
+  }
+
+  protected deleteLoadout(id: number, name: string): void {
+    if (confirm(`Forget the loadout "${name}"? Mechs already built stay in the hangar.`)) this.game.deleteLoadout(id);
+  }
+
+  protected setAuto(e: Event): void {
+    this.game.setAutoRebuild((e.target as HTMLInputElement).checked);
+  }
+
+  protected blockedTitle(blocked: string[]): string {
+    return blocked.length ? `Can't do: ${blocked.join('; ')}` : '';
+  }
   protected readonly shopSlot = signal<SlotId>('drill');
 
   protected readonly cards = computed(() => {

@@ -179,11 +179,114 @@
             Activate (×{{ MECH.techniqueBoost }} for {{ MECH.techniqueSec }}s)
           </button>
         </div>
+        @if (hasLoadouts()) {
+          @let linked = selectedLoadout(v.mech.id);
+          <div class="save-loadout">
+            <div class="sub-title">LOADOUT MEMORY <span class="kana">きおく</span></div>
+            <label class="check small">
+              <input type="checkbox" [checked]="saveCrew()" (change)="setSaveCrew($event)" />
+              Include pilot, orders and zone
+            </label>
+            <button
+              type="button"
+              class="btn small"
+              [disabled]="!linked && st.loadouts.saved.length >= maxLoadouts"
+              (click)="saveLoadout(v.mech.id)"
+              [title]="linked ? 'Overwrite the saved loadout with this mech as it is now' : 'Remember this build through Fold Jumps'"
+            >
+              {{ linked ? 'Update "' + linked.name + '"' : 'Save loadout' }}
+            </button>
+            @if (!linked && st.loadouts.saved.length >= maxLoadouts) {
+              <div class="dim small">Memory full ({{ maxLoadouts }}). Delete a loadout first.</div>
+            }
+          </div>
+        }
         <button type="button" class="btn small scrap" (click)="game.scrapMech(v.mech.id)" title="Parts return to storage; the frame is lost">Scrap frame</button>
       </div>
     </div>
   } @else if (bays() > 0) {
     <p class="hint">Build a frame in an empty bay to get started. Pickaxe is the best miner.</p>
+  }
+
+  <!-- Saved loadouts -->
+  @if (hasLoadouts()) {
+    <div class="loadouts">
+      <div class="lo-head">
+        <div class="sub-title">SAVED LOADOUTS <span class="kana">きおく</span> <span class="dim">{{ st.loadouts.saved.length }}/{{ maxLoadouts }}</span></div>
+        <label class="check small" title="After a Fold Jump, rebuild each saved loadout once there is a free bay and credits for all of it">
+          <input type="checkbox" [checked]="st.loadouts.auto" (change)="setAuto($event)" />
+          Auto-rebuild after a jump
+          @if (st.loadouts.auto && st.loadouts.pending) {
+            <span class="pending">· WAITING FOR CREDITS</span>
+          }
+        </label>
+        @if (st.loadouts.saved.length) {
+          @let all = allCost();
+          <button
+            type="button"
+            class="btn small btn-primary"
+            [disabled]="all.credits === 0 && all.fromStores.length === 0 && !all.frames"
+            (click)="game.rebuildLoadout(null)"
+            [title]="blockedTitle(all.blocked)"
+          >
+            Rebuild all · {{ game.fmt(all.credits) }} cr
+          </button>
+        }
+      </div>
+      @if (!st.loadouts.saved.length) {
+        <p class="dim small">No saved loadouts yet. Select a mech and press "Save loadout"; it is kept through Fold Jumps.</p>
+      }
+      <div class="lo-list">
+        @for (row of loadouts(); track row.l.id) {
+          <div class="lo-item" [style.--fc]="row.frame.color">
+            <fdm-mech-portrait [frame]="row.l.frame" [parts]="row.l.parts" [size]="44" />
+            <div class="lo-body">
+              @if (renamingId() === row.l.id) {
+                <input
+                  class="lo-rename"
+                  type="text"
+                  [value]="row.l.name"
+                  [attr.maxlength]="maxName"
+                  aria-label="Loadout name"
+                  (keydown.enter)="rename(row.l.id, $event)"
+                  (keydown.escape)="renamingId.set(null)"
+                  (blur)="rename(row.l.id, $event)"
+                />
+              } @else {
+                <div class="lo-name">{{ row.l.name }}</div>
+              }
+              <div class="dim small">{{ row.frame.name }} · {{ row.parts.length ? row.parts.join(', ') : 'no parts' }}</div>
+              <div class="dim small">
+                {{ row.pilot ? row.pilot.callsign : row.l.pilotId !== null ? 'pilot gone' : 'autopilot' }} ·
+                {{ row.l.job === 'mining' ? 'mine' : row.l.job === 'defense' ? 'defend' : 'idle' }} ·
+                {{ row.mech ? 'BUILT as ' + row.mech.designation : 'NOT BUILT' }}
+              </div>
+              @if (!row.done) {
+                <div class="small lo-cost">
+                  <b>{{ costLabel(row.cost) }}</b>
+                  @if (row.cost.fromStores.length) {
+                    · {{ row.cost.fromStores.length }} from storage
+                  }
+                  @if (row.cost.credits > st.credits) {
+                    <span class="warn">· short {{ game.fmt(row.cost.credits - st.credits) }} cr</span>
+                  }
+                </div>
+              }
+              @for (b of row.cost.blocked; track $index) {
+                <div class="warn small">⚠ {{ b.slice(row.l.name.length + 2) }}</div>
+              }
+            </div>
+            <div class="lo-actions">
+              <button type="button" class="btn small btn-primary" [disabled]="row.done" (click)="game.rebuildLoadout(row.l.id)">
+                {{ row.done ? 'Built' : row.mech ? 'Refit' : 'Rebuild' }}
+              </button>
+              <button type="button" class="btn small" (click)="startRename(row.l.id)">Rename</button>
+              <button type="button" class="btn small scrap" (click)="deleteLoadout(row.l.id, row.l.name)">Delete</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
   }
 
   <!-- Parts shop -->

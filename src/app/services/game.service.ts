@@ -596,6 +596,10 @@ export class GameService {
       const m = s.mechs.find((x) => x.id === id);
       if (m) this.say('VESPER', `${m.designation} "${m.name}" returning to the repair bay for maintenance.`);
     }
+    if (ev.rebuilt?.length) {
+      this.audio.select();
+      this.say('VESPER', `Loadout Memory rebuilt ${ev.rebuilt.join(' and ')} in the hangar.`);
+    }
     if (ev.assistantStarted?.length) {
       this.say('VESPER', `ARIA put ${ev.assistantStarted.join(' and ')} on a free lab bench.`);
     }
@@ -634,6 +638,9 @@ export class GameService {
       case 'hangar':
         this.say('JUNO', "Juno Hart, reporting for duty! Build me a mech and I'll show you real mining, Commander.", 1500);
         this.say('VESPER', 'HANGAR and CREW systems are online.', 3000);
+        break;
+      case 'loadout_memory':
+        this.say('VESPER', 'Loadout Memory online. Save a mech in the HANGAR and rebuild it after any Fold Jump.', 1500);
         break;
       case 'repair_bay':
         this.say('KIT', "Kit Okafor, engineer! I brought a few tools. Okay, a lot of tools. Your mechs are in good hands.", 1500);
@@ -715,6 +722,54 @@ export class GameService {
 
   buyPart(partId: string): void {
     this.act((s) => E.buyPart(s, partId), () => this.audio.buy());
+  }
+
+  // ------------------------------------------------------------ saved loadouts
+
+  saveLoadout(mechId: number, crew: boolean): void {
+    this.act(
+      (s) => E.saveLoadout(s, mechId, crew) !== null,
+      () => {
+        this.audio.blip();
+        const l = E.mechLoadout(this._state()!, mechId);
+        if (l) this.say('VESPER', `Loadout "${l.name}" saved to the core. It will survive a Fold Jump.`);
+      },
+    );
+  }
+
+  renameLoadout(id: number, name: string): void {
+    this.act((s) => E.renameLoadout(s, id, name), () => this.audio.blip());
+  }
+
+  deleteLoadout(id: number): void {
+    this.act((s) => E.deleteLoadout(s, id), () => this.audio.blip());
+  }
+
+  setAutoRebuild(on: boolean): void {
+    this.act((s) => E.setAutoRebuild(s, on), () => this.audio.blip());
+  }
+
+  /** Rebuild one loadout, or all of them with id null. Reports what was skipped. */
+  rebuildLoadout(id: number | null): void {
+    const s = this._state();
+    if (!s) return;
+    const r = id === null ? E.rebuildAll(s) : E.rebuildLoadout(s, id);
+    const did = r.built.length + r.fitted;
+    if (did) this.audio.buy();
+    else this.audio.denied();
+    const parts = [
+      r.built.length ? `built ${r.built.join(', ')}` : '',
+      r.fitted ? `fitted ${r.fitted} part${r.fitted === 1 ? '' : 's'} (${r.bought} bought)` : '',
+      r.spent > 0 ? `spent ${this.fmt(r.spent)} cr` : '',
+    ].filter(Boolean);
+    if (parts.length) this.say('VESPER', `Rebuild: ${parts.join(', ')}.`);
+    else if (!r.issues.length) this.say('VESPER', 'Nothing to rebuild: every saved loadout is already in the hangar.');
+    if (r.issues.length) {
+      const shown = r.issues.slice(0, 4).join(' · ');
+      const more = r.issues.length > 4 ? ` (+${r.issues.length - 4} more)` : '';
+      this.say('VESPER', `Couldn't finish: ${shown}${more}.`, parts.length ? 600 : 0);
+    }
+    this.publish();
   }
 
   equipPart(mechId: number, slot: SlotId, partId: string | null): void {

@@ -322,6 +322,12 @@ export const RESEARCH: readonly ResearchNode[] = [
     flavor: 'The mechs will check themselves in. Like responsible adults.',
   }),
   N({
+    id: 'loadout_memory', name: 'Loadout Memory', branch: 'fleet', maxLevel: 1,
+    sd: 25, cr: 60000, sec: 300, requires: ['hangar'],
+    effect: 'Save mech loadouts in the HANGAR and rebuild them after a Fold Jump',
+    flavor: 'Kit wrote every bolt down on the back of a ration box. I have digitised the ration box.',
+  }),
+  N({
     id: 'reactor_efficiency', name: 'Reactor Tuning', branch: 'fleet', maxLevel: 3,
     sd: 25, cr: 60000, sec: 300, growth: 2.8, requires: ['hangar'],
     effect: '+10% mech power supply',
