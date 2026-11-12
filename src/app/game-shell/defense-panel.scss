@@ -184,12 +184,27 @@
   border: 2px dashed var(--danger);
   background: rgba(255, 59, 59, 0.05);
 }
+/* The Jackal's own poster: brighter, with a gold edge, above the rival captains. */
+.wanted:not(.rival) {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 210, 63, 0.35),
+    0 0 14px rgba(255, 59, 59, 0.25);
+
+  .wanted-name {
+    color: #ff3b3b;
+    text-shadow: 0 0 6px rgba(255, 59, 59, 0.6);
+  }
+}
 
 .wanted.rival {
   margin-top: 0.4rem;
   padding: 0.35rem 0.5rem;
-  border: 1px dashed var(--amber);
-  background: rgba(255, 210, 63, 0.04);
+  border: 1px dashed rgba(255, 59, 59, 0.6);
+  background: rgba(255, 59, 59, 0.04);
+
+  .wanted-name {
+    color: #ff6b6b;
+  }
 }
 
 .wanted-title {

@@ -629,12 +629,46 @@
   }
 }
 
-.from-jackal .msg-body {
+.from-jackal .msg-body,
+.from-pirate .msg-body {
   border-left-color: var(--danger);
+  border-color: #4a1a2a;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 3px),
+    #1a0a12;
+}
+
+.from-jackal .msg-from,
+.from-pirate .msg-from {
+  color: #ff6b6b;
+}
+
+.from-jackal .portrait svg,
+.from-pirate .portrait svg {
+  border-color: var(--danger);
+}
+
+/* The Jackal outranks every other pirate: vermilion and gold, with a glow. */
+.from-jackal .msg-body {
+  border-left: 3px solid var(--danger);
+  box-shadow:
+    inset 2px 0 0 #ffd23f,
+    0 0 12px rgba(255, 59, 59, 0.3);
 }
 
 .from-jackal .msg-from {
-  color: var(--danger);
+  color: #ff3b3b;
+  text-shadow: 0 0 6px rgba(255, 59, 59, 0.7);
+
+  &::before {
+    content: '◆ ';
+    color: #ffd23f;
+  }
+}
+
+.from-jackal .portrait svg {
+  border-color: #ffd23f;
+  box-shadow: 0 0 8px rgba(255, 59, 59, 0.6);
 }
 
 /* The Fold Drive gauge is only a teaser until Milestone 6: drop it on narrower screens. */
