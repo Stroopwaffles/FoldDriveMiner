@@ -83,7 +83,10 @@
         @if (archive().permanent.length) {
           <div class="ok small">Permanent: {{ archive().permanent.join(', ') }}</div>
         }
-        <div class="dim small">QoL and infrastructure research (refinery, auto-sell, hangar…) becomes permanent once you've had it in {{ permanentAfter }} runs.</div>
+        <div class="dim small">
+          QoL research (refinery, auto-sell, hangar…) is kept for good once you've researched it before {{ permanentAfter }} Fold Jumps.
+          Until then, research it again in each new sector. Permanent research shows gold in the LAB.
+        </div>
         @if (archive().slots === 0) {
           <div class="dim small">Buy <b>Research Archive</b> in the Jump Core to carry research through the fold.</div>
         } @else {
