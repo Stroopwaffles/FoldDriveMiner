@@ -475,3 +475,15 @@
     color: var(--ok);
   }
 }
+
+.vg {
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+
+  &.yes {
+    color: #ff5fa2;
+  }
+  &.no {
+    color: var(--text-dim);
+  }
+}

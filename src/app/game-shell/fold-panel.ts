@@ -41,6 +41,7 @@ export class FoldPanel {
   });
   /** Nullsteel bars on hand and what each is worth as fuel. */
   protected readonly nullsteel = computed(() => ({ held: Math.floor(this.s().alloys?.nullsteel ?? 0), units: F.nullsteelFuelUnits() }));
+  protected readonly cryoplate = computed(() => ({ held: Math.floor(this.s().alloys?.cryoplate ?? 0), units: F.cryoplateFuelUnits() }));
   protected readonly cellShare = Math.round(FOLD.cellCharge * 100);
   protected readonly gain = computed(() => F.resonanceGain(this.s()));
   protected readonly runCredits = computed(() => F.runCredits(this.s()));
@@ -56,6 +57,8 @@ export class FoldPanel {
       profile: S.profileDef(def.profile),
       traits: def.traits.map((t, k) => (k < revealed ? S.sectorTraitDef(t) : null)),
       zones: def.zones.length,
+      /** Whether any zone holds Voidglass, the densest fuel. */
+      voidglass: def.zones.some((z) => (z.composition.voidglass ?? 0) > 0),
     })),
   );
 

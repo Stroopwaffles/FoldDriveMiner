@@ -352,3 +352,15 @@
   border-color: #ff7a7a;
   box-shadow: 0 4px 0 #20030a, 0 0 18px rgba(255, 59, 59, 0.45);
 }
+
+.vg {
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+
+  &.yes {
+    color: #ff5fa2;
+  }
+  &.no {
+    color: var(--text-dim);
+  }
+}

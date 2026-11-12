@@ -744,7 +744,15 @@ function makeContract(state: GameState, issuer: Contract['issuer'], type: Contra
     progress: 0,
     deadline,
     duration: deadline,
-    reward: { credits: Math.max(CONTRACT.minReward, Math.round(reward * meridianBonus(state, issuer))), surveyData: sd, dataCores: rng.next() < 0.15 ? 1 : 0 },
+    reward: {
+      credits: Math.max(CONTRACT.minReward, Math.round(reward * meridianBonus(state, issuer))),
+      surveyData: sd,
+      dataCores: rng.next() < 0.15 ? 1 : 0,
+      // The energy company pays in fuel too, once you have a Fold Drive to fill.
+      ...(issuer.id === 'aster_lune' && hasResearch(state, 'fold_drive') && rng.next() < CONTRACT.asterCellChance
+        ? { foldCells: type === 'construction' ? 2 : 1 }
+        : {}),
+    },
     baseline: 0,
     held: 0,
     ...(build ? { improvement: build.id, materials, zone: site } : {}),
@@ -860,10 +868,12 @@ function complete(state: GameState, c: Contract, events: TickEvents): void {
   state.stats.creditsEarned += c.reward.credits;
   state.surveyData += c.reward.surveyData;
   state.dataCores += c.reward.dataCores;
+  if (c.reward.foldCells) state.trade.inventory.fold_cell += c.reward.foldCells;
   changeStanding(state, c, c.type === 'construction' ? IMPROVEMENT.standing : c.issuer.kind === 'corp' ? 2 : 3);
   const bits = [`+${c.reward.credits.toLocaleString()} cr`];
   if (c.reward.surveyData) bits.push(`+${c.reward.surveyData} Survey Data`);
   if (c.reward.dataCores) bits.push('+1 Data Core');
+  if (c.reward.foldCells) bits.push(`+${c.reward.foldCells} fold charge cell${c.reward.foldCells > 1 ? 's' : ''}`);
   news(events, `Contract complete — ${c.title}. ${bits.join(', ')}.`, true, 'corp');
 
   if (c.issuer.kind === 'corp') {

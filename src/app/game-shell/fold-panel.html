@@ -37,6 +37,11 @@
             <span>{{ nullsteel().held }} alloy × {{ nullsteel().units }}</span>
             <span></span>
           </div>
+          <div class="fuel-row" style="--oc: #a8fff0">
+            <span class="fuel-name">Cryoplate</span>
+            <span>{{ cryoplate().held }} alloy × {{ cryoplate().units }}</span>
+            <span class="dim small">contract materials are kept</span>
+          </div>
         </div>
         <div class="row">
           <button type="button" class="btn btn-amber small" (click)="game.feedDrive()">Load fuel now</button>
@@ -66,7 +71,7 @@
           @for (d of destinations(); track d.def.seed) {
             <button type="button" class="dest" [class.on]="f.destination === d.i" [style.--sc]="d.star.color" (click)="game.setDestination(d.i)">
               <div class="dest-name">SECTOR {{ d.def.code }} · {{ d.def.name }}</div>
-              <div class="dim small">{{ d.starLabel }} · {{ d.profile.name }} · {{ d.zones }} zones</div>
+              <div class="dim small">{{ d.starLabel }} · {{ d.profile.name }} · {{ d.zones }} zones · <span [class]="d.voidglass ? 'vg yes' : 'vg no'">{{ d.voidglass ? '◆ VOIDGLASS' : 'NO VOIDGLASS' }}</span></div>
               <div class="traits">
                 @for (t of d.traits; track $index) {
                   @if (t) {

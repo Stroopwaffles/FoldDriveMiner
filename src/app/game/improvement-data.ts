@@ -55,7 +55,8 @@ export const IMPROVEMENTS: readonly ImprovementDef[] = [
   },
   {
     id: 'fuel_depot', name: 'Helium Fuel Depot', kana: 'ねんりょうこ', corps: ['aster_lune'], tier: 3,
-    ingots: { helium3: 3 }, alloys: { nullsteel: 1.5 }, bonus: { fuel: 0.5 },
+    // Helium-3 and Cryoplate only, so it can be built in sectors with no Voidglass.
+    ingots: { helium3: 4, iridium: 2 }, alloys: { cryoplate: 1.5 }, bonus: { fuel: 0.5 },
     effect: '+50% Fold Drive charge efficiency in this sector',
   },
   {

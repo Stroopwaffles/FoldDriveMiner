@@ -22,6 +22,8 @@ export const FOLD = {
   ingotFuelMult: 20,
   /** A Nullsteel alloy (Helium-3 + Voidglass) is worth this many tonnes of raw Voidglass. */
   nullsteelFuelMult: 50,
+  /** A Cryoplate alloy (Iridium + Helium-3) is worth this many Helium-3 units: twice its Helium-3 ingot. */
+  cryoplateFuelUnits: 40,
   /** A merchant's fold charge cell adds this share of a full charge. */
   cellCharge: 0.2,
   /** Charge Efficiency research and Fold Harmonics: +% per level. */

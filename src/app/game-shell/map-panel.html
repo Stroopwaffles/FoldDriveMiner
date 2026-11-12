@@ -54,7 +54,7 @@
                 </svg>
                 <div>
                   <div class="dest-name">SECTOR {{ d.def.code }} · {{ d.def.name }}</div>
-                  <div class="dim small">{{ d.starLabel }} · {{ d.profile.name }} · {{ d.zones }} zones</div>
+                  <div class="dim small">{{ d.starLabel }} · {{ d.profile.name }} · {{ d.zones }} zones · <span [class]="d.voidglass ? 'vg yes' : 'vg no'">{{ d.voidglass ? '◆ VOIDGLASS' : 'NO VOIDGLASS' }}</span></div>
                 </div>
               </div>
               <div class="dest-traits">

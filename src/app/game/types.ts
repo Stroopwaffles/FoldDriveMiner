@@ -378,7 +378,7 @@ export interface Contract {
   /** Seconds left (counts down only while you're playing). */
   deadline: number;
   duration: number;
-  reward: { credits: number; surveyData: number; dataCores: number };
+  reward: { credits: number; surveyData: number; dataCores: number; foldCells?: number };
   /** For counters (raids won, scans, cracks) at the moment you accepted. */
   baseline: number;
   /** Sustain contracts: seconds above the target so far. */

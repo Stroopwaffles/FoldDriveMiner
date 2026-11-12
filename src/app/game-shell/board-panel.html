@@ -139,7 +139,7 @@
         }
         <div class="c-foot">
           <span class="small">{{ v.build ? (v.build.needsAlloys ? 'Refine the ingots and forge the alloys, then build' : 'Refine the ingots, then build') : v.progressText }}{{ v.c.type === 'delivery' || v.c.type === 'refinement' ? ' — taken from the hold automatically' : '' }}</span>
-          <span class="reward small">+{{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · +' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · +1 Data Core' : '' }}</span>
+          <span class="reward small">+{{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · +' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · +1 Data Core' : '' }}{{ v.c.reward.foldCells ? ' · +' + v.c.reward.foldCells + ' fold cell' + (v.c.reward.foldCells > 1 ? 's' : '') : '' }}</span>
           <button type="button" class="btn tiny" (click)="game.abandonContract(v.c.id)" title="Costs a little standing">Abandon</button>
         </div>
       </div>
@@ -170,7 +170,7 @@
             </div>
           }
           <div class="dim small">Deadline {{ duration(v.c.duration) }} of play time · deadlines pause while you're away</div>
-          <div class="reward small">Reward: {{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · ' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · 1 Data Core' : '' }}</div>
+          <div class="reward small">Reward: {{ game.fmt(v.c.reward.credits) }} cr{{ v.c.reward.surveyData ? ' · ' + v.c.reward.surveyData + ' SD' : '' }}{{ v.c.reward.dataCores ? ' · 1 Data Core' : '' }}{{ v.c.reward.foldCells ? ' · ' + v.c.reward.foldCells + ' fold cell' + (v.c.reward.foldCells > 1 ? 's' : '') : '' }}</div>
           <button type="button" class="btn small btn-primary" [disabled]="st.contracts.active.length >= slots()" (click)="game.acceptContract(v.c.id)">Accept</button>
         </div>
       } @empty {

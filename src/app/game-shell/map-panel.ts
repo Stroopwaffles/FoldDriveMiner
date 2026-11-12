@@ -150,6 +150,8 @@ export class MapPanel {
       profile: S.profileDef(def.profile),
       traits: def.traits.map((t, k) => (k < revealed ? S.sectorTraitDef(t) : null)),
       zones: def.zones.length,
+      /** Whether any zone holds Voidglass, the densest fuel. */
+      voidglass: def.zones.some((z) => (z.composition.voidglass ?? 0) > 0),
     })),
   );
 

@@ -11,7 +11,8 @@ import { FOLD, PERMANENT_NODES, coreDef } from './fold-data';
 import { partDef } from './fleet-data';
 import { destinationSeeds, generateSector } from './sector-rules';
 import { assignZoneNames } from './zone-names';
-import { improvementBonus } from './improvement-rules';
+import { buildCost, improvementBonus } from './improvement-rules';
+import { AlloyId } from './alloy-data';
 import { THREAT } from './threat-data';
 import { FoldState, GameState } from './types';
 import { RESEARCH } from './research';
@@ -102,6 +103,24 @@ export function nullsteelFuelUnits(): number {
   return FOLD.voidglassUnits * FOLD.nullsteelFuelMult;
 }
 
+/** Helium-3 units one Cryoplate alloy is worth as fuel. */
+export function cryoplateFuelUnits(): number {
+  return FOLD.cryoplateFuelUnits;
+}
+
+/** Ingots and alloys set aside for accepted construction contracts: the drive never burns them. */
+function reservedForContracts(state: GameState): { ingots: Partial<Record<OreId, number>>; alloys: Partial<Record<AlloyId, number>> } {
+  const ingots: Partial<Record<OreId, number>> = {};
+  const alloys: Partial<Record<AlloyId, number>> = {};
+  for (const c of state.contracts?.active ?? []) {
+    if (c.type !== 'construction') continue;
+    const cost = buildCost(state, c);
+    for (const [o, n] of Object.entries(cost.ingots)) ingots[o as OreId] = (ingots[o as OreId] ?? 0) + n!;
+    for (const [a, n] of Object.entries(cost.alloys)) alloys[a as AlloyId] = (alloys[a as AlloyId] ?? 0) + n!;
+  }
+  return { ingots, alloys };
+}
+
 /** Feed as much fuel from the hold as the drive will take. Returns charge added. */
 export function feedDrive(state: GameState): number {
   if (!driveOnline(state)) return 0;
@@ -109,19 +128,25 @@ export function feedDrive(state: GameState): number {
   const before = f.charge;
   const cap = chargeCap(state);
   const unit = perUnit(state);
-  // Densest fuel first: Nullsteel, then Voidglass, then Helium-3 (ingots before raw ore).
-  const alloyValue = nullsteelFuelUnits() * unit;
-  const bars = Math.floor(state.alloys?.nullsteel ?? 0);
-  const burn = Math.min(bars, (cap - f.charge) / alloyValue);
-  if (burn > 0 && f.charge < cap) {
-    state.alloys.nullsteel -= burn;
-    f.charge = Math.min(cap, f.charge + burn * alloyValue);
-  }
+  // Densest fuel first: Nullsteel, Voidglass, Cryoplate, then Helium-3 (ingots before raw ore).
+  // Anything an accepted construction contract needs is left alone.
+  const keep = reservedForContracts(state);
+  const burnAlloy = (id: AlloyId, units: number) => {
+    const value = units * unit;
+    const bars = Math.max(0, Math.floor(state.alloys?.[id] ?? 0) - (keep.alloys[id] ?? 0));
+    const burn = Math.min(bars, (cap - f.charge) / value);
+    if (burn > 0 && f.charge < cap) {
+      state.alloys[id] -= burn;
+      f.charge = Math.min(cap, f.charge + burn * value);
+    }
+  };
+  burnAlloy('nullsteel', nullsteelFuelUnits());
   for (const ore of ['voidglass', 'helium3'] as OreId[]) {
+    if (ore === 'helium3') burnAlloy('cryoplate', cryoplateFuelUnits());
     for (const ingot of [true, false]) {
       const value = fuelUnits(state, ore, ingot) * unit;
       if (!value || f.charge >= cap) continue;
-      const held = ingot ? Math.floor(state.ingots[ore]) : state.cargo[ore];
+      const held = ingot ? Math.max(0, Math.floor(state.ingots[ore]) - (keep.ingots[ore] ?? 0)) : state.cargo[ore];
       const take = Math.min(held, (cap - f.charge) / value);
       if (take <= 0) continue;
       if (ingot) state.ingots[ore] -= take;

@@ -194,6 +194,8 @@ export const OUTFITS: Record<OutfitArchetype, { label: string; types: ContractTy
 };
 
 export const CONTRACT = {
+  /** Chance an Aster-Lune contract also pays fold charge cells (1, or 2 for construction). */
+  asterCellChance: 0.4,
   boardSize: 3,
   refreshSec: 600,
   rerollCost: 2000,
