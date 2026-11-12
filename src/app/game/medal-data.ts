@@ -16,6 +16,8 @@ export interface MedalDef {
   /** Hidden until earned. */
   secret?: boolean;
   check: (s: GameState) => boolean;
+  /** How far along it is, for the Archive's progress bars. */
+  progress?: (s: GameState) => { value: number; target: number };
 }
 
 export const CATEGORIES: { id: MedalCategory; name: string; kana: string; color: string }[] = [
@@ -57,6 +59,7 @@ function tiers(
     desc: desc(fmt(t)),
     bonus,
     check: (s: GameState) => value(s) >= t,
+    progress: (s: GameState) => ({ value: value(s), target: t }),
   }));
 }
 
@@ -90,6 +93,7 @@ export const MEDALS: readonly MedalDef[] = [
   {
     id: 'all_drones', name: 'Full Spectrum', category: 'fleet', desc: 'Own every kind of drone at once.', bonus: P(0.02),
     check: (s) => Object.values(s.drones).every((n) => n > 0),
+    progress: (s) => ({ value: Object.values(s.drones).filter((n) => n > 0).length, target: Object.keys(s.drones).length }),
   },
   // Pilots
   ...tiers('level', 'pilots', ['Wings', 'Veteran', 'Living Legend'],
@@ -101,10 +105,12 @@ export const MEDALS: readonly MedalDef[] = [
   {
     id: 'story_crew', name: 'The Anchors', category: 'pilots', desc: 'Have all four story pilots aboard.', bonus: X(0.05),
     check: (s) => ['juno', 'kit', 'saffi', 'ansel'].every((k) => s.pilots.some((p) => p.story === k)),
+    progress: (s) => ({ value: ['juno', 'kit', 'saffi', 'ansel'].filter((k) => s.pilots.some((p) => p.story === k)).length, target: 4 }),
   },
   {
     id: 'sync5', name: 'Perfect Sync', category: 'pilots', desc: 'Reach Sync 5 with any frame and unlock a Special Technique.', bonus: X(0.03),
     check: (s) => s.pilots.some((p) => Object.values(p.sync).some((v) => v >= 5)),
+    progress: (s) => ({ value: Math.max(0, ...s.pilots.flatMap((p) => Object.values(p.sync))), target: 5 }),
   },
   // Exploration
   ...tiers('codex', 'exploration', ['Curious', 'Cataloguer', 'Codex Keeper'],
@@ -134,6 +140,7 @@ export const MEDALS: readonly MedalDef[] = [
   {
     id: 'partner', name: 'Trusted Partner', category: 'commerce', desc: 'Reach Partner reputation with a merchant clan.', bonus: S(0.02),
     check: (s) => Object.values(s.trade.rep).some((r) => r >= 30),
+    progress: (s) => ({ value: Math.max(0, ...Object.values(s.trade.rep)), target: 30 }),
   },
   // Story
   ...tiers('episodes', 'story', ['Pilot Episode', 'Season Regular', 'Signal Chaser', 'Series Finale'],
@@ -163,6 +170,7 @@ export const MEDALS: readonly MedalDef[] = [
   {
     id: 'side', name: 'Between Episodes', category: 'story', desc: 'Watch 3 side stories.', bonus: R(0.02),
     check: (s) => s.story.sideWatched >= 3,
+    progress: (s) => ({ value: s.story.sideWatched, target: 3 }),
   },
   // Secret
   { id: 'overheat', name: 'Meltdown Enthusiast', category: 'secret', secret: true, desc: 'Overheat the drill 100 times.', bonus: D(0.03), check: (s) => s.stats.overheats >= 100 },

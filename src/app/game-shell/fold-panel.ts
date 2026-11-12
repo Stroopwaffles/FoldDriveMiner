@@ -73,7 +73,6 @@ export class FoldPanel {
     CORE_UPGRADES.map((def) => ({ def, level: F.coreLevel(this.s(), def.id), cost: F.coreCost(this.s(), def.id) })),
   );
 
-  protected readonly permanentAfter = FOLD.permanentAfter;
 
   /** Deep Fold: only after Master the Cycle. */
   protected readonly deep = computed(() => {

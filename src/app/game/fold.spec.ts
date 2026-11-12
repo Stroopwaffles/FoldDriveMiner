@@ -212,21 +212,34 @@ describe('milestone 6: the jump', () => {
     expect(r.first).toBe(true);
   });
 
-  it('the archive and permanent research survive; QoL becomes permanent after 2 runs', () => {
+  it('the archive and permanent research survive; QoL is permanent as soon as it is researched', () => {
     const s = jumpable();
     s.fold.core['core_archive'] = 1;
+    // Researched this run: already shown as permanent before any jump.
+    expect(F.permanentNodes(s)).toContain('refinery');
+    expect(F.archivable(s)).not.toContain('refinery');
     F.toggleArchive(s, 'drone_efficiency');
     const a = F.foldJump(s)!.state;
     expect(a.research.levels['drone_efficiency']).toBe(3);
-    expect(a.research.levels['refinery']).toBeUndefined(); // only 1 run so far
+    expect(a.research.levels['refinery']).toBe(1);
     expect(a.fold.qolCounts['refinery']).toBe(1);
-    // Second run: research the refinery again, jump again → now permanent.
-    a.research.levels['refinery'] = 1;
+    // The archive pick is still picked for the next jump.
+    expect(a.fold.archive).toEqual(['drone_efficiency']);
     a.fold.charge = 1;
     const b = F.foldJump(a)!.state;
     expect(b.research.levels['refinery']).toBe(1);
-    expect(F.permanentNodes(b)).toContain('refinery');
+    expect(b.research.levels['drone_efficiency']).toBe(3);
+    expect(b.fold.archive).toEqual(['drone_efficiency']);
     expect(b.sector.depth).toBe(2);
+  });
+
+  it('archive picks that no longer fit the slots are dropped', () => {
+    const s = jumpable();
+    s.fold.core['core_archive'] = 1;
+    F.toggleArchive(s, 'drone_efficiency');
+    s.fold.core['core_archive'] = 0; // e.g. a Deep Fold reset the Jump Core
+    const a = F.foldJump(s)!.state;
+    expect(a.fold.archive).toEqual([]);
   });
 
   it('Jump Core head starts apply on arrival', () => {

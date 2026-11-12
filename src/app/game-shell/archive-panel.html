@@ -139,6 +139,12 @@
                   <span class="r-name">{{ m.earned || !m.def.secret ? m.def.name : '? ? ?' }}</span>
                   <span class="r-desc">{{ m.earned || !m.def.secret ? m.def.desc : 'Secret commendation.' }}</span>
                   <span class="r-bonus">+{{ pct(m.def.bonus.amount) }}% {{ bonusLabel(m.def.bonus.kind) }}</span>
+                  @if (m.progress; as p) {
+                    <span class="r-progress">
+                      <span class="r-bar"><i [style.width.%]="p.pct"></i></span>
+                      <span class="r-num">{{ game.fmt(p.value) }} / {{ game.fmt(p.target) }}</span>
+                    </span>
+                  }
                 </div>
               }
             </div>

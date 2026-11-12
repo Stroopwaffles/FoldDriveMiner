@@ -55,8 +55,8 @@ export const FOLD = {
   echoProduction: 0.05,
   /** Mech frames you've built before cost this share of the price. */
   blueprintCost: 0.25,
-  /** QoL and infrastructure research becomes permanent after this many runs. */
-  permanentAfter: 2,
+  /** QoL and infrastructure research is permanent once researched in this many runs (1: right away). */
+  permanentAfter: 1,
   destinations: 3,
 };
 

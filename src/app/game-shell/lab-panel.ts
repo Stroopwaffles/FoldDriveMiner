@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MATRIX } from '../game/core-data';
 import * as E from '../game/engine';
 import * as F from '../game/fold-rules';
-import { FOLD, PERMANENT_NODES } from '../game/fold-data';
+import { PERMANENT_NODES } from '../game/fold-data';
 import { formatDuration } from '../game/format';
 import { BRANCHES, RESEARCH, ResearchNode, researchNode } from '../game/research';
 import { AudioService } from '../services/audio.service';
@@ -104,12 +104,11 @@ export class LabPanel {
 
   protected readonly selectedId = signal<string>('refinery');
   protected readonly selected = computed(() => this.nodes().find((n) => n.node.id === this.selectedId())!);
-  /** For QoL nodes: permanent already, or how many runs until it is. */
+  /** For QoL nodes: whether it's already kept for good. */
   protected readonly qol = computed(() => {
     const id = this.selectedId();
     if (!PERMANENT_NODES.includes(id)) return null;
-    const runs = this.s().fold.qolCounts[id] ?? 0;
-    return { permanent: runs >= FOLD.permanentAfter, runs: Math.min(runs, FOLD.permanentAfter), need: FOLD.permanentAfter };
+    return { permanent: F.isPermanent(this.s(), id) };
   });
 
   /** ARIA: owned, on/off, mode, and her queue with whether each can start now. */

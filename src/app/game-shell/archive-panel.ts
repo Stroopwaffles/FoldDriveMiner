@@ -93,7 +93,13 @@ export class ArchivePanel {
   protected readonly categories = computed(() => {
     const earned = this.s().story.medals;
     return CATEGORIES.map((c) => {
-      const list = MEDALS.filter((m) => m.category === c.id).map((m) => ({ def: m, earned: earned[m.id] !== undefined }));
+      const list = MEDALS.filter((m) => m.category === c.id).map((m) => {
+        const got = earned[m.id] !== undefined;
+        // Progress toward ones not yet earned (secrets stay hidden).
+        const p = !got && !m.secret && m.progress ? m.progress(this.s()) : null;
+        const progress = p ? { value: Math.min(p.value, p.target), target: p.target, pct: Math.min(100, (Math.max(0, p.value) / p.target) * 100) } : null;
+        return { def: m, earned: got, progress };
+      });
       return { ...c, list, got: list.filter((x) => x.earned).length };
     });
   });

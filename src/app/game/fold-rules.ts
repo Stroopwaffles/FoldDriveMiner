@@ -178,9 +178,16 @@ export function archiveSlots(state: GameState): number {
   return coreLevel(state, 'core_archive') + (choice(state) === 'break' ? 2 : 0);
 }
 
-/** Research nodes that will come along automatically (permanent after enough runs, plus the drive itself). */
+/** Research nodes that will come along automatically: QoL research you've researched (now or in an earlier run). */
 export function permanentNodes(state: GameState): string[] {
-  return PERMANENT_NODES.filter((id) => (state.fold.qolCounts[id] ?? 0) >= FOLD.permanentAfter);
+  return PERMANENT_NODES.filter((id) => isPermanent(state, id));
+}
+
+/** A QoL node is kept for good once researched in enough runs, counting this one. */
+export function isPermanent(state: GameState, id: string): boolean {
+  if (!PERMANENT_NODES.includes(id)) return false;
+  const runs = (state.fold.qolCounts[id] ?? 0) + ((state.research.levels[id] ?? 0) > 0 ? 1 : 0);
+  return runs >= FOLD.permanentAfter;
 }
 
 /** Researched nodes the archive could keep (not already permanent). */
@@ -385,6 +392,9 @@ export function foldJump(old: GameState, now = Date.now(), deep = false): JumpRe
   syncResearchEffects(s);
   carryStory(old, s, gained);
   s.asteroid = spawnAsteroid(s);
+
+  // The Research Archive keeps its picks for the next jump (anything still archivable, within the slots).
+  s.fold.archive = f.archive.filter((id) => archivable(s).includes(id)).slice(0, archiveSlots(s));
 
   return {
     state: s,
