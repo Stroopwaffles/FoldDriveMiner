@@ -588,6 +588,10 @@ export class GameService {
       const m = s.mechs.find((x) => x.id === id);
       if (m) this.say('VESPER', `${m.designation} "${m.name}" returning to the repair bay for maintenance.`);
     }
+    for (const id of ev.repairStalled ?? []) {
+      const m = s.mechs.find((x) => x.id === id);
+      if (m) this.say('VESPER', `Repairs on ${m.designation} have stopped: the bay needs credits and Ferrite or Titanite in the hold.`);
+    }
     for (const name of ev.charted) {
       this.audio.dataCore();
       this.say('VESPER', `Sector scan complete: ${name} charted. Open the MAP to set course.`);
@@ -1146,6 +1150,7 @@ export class GameService {
       levelUps: [],
       syncUps: [],
       autoRepairs: [],
+      repairStalled: [],
       threatStarted: [],
       threatResolved: [],
       anomaly: [],

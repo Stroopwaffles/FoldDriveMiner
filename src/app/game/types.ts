@@ -163,6 +163,8 @@ export interface MechState {
   job: MechJob;
   /** Job to go back to after an automatic repair. */
   returnJob: MechJob | null;
+  /** In the repair bay but can't pay (credits or Ferrite/Titanite); not saved as false. */
+  repairStalled?: boolean;
   zone: ZoneId;
   pilotId: number | null;
   /** Special Technique: seconds of boost left, and cooldown left. */
@@ -540,6 +542,8 @@ export interface TickEvents {
   trade: { text: string; good: boolean; from?: 'merchant' | 'corp' | 'vesper' }[];
   syncUps: { pilotId: number; frame: FrameId; level: number }[];
   autoRepairs: number[];
+  /** Mechs whose repair just stalled for lack of credits or ore. */
+  repairStalled?: number[];
   ingots: OreAmounts;
   /** Alloys the forge finished. */
   alloys: number;

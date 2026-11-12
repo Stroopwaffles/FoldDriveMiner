@@ -11,7 +11,7 @@ import { PARTS } from './fleet-data';
 import { mechCondition, mechOperable, mechPilot, mechStats } from './fleet-rules';
 import { Rng } from './rng';
 import { sectorMods, sectorOf, sectorZones } from './sector-rules';
-import { injurePilot, startEvent } from './threat-rules';
+import { damageMech, startEvent } from './threat-rules';
 import { rollBond } from './trade-rules';
 import { AnomaliesState, AnomalyState, GameState, MechState, MissionState, TickEvents } from './types';
 import { addToCargo, baseDrillPower, drillPower, droneRates, mechRateTotal, orePrice, overdriveMult } from './engine';
@@ -368,11 +368,7 @@ function resolveMission(state: GameState, m: MissionState, events: TickEvents): 
           }
         } else if (roll < 0.7) {
           news(events, a.kind, `It was a trap! Pirates were waiting on the signal.`, false);
-          if (mech && rng.next() < 0.5) {
-            const max = mechStats(state, mech).armor;
-            mech.armor = Math.max(0, mech.armor - max * 0.4);
-            if (mech.armor <= 0) injurePilot(state, mech.pilotId);
-          }
+          if (mech && rng.next() < 0.5) damageMech(state, mech, 0.4);
           if (!state.threats.events.some((e) => e.kind === 'raid')) {
             const raid = startEvent(state, 'raid', events, rng);
             raid.remaining = 20;
@@ -398,9 +394,7 @@ function resolveMission(state: GameState, m: MissionState, events: TickEvents): 
           }
           news(events, a.kind, `Battlefield expedition ${a.progress}/${ANOMALY.battlefieldRuns}: recovered ${parts.join(', ')}.${extra}`, true);
         } else if (mech) {
-          const max = mechStats(state, mech).armor;
-          mech.armor = Math.max(0, mech.armor - max * 0.5);
-          if (mech.armor <= 0) injurePilot(state, mech.pilotId);
+          damageMech(state, mech, 0.5);
           news(events, a.kind, `Battlefield expedition went wrong — ${mech.designation} took heavy damage.`, false);
         }
         a.status = a.progress >= ANOMALY.battlefieldRuns ? 'done' : 'scanned';

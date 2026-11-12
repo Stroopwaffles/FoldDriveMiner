@@ -297,8 +297,14 @@ export function setMechJob(state: GameState, mechId: number, job: MechJob): bool
   if (!mech) return false;
   if (job === 'repair' && !hasResearch(state, 'repair_bay')) return false;
   if ((job === 'mining' || job === 'defense') && !mechOperable(state, mech)) return false;
+  // A manual repair remembers what the mech was doing, and it goes back to that afterwards.
+  if (job === 'repair') {
+    if (mech.job !== 'repair') mech.returnJob = mech.job === 'mining' || mech.job === 'defense' ? mech.job : null;
+  } else {
+    mech.returnJob = null;
+    mech.repairStalled = undefined;
+  }
   mech.job = job;
-  mech.returnJob = null;
   return true;
 }
 
@@ -434,20 +440,30 @@ export function advanceFleet(state: GameState, dt: number, efficiency: number, e
         if (after > before) events.syncUps.push({ pilotId: pilot.id, frame: mech.frame, level: after });
       }
       mech.armor = Math.max(Math.min(mech.armor, max * MECH.wearFloor), mech.armor - wear);
-
-      if (autoRepair && mech.armor / max < MECH.autoRepairBelow) {
-        mech.job = 'repair';
-        mech.returnJob = 'mining';
-        events.autoRepairs.push(mech.id);
-      }
     } else if (mech.job === 'repair' && hasResearch(state, 'repair_bay')) {
       const want = Math.min(max - mech.armor, repairRate(state, mech) * dt);
-      mech.armor += payForRepair(state, want);
+      const paid = payForRepair(state, want);
+      mech.armor += paid;
+      // Out of credits or Ferrite/Titanite: the bay waits. Say so once, not every tick.
+      const stalled = want > 1e-9 && paid < want * 0.999;
+      if (stalled && !mech.repairStalled) events.repairStalled?.push(mech.id);
+      mech.repairStalled = stalled || undefined;
       if (mech.armor >= max - 1e-6) {
         mech.armor = max;
-        mech.job = mech.returnJob ?? 'idle';
+        mech.repairStalled = undefined;
+        const back = mech.returnJob ?? 'idle';
         mech.returnJob = null;
+        // Back to work, unless it can't work any more (no power for its parts, say).
+        mech.job = (back === 'mining' || back === 'defense') && !mechOperable(state, mech) ? 'idle' : back;
       }
+    }
+
+    // Auto-repair: any mech that's badly hurt or disabled heads for the bay and remembers its job.
+    // Mechs out on missions wait until they're home (the mission hands them back first).
+    if (autoRepair && max > 0 && mech.job !== 'repair' && mech.job !== 'mission' && mech.armor / max < MECH.autoRepairBelow) {
+      mech.returnJob = mech.job;
+      mech.job = 'repair';
+      events.autoRepairs.push(mech.id);
     }
   }
   state.stats.mechOre += Object.values(mined).reduce((a, b) => a + b, 0);

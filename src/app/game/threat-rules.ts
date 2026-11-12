@@ -400,7 +400,8 @@ export function injuryRecoveryMult(state: GameState): number {
   return 1 + researchLevel(state, 'medbay') * THREAT.medbayPerLevel;
 }
 
-function damageMech(state: GameState, mech: MechState, frac: number): boolean {
+/** Knocks off a share of a mech's armor; at zero it's disabled (pilot hurt, auto-repair takes over). */
+export function damageMech(state: GameState, mech: MechState, frac: number): boolean {
   const max = mechStats(state, mech).armor;
   mech.armor = Math.max(0, mech.armor - max * frac);
   if (mech.armor <= 0) {

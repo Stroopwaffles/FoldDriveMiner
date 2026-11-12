@@ -97,6 +97,7 @@ export function emptyEvents(): TickEvents {
     levelUps: [],
     syncUps: [],
     autoRepairs: [],
+    repairStalled: [],
     threatStarted: [],
     threatResolved: [],
     anomaly: [],

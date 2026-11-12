@@ -150,7 +150,7 @@ describe('milestone 3: mechs', () => {
     E.tick(s, 600);
     expect(m.armor).toBeCloseTo(max, 3);
     expect(s.credits).toBeLessThan(credits);
-    expect(m.job).toBe('idle');
+    expect(m.job).toBe('mining'); // a manual repair goes back to the job it left
   });
 
   it('auto-repair sends worn miners to the bay and back to work', () => {
