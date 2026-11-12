@@ -59,6 +59,20 @@
             }
           </div>
         }
+        @if (st.story.epilogue) {
+          <div class="act">Epilogue · Beyond the frontier</div>
+          <div class="ep-list">
+            <div class="ep" [class.ready]="st.story.epilogue === 1" [class.watched]="st.story.epilogue === 2">
+              <span class="ep-n">EP</span>
+              <span class="ep-title">{{ epilogueTitle }}</span>
+              <button type="button" class="btn small" [class.btn-primary]="st.story.epilogue === 1" (click)="game.playEpilogue()">
+                {{ st.story.epilogue === 1 ? '▶ PLAY' : '↺ REPLAY' }}
+              </button>
+            </div>
+          </div>
+        } @else if (st.story.choice === 'break') {
+          <p class="dim small">Break the Cycle: reach sector depth 10, the edge of the charted frontier, for the epilogue.</p>
+        }
         @if (sides().length) {
           <div class="act">Side Stories · Between the folds</div>
           <div class="ep-list">

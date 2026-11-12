@@ -13,7 +13,7 @@ import * as A from '../game/anomaly-rules';
 import * as F from '../game/fold-rules';
 import { ARRIVAL } from '../game/fold-data';
 import * as ST from '../game/story-rules';
-import { ACTS, FINALE, FINAL_EPISODE, FinaleChoice, SceneSetting, StoryVoice, episodeDef, sceneSetting } from '../game/story-data';
+import { ACTS, EPILOGUE, FINALE, FINAL_EPISODE, FinaleChoice, SceneSetting, StoryVoice, episodeDef, sceneSetting } from '../game/story-data';
 import { BONUS_LABEL, medalDef } from '../game/medal-data';
 import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
@@ -98,7 +98,7 @@ export interface EpisodeCard {
 
 /** A story scene playing full screen: title card (index -1), dialogue, then the finale choice. */
 export interface Scene {
-  kind: 'episode' | 'side';
+  kind: 'episode' | 'side' | 'epilogue';
   n: number;
   label: string;
   title: string;
@@ -1236,7 +1236,13 @@ export class GameService {
     this.episode.set({
       number: r.state.fold.jumps + 1,
       label: deep ? `DEEP FOLD ${String(r.state.fold.deepFolds).padStart(2, '0')}` : `FOLD JUMP ${String(r.state.fold.jumps).padStart(2, '0')}`,
-      teaser: pending ? `NOW PLAYING · EPISODE ${pending}: ${episodeDef(pending)!.title}` : next ? `NEXT EPISODE · ${next.title}` : undefined,
+      teaser: pending
+        ? `NOW PLAYING · EPISODE ${pending}: ${episodeDef(pending)!.title}`
+        : ST.pendingEpilogue(r.state)
+          ? `EPILOGUE · ${EPILOGUE.title}`
+          : next
+            ? `NEXT EPISODE · ${next.title}`
+            : undefined,
       title: def.name,
       subtitle: deep
         ? `Sector ${def.code} · ${S.starLabel(def)} · +${r.echoes} Echo${r.echoes === 1 ? '' : 'es'}`
@@ -1250,6 +1256,9 @@ export class GameService {
               `Deep Fold complete. The Resonance layer collapsed into ${r.echoes} Echo${r.echoes === 1 ? '' : 'es'} (${r.state.fold.echoes} in all). Every jump now pays ×${(1 + r.state.fold.echoes * 0.1).toFixed(1)} Resonance.`,
             ] as [Speaker, string])
           : ['VESPER', `Fold Resonance +${r.gained}. Production is now ×${F.resonanceMult(r.state).toFixed(2)} from Resonance. Spend it in the FOLD tab's Jump Core.`],
+        ...(ST.pendingEpilogue(r.state)
+          ? ([['VESPER', 'We have reached the edge of the charted frontier. Incoming transmission: the Epilogue. Press PLAY in the comm log when you are ready.']] as [Speaker, string][])
+          : []),
       ],
     });
   }
@@ -1308,6 +1317,25 @@ export class GameService {
     });
   }
 
+  /** Break the Cycle's ending, at the charted frontier. */
+  playEpilogue(): void {
+    const s = this._state();
+    if (!s || !s.story.epilogue) return;
+    this.audio.select();
+    this.scene.set({
+      kind: 'epilogue',
+      n: 0,
+      label: 'EPILOGUE',
+      title: EPILOGUE.title,
+      act: 'Beyond the frontier',
+      lines: EPILOGUE.lines.map(([w, t]) => [w, this.fill(t)] as [Speaker, string]),
+      index: -1,
+      replay: s.story.epilogue === 2,
+      finale: false,
+      setting: 'nebula',
+    });
+  }
+
   playSide(n?: number): void {
     const s = this._state();
     if (!s) return;
@@ -1358,6 +1386,7 @@ export class GameService {
     this.scene.set(null);
     if (!sc || !s || sc.replay) return;
     if (sc.kind === 'episode') ST.watchEpisode(s, sc.n);
+    else if (sc.kind === 'epilogue') ST.watchEpilogue(s);
     else ST.watchSide(s, sc.n);
     this.publish();
     this.save();

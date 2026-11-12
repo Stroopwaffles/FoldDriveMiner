@@ -3,6 +3,7 @@
  * side stories, commendations and their bonuses, the Sector Logbook and the
  * dossiers of pilots who left. Everything here survives Fold Jumps.
  */
+import { FOLD } from './fold-data';
 import { matrixBonus } from './core-rules';
 import { addStoryPilot } from './crew-rules';
 import { BonusKind, MEDALS } from './medal-data';
@@ -42,6 +43,17 @@ export function pendingEpisode(state: GameState): number | null {
 export function pendingSide(state: GameState): number | null {
   const st = state.story;
   return st.sideWatched < st.side ? st.sideWatched + 1 : null;
+}
+
+/** True while Break the Cycle's epilogue is waiting to be watched. */
+export function pendingEpilogue(state: GameState): boolean {
+  return state.story.epilogue === 1;
+}
+
+export function watchEpilogue(state: GameState): boolean {
+  if (!state.story.epilogue) return false;
+  state.story.epilogue = 2;
+  return true;
 }
 
 export function sideStory(n: number) {
@@ -211,5 +223,7 @@ export function carryStory(old: GameState, next: GameState, resonance: number): 
   closeLog(old, resonance);
   next.story = structuredClone(old.story);
   if (next.story.choice) next.story.side++;
+  // Break the Cycle: reaching the charted frontier is the ending.
+  if (next.story.choice === 'break' && next.sector.depth >= FOLD.frontierDepth && !next.story.epilogue) next.story.epilogue = 1;
   openLog(next);
 }

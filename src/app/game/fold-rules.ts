@@ -66,7 +66,15 @@ export function depthRaidMult(state: GameState): number {
 
 /** Helium-3 units for a full charge in the current sector. */
 export function chargeNeeded(state: GameState): number {
-  return FOLD.baseCharge * FOLD.chargeGrowth ** state.sector.depth;
+  return chargeAtDepth(state.sector.depth);
+}
+
+/** Full-charge Helium-3 at a depth: ×4 to depth 6, ×2 to the frontier (10), then ×4 again. */
+export function chargeAtDepth(depth: number): number {
+  const early = Math.min(depth, FOLD.lateFrom);
+  const late = Math.max(0, Math.min(depth, FOLD.frontierDepth) - FOLD.lateFrom);
+  const beyond = Math.max(0, depth - FOLD.frontierDepth);
+  return FOLD.baseCharge * FOLD.chargeGrowth ** (early + beyond) * FOLD.lateGrowth ** late;
 }
 
 export function chargeEfficiency(state: GameState): number {

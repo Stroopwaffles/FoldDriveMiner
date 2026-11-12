@@ -149,6 +149,10 @@ export const MEDALS: readonly MedalDef[] = [
     check: (s) => (s.fold.deepFolds ?? 0) >= 1,
   },
   {
+    id: 'beyond_map', name: 'Beyond the Map', category: 'story', desc: 'Break the Cycle and fly past the charted frontier.', bonus: P(0.05),
+    check: (s) => s.story.choice === 'break' && (s.story.epilogue ?? 0) >= 1,
+  },
+  {
     id: 'side', name: 'Between Episodes', category: 'story', desc: 'Watch 3 side stories.', bonus: R(0.02),
     check: (s) => s.story.sideWatched >= 3,
   },

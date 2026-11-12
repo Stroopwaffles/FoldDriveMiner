@@ -364,6 +364,23 @@ export function episodeDef(n: number): EpisodeDef | undefined {
 
 // ---------------------------------------------------------------- the finale
 
+/** Break the Cycle's ending: the first jump to reach the charted frontier (depth 10). */
+export const EPILOGUE: { title: string; lines: Line[] } = {
+  title: 'Past the Edge',
+  lines: [
+    ['VESPER', 'Depth ten. There is no chart past this point, Commander. Not a handwritten one. Not anyone\'s.'],
+    ['ANSEL', 'No annotations. No margins in my hand. We have never been here before.'],
+    ['JUNO', 'So this is it? The loop\'s really broken?'],
+    ['SAFFI', 'Contact off the bow. Red frame, running dark.'],
+    ['JACKAL', 'Told you it was real travel, little bird. One way. No do-overs.'],
+    ['SAFFI', 'Rei. You waited.'],
+    ['JACKAL', 'A hundred loops. I could stand ten more minutes.'],
+    ['KIT', 'I just checked the clocks. All of them. They agree with each other. That\'s never happened.'],
+    ['VESPER', 'Then this is no longer a loop. It is a voyage. And the {ship} is a long way from home.'],
+    ['JUNO', 'Home can wait. Let\'s see what\'s out here.'],
+  ],
+};
+
 export interface FinaleDef {
   id: FinaleChoice;
   name: string;

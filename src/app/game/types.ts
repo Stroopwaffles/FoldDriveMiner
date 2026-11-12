@@ -455,6 +455,8 @@ export interface StoryState {
   /** Side stories unlocked (one per jump after the finale) and watched. */
   side: number;
   sideWatched: number;
+  /** Break the Cycle's epilogue: 0 not yet, 1 arrived (waiting to be watched), 2 watched. */
+  epilogue?: number;
   /** Commendations earned: id → playtime second. */
   medals: Record<string, number>;
   logbook: LogEntry[];

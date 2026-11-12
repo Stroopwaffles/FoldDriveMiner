@@ -9,6 +9,13 @@ export const FOLD = {
    */
   baseCharge: 5e6,
   chargeGrowth: 4,
+  /**
+   * After the finale (past depth 6) fuel grows more gently, ×2 per depth, up to the charted
+   * frontier at depth 10; past the frontier it is ×4 again (an endless, ever-steeper run).
+   */
+  lateFrom: 6,
+  lateGrowth: 2,
+  frontierDepth: 10,
   /** Fuel values in Helium-3 units: Voidglass is worth 10. */
   voidglassUnits: 10,
   /** An ingot is worth this many tonnes of its raw ore. */
