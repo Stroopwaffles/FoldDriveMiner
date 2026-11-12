@@ -61,7 +61,7 @@ export const ANOMALIES: readonly AnomalyDef[] = [
   {
     kind: 'crystal_bloom', name: 'Crystal Bloom', kana: 'けっしょうのはな', rarity: 'rare', fixed: true, minDepth: 2, weight: 1,
     scanSec: 150, approaches: ['drones'], missionSec: 0,
-    desc: 'Voidglass that grows back. Deploy a harvest rig for a slow, permanent trickle of the most valuable ore there is.',
+    desc: 'Voidglass that grows back. Deploy a harvest rig (no Mk.V drill needed) for a steady flow of the most valuable ore there is, and upgrade the rig to widen it.',
     codex: 'Crystals that regrow in hard vacuum, in perfect lattices, at exactly the rate you harvest them. As if they were expecting you.',
   },
   {
@@ -128,6 +128,10 @@ export const ANOMALY = {
   beaconSecPerFragment: 900,
   bloomPerSec: 0.01,
   bloomRigCost: 250000,
+  /** Harvest rig upgrades: output multiplier per rig level (level 1 = the base rig). */
+  bloomRigMult: [1, 2.5, 5, 10, 20],
+  /** Each upgrade costs the rig price × this per level already built. */
+  bloomUpgradeGrowth: 3,
   battlefieldRuns: 5,
   cometSec: 180,
   cometMult: 2,

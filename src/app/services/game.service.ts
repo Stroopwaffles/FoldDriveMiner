@@ -948,6 +948,10 @@ export class GameService {
     this.act((s) => A.deployRig(s, id), () => this.audio.buy());
   }
 
+  upgradeRig(id: number): void {
+    this.act((s) => A.upgradeRig(s, id), () => this.audio.buy());
+  }
+
   goldenClick(): A.GoldenClick | null {
     const s = this._state();
     if (!s) return null;

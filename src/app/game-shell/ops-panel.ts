@@ -29,7 +29,7 @@ export class OpsPanel {
   protected readonly cargoRows = computed(() => {
     const s = this.s();
     const analysis = this.hasAnalysis();
-    return ORES.filter((o) => o.tier <= Math.max(E.drillTier(s) + 1, 2) || s.cargo[o.id] > 0).map((o) => {
+    return ORES.filter((o) => o.tier <= Math.max(E.drillTier(s) + 1, 2) || E.oreTradable(s, o.id)).map((o) => {
       const fc = analysis ? E.priceForecast(s, o.id) : null;
       return {
         ore: o,
@@ -40,7 +40,8 @@ export class OpsPanel {
         mult: E.marketMultiplier(s.marketClock, o.id),
         trend: E.priceTrend(s, o.id),
         forecast: fc && fc.inSec > 0 ? fc : null,
-        locked: !E.oreReachable(s, o.id),
+        // Locked only if the drill can't cut it and none is coming in (a Bloom rig still fills the hold).
+        locked: !E.oreTradable(s, o.id),
         autoOre: s.autoSell.ore[o.id],
         autoIngot: s.autoSell.ingot[o.id],
       };
@@ -111,7 +112,7 @@ export class OpsPanel {
   protected readonly batchTime = computed(() => formatDuration(E.batchDuration(this.s())));
   protected readonly ingotMult = CONFIG.refinery.ingotValueMult;
   protected readonly anyRunning = computed(() => this.s().refinery.slots.some((x) => x.batch > 0));
-  protected readonly refinableOres = computed(() => ORES.filter((o) => E.oreReachable(this.s(), o.id)));
+  protected readonly refinableOres = computed(() => ORES.filter((o) => E.oreTradable(this.s(), o.id)));
   protected readonly slots = computed(() => {
     const s = this.s();
     const ratio = this.ratio();

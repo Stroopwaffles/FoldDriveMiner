@@ -225,6 +225,42 @@ export function deployRig(state: GameState, id: number): boolean {
   return true;
 }
 
+/** Harvest rig level (1 when first deployed); stored in the anomaly's progress. */
+export function rigLevel(a: AnomalyState): number {
+  return Math.max(1, a.progress);
+}
+
+export function rigMaxLevel(): number {
+  return ANOMALY.bloomRigMult.length;
+}
+
+/** Voidglass per second from a Crystal Bloom rig. */
+export function bloomRate(a: AnomalyState): number {
+  return ANOMALY.bloomPerSec * ANOMALY.bloomRigMult[Math.min(rigLevel(a), rigMaxLevel()) - 1];
+}
+
+/** Credits for the next rig upgrade, or null at max. */
+export function rigUpgradeCost(a: AnomalyState): number | null {
+  const lvl = rigLevel(a);
+  if (lvl >= rigMaxLevel()) return null;
+  return Math.round(ANOMALY.bloomRigCost * ANOMALY.bloomUpgradeGrowth ** lvl);
+}
+
+export function upgradeRig(state: GameState, id: number): boolean {
+  const a = anomalyById(state, id);
+  if (!a || a.kind !== 'crystal_bloom' || a.status !== 'active') return false;
+  const cost = rigUpgradeCost(a);
+  if (cost === null || state.credits < cost) return false;
+  state.credits -= cost;
+  a.progress = rigLevel(a) + 1;
+  return true;
+}
+
+/** A harvest rig is running somewhere in this sector. */
+export function bloomHarvesting(state: GameState): boolean {
+  return state.anomalies.list.some((a) => a.kind === 'crystal_bloom' && a.status === 'active');
+}
+
 export function decodeSpeed(state: GameState): number {
   const scholars = state.pilots.filter((p) => p.background === 'scholar' && Object.values(state.posts).includes(p.id)).length;
   return 1 + postBonus(state, 'science') + 0.5 * scholars + researchLevel(state, 'deep_scan') * 0.25 + researchLevel(state, 'beacon_decoding') * 0.5;
@@ -477,7 +513,7 @@ export function advanceAnomalies(state: GameState, dt: number, events: TickEvent
     // Crystal Bloom harvest rig.
     if (a.kind === 'crystal_bloom' && a.status === 'active') {
       const ore = emptyOre();
-      ore.voidglass = ANOMALY.bloomPerSec * dt;
+      ore.voidglass = bloomRate(a) * dt;
       addToCargo(state, ore);
     }
   }

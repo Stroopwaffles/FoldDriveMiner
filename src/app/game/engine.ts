@@ -37,7 +37,7 @@ import { CORES } from './core-data';
 import { applySalvage, crackSalvage, rollSpecial, specialComposition, specialName } from './special-rules';
 import { specialDef } from './special-data';
 import { advanceForge, autoSellAlloys, emptyAlloyFlags, emptyAlloys, emptyForge, forgeReserved, sellAllAlloys } from './alloy-rules';
-import { advanceAnomalies, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
+import { advanceAnomalies, bloomHarvesting, codexProductionBonus, codexSurveyBonus, emptyAnomalies, ensureAnomalies, lensMult } from './anomaly-rules';
 import { advanceScan, generateSector, oreCharted, pulsarSurge, sectorHasOre, sectorMods, sectorZones, starLabel } from './sector-rules';
 import {
   advanceTrade,
@@ -867,10 +867,18 @@ export function batchDuration(state: GameState): number {
   );
 }
 
+/**
+ * Ore you can sell, refine and watch on the market: what the drill can cut, plus anything already
+ * in the hold (Voidglass from a Crystal Bloom rig arrives long before a Mk.V drill).
+ */
+export function oreTradable(state: GameState, ore: OreId): boolean {
+  return oreReachable(state, ore) || state.cargo[ore] >= 0.01 || state.ingots[ore] >= 0.01 || (ore === 'voidglass' && bloomHarvesting(state));
+}
+
 /** Loads a batch into a slot from cargo. Returns false if there isn't enough ore. */
 export function startBatch(state: GameState, index: number, ore: OreId): boolean {
   const slot = state.refinery.slots[index];
-  if (!slot || slot.batch > 0 || !oreReachable(state, ore)) return false;
+  if (!slot || slot.batch > 0 || !oreTradable(state, ore)) return false;
   slot.ore = ore;
   return loadBatch(state, slot);
 }

@@ -4,6 +4,7 @@ import { ANOMALY, RARITY_COLOR, anomalyDef } from '../game/anomaly-data';
 import * as A from '../game/anomaly-rules';
 import * as E from '../game/engine';
 import { formatDuration } from '../game/format';
+import { AnomalyState } from '../game/types';
 import { GameService } from '../services/game.service';
 
 /** MAP › SIGNALS: detected anomalies, scanning, responses and missions in flight. */
@@ -102,7 +103,18 @@ import { GameService } from '../services/game.service';
                   </div>
                 }
                 @case ('crystal_bloom') {
-                  <div class="ok small">Harvest rig running: +{{ bloom * 60 }} Voidglass per minute.</div>
+                  @let rig = rigInfo(r.a);
+                  <div class="ok small">
+                    Harvest rig LV {{ rig.level }}/{{ rig.max }}: +{{ rig.perMin }} Voidglass per minute
+                    <span class="dim">(no drill needed; sell or refine it in OPS)</span>
+                  </div>
+                  @if (rig.cost !== null) {
+                    <button type="button" class="btn small" [disabled]="st.credits < rig.cost" (click)="game.upgradeRig(r.a.id)">
+                      Upgrade rig → {{ rig.nextPerMin }}/min · {{ game.fmt(rig.cost) }} cr
+                    </button>
+                  } @else {
+                    <span class="dim small">Rig fully upgraded.</span>
+                  }
                 }
                 @case ('comet') {
                   <div class="ok small">☄ Comet in the {{ r.zone }}: ×2 production for {{ duration(r.a.timer) }}.</div>
@@ -262,7 +274,19 @@ export class SignalsPanel {
   protected readonly runs = ANOMALY.battlefieldRuns;
   protected readonly fragments = ANOMALY.beaconFragments;
   protected readonly fragSec = ANOMALY.beaconSecPerFragment;
-  protected readonly bloom = ANOMALY.bloomPerSec;
+  /** Harvest rig level, output and the next upgrade. */
+  protected rigInfo(a: AnomalyState) {
+    const level = A.rigLevel(a);
+    const cost = A.rigUpgradeCost(a);
+    const perMin = (x: number) => +(x * 60).toFixed(1);
+    return {
+      level,
+      max: A.rigMaxLevel(),
+      perMin: perMin(A.bloomRate(a)),
+      cost,
+      nextPerMin: cost === null ? 0 : perMin(ANOMALY.bloomPerSec * ANOMALY.bloomRigMult[level]),
+    };
+  }
 
   protected readonly picked = signal<Record<number, number>>({});
 
