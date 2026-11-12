@@ -334,6 +334,7 @@ export function spawnFleet(state: GameState, events: TickEvents, clan?: ClanId):
   state.rng = rng.state;
   t.fleet = fleet;
   t.visits++;
+  state.stats.convoysHosted = (state.stats.convoysHosted ?? 0) + 1;
   news(events, `UNIDENTIFIED CONVOY ON APPROACH — TRANSPONDER: ${clanDef(id).name.toUpperCase()}. They'll trade for a while; open the BOARD.`, true);
   news(events, clanDef(id).greet, true, 'merchant');
   return fleet;

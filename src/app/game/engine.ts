@@ -177,6 +177,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
       researchCompleted: 0,
       mechOre: 0,
       mechsBuilt: 0,
+      convoysHosted: 0,
     },
     flags: {},
   };

@@ -59,6 +59,8 @@ export interface GameStats {
   researchCompleted: number;
   mechOre: number;
   mechsBuilt: number;
+  /** Merchant convoys hosted over the whole save (trade.visits only counts this run). */
+  convoysHosted: number;
 }
 
 export interface SectorInfo {

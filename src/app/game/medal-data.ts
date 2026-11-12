@@ -136,7 +136,7 @@ export const MEDALS: readonly MedalDef[] = [
   ...tiers('contracts', 'commerce', ['Signed', 'Reliable Supplier', 'Preferred Vendor'],
     [1, 10, 50], (s) => s.contracts.completed, (n) => `Complete ${n} contract(s).`, S(0.01)),
   ...tiers('convoys', 'commerce', ['Open for Business', 'Convoy Regular'],
-    [5, 25], (s) => s.trade.visits, (n) => `Host ${n} merchant convoys.`, S(0.01)),
+    [5, 25], (s) => s.stats.convoysHosted ?? 0, (n) => `Host ${n} merchant convoys.`, S(0.01)),
   {
     id: 'partner', name: 'Trusted Partner', category: 'commerce', desc: 'Reach Partner reputation with a merchant clan.', bonus: S(0.02),
     check: (s) => Object.values(s.trade.rep).some((r) => r >= 30),

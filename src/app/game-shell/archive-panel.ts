@@ -153,7 +153,7 @@ export class ArchivePanel {
       ['Jackal encounters / defeats', `${t.jackalEncounters} / ${t.jackalDefeats}`],
       ['Pirate base strikes won', String(t.strikesWon)],
       ['Contracts completed / failed', `${s.contracts.completed} / ${s.contracts.failed}`],
-      ['Merchant convoys', String(s.trade.visits)],
+      ['Merchant convoys', String(s.stats.convoysHosted ?? 0)],
       ['Anomalies identified', String(Object.values(s.anomalies.codex).reduce<number>((a, b) => a + (b ?? 0), 0))],
       ['Beacon fragments decoded', String(s.anomalies.lore)],
       ['Fold Jumps', String(s.fold.jumps)],

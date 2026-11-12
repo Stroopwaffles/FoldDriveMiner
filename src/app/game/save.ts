@@ -105,7 +105,26 @@ export function migrate(raw: unknown): GameState {
   if (data['version'] !== CURRENT_VERSION) {
     throw new SaveError(`Unknown save version: ${String(data['version'])}`);
   }
+  backfillConvoys(data);
   return fillDefaults(data as Partial<GameState>);
+}
+
+/**
+ * Lifetime convoy count for saves from before it was tracked. trade.visits resets every Fold Jump,
+ * so start from this run's visits plus what an earlier run's convoy commendation proves.
+ */
+function backfillConvoys(data: Record<string, unknown>): void {
+  const stats = (data['stats'] ?? {}) as Record<string, unknown>;
+  if (typeof stats['convoysHosted'] === 'number') return;
+  const visits = Number((data['trade'] as { visits?: number } | undefined)?.visits) || 0;
+  const story = data['story'] as { medals?: Record<string, number>; logbook?: { arrived: number }[] } | undefined;
+  const medals = story?.medals ?? {};
+  const runStart = story?.logbook?.at(-1)?.arrived ?? 0;
+  // Earned before this run started: those convoys were in earlier runs, on top of this run's.
+  const earlier = (id: string, n: number) => (medals[id] !== undefined && medals[id] < runStart ? n : 0);
+  const proven = Math.max(earlier('convoys_2', 25), earlier('convoys_1', 5));
+  stats['convoysHosted'] = proven + visits;
+  data['stats'] = stats;
 }
 
 /** Fills any missing fields from a fresh game, so new fields never break old saves. */
