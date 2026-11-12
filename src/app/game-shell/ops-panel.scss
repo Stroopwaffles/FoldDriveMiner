@@ -415,3 +415,97 @@ th {
   font-size: 0.6rem;
   opacity: 0.7;
 }
+
+/* ---------------- Hyperthought Engine ---------------- */
+.booster-card {
+  .lvl {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  &.running {
+    border-color: rgba(122, 215, 255, 0.55);
+    box-shadow: inset 0 0 24px rgba(122, 215, 255, 0.08);
+  }
+}
+
+.ht-top {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+
+.ht-state {
+  flex: 1;
+  min-width: 0;
+}
+
+.ht-status {
+  font-family: var(--font-display);
+  letter-spacing: 0.2em;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+
+  &.running {
+    color: #7ad7ff;
+    text-shadow: 0 0 8px rgba(122, 215, 255, 0.7);
+  }
+
+  &.idle {
+    color: var(--amber);
+  }
+
+  &.starved {
+    color: var(--danger);
+  }
+}
+
+/* The "thought core": bars that dance while it runs and rest otherwise. */
+.ht-core {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 30px;
+  padding: 3px;
+  border: 1px solid #23305a;
+  background: #060818;
+
+  span {
+    width: 4px;
+    height: 20%;
+    background: linear-gradient(0deg, #2a4a7a, #7ad7ff);
+    opacity: 0.45;
+  }
+}
+
+.booster-card.running .ht-core span {
+  opacity: 1;
+  animation: ht-think calc(0.5s + var(--i) * 0.07s) ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.13s);
+}
+
+@keyframes ht-think {
+  from {
+    height: 15%;
+  }
+  to {
+    height: 100%;
+  }
+}
+
+.ht-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 0.8rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+
+  b {
+    font-family: var(--font-mono);
+    font-weight: normal;
+    text-align: right;
+  }
+}

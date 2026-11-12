@@ -126,8 +126,9 @@ export class LabPanel {
       `Core Cache (Core Matrix): ${p.matrix ? pct(p.matrix) : 'not built'}`,
       `Collegium Fellowship: ${p.fellowship ? pct(p.fellowship) : 'not a Fellow'}`,
       `Research grant: ${p.grant ? pct(p.grant) + ' for ' + formatDuration(s.trade.researchGrant) : 'none (Starward Collegium sells them)'}`,
+      `Hyperthought Engine: ${p.booster ? pct(p.booster) : E.boosterLevel(s) ? 'not running (OPS)' : 'not researched'}`,
     ];
-    if (p.science || p.grant) lines.push('The Science Officer and research grants multiply the other bonuses.');
+    if (p.science || p.grant || p.booster) lines.push('The Science Officer, grants and the Hyperthought Engine multiply the other bonuses.');
     return { mult, bonus: mult - 1, tip: lines.join('\n') };
   });
 

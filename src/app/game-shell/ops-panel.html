@@ -308,6 +308,39 @@
     </div>
   </section>
 
+  <!-- HYPERTHOUGHT ENGINE -->
+  @if (booster(); as b) {
+    <section class="panel card booster-card" [class.running]="b.status === 'running'">
+      <div class="panel-title">
+        <span class="led" [class.off]="b.status === 'off'" [class.amber]="b.status === 'idle'" [class.red]="b.status === 'starved'"></span>Hyperthought Engine
+        <span class="kana">ハイパーソート</span>
+        <span class="lvl">LV {{ b.level }}/{{ b.max }}</span>
+      </div>
+      <div class="card-body">
+        <div class="ht-top">
+          <div class="ht-core" aria-hidden="true">
+            @for (i of htBars; track i) {
+              <span [style.--i]="i"></span>
+            }
+          </div>
+          <div class="ht-state">
+            <div class="ht-status" [class]="'ht-status ' + b.status">{{ b.label }}</div>
+            <div class="dim small">{{ b.hint }}</div>
+          </div>
+          <button type="button" class="btn" [class.btn-primary]="!b.on" (click)="game.setBooster(!b.on)">{{ b.on ? 'Switch off' : 'Switch on' }}</button>
+        </div>
+        <div class="ht-grid">
+          <span>Research boost</span><b class="ok">+{{ b.bonusPct }}%</b>
+          <span>Burn</span><b>{{ b.burnMin }} SD/min</b>
+          <span>Reserve</span>
+          <b><button type="button" class="btn tiny" (click)="game.cycleBoosterReserve()" title="Never burn below this much Survey Data">keep {{ game.fmt(b.reserve) }} SD ▸</button></b>
+          <span>Runway</span><b>{{ b.runway }}</b>
+        </div>
+        <div class="dim small">Runs only while a LAB bench is busy. Burned so far: {{ game.fmt(b.burned) }} SD.</div>
+      </div>
+    </section>
+  }
+
   <!-- DRONES -->
   <section class="panel card drone-card">
     <div class="panel-title"><span class="led" [class.off]="droneCount() === 0"></span>Drone Bay <span class="kana">ドローン</span></div>

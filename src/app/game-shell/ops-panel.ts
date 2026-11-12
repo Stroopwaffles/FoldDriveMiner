@@ -150,6 +150,36 @@ export class OpsPanel {
   protected readonly furnaceMax = CONFIG.refinery.maxBatchLevel;
   protected readonly odMult = computed(() => E.overdriveMult(this.s()));
   protected readonly drillTier = computed(() => E.drillTier(this.s()));
+
+  /** Hyperthought Engine card: shown once researched. */
+  protected readonly htBars = [0, 1, 2, 3, 4, 5, 6];
+  protected readonly booster = computed(() => {
+    const s = this.s();
+    const level = E.boosterLevel(s);
+    if (level <= 0) return null;
+    const b = s.booster;
+    const burn = E.boosterBurn(s);
+    const spare = Math.max(0, s.surveyData - b.reserve);
+    const labels = {
+      off: ['OFFLINE', 'Switch it on to burn Survey Data for faster research.'],
+      idle: ['STANDBY', 'No research running. Start a project in the LAB.'],
+      starved: ['STARVED', 'Not enough Survey Data above your reserve.'],
+      running: ['THINKING', 'Burning Survey Data. The LAB is running hot.'],
+    } as const;
+    return {
+      level,
+      max: 3,
+      on: b.on,
+      status: b.status,
+      label: labels[b.status][0],
+      hint: labels[b.status][1],
+      bonusPct: Math.round(E.boosterBonus(s) * 100),
+      burnMin: (burn * 60).toFixed(burn * 60 < 10 ? 1 : 0),
+      reserve: b.reserve,
+      burned: b.burned,
+      runway: burn > 0 ? (spare > 0 ? formatDuration(spare / burn) : 'none') : '—',
+    };
+  });
   /** The next drill tier that comes from research, if any. */
   protected readonly researchTier = computed(() => {
     const t = E.drillTier(this.s());

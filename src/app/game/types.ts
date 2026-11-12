@@ -1,3 +1,4 @@
+import type { BoosterState } from './booster-rules';
 import type { AlloyId } from './alloy-data';
 import type { DerelictClass, SpecialKind } from './special-data';
 import { OreId, ZoneId } from './config';
@@ -465,6 +466,8 @@ export interface GameState {
   cargoLevel: number;
   /** Long-Range Sensor Array level (credits): finds special rocks more often. */
   sensorArray: number;
+  /** Hyperthought Engine: burns Survey Data for research speed (Ops). */
+  booster: BoosterState;
 
   drill: DrillState;
   drones: Record<DroneType, number>;

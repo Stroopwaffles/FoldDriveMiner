@@ -54,6 +54,7 @@ import {
 import { advanceFold, coreLevel, depthMult, emptyFold, resonanceMult } from './fold-rules';
 import { advanceStory, emptyStory, medalBonus, medalMult, openLog } from './story-rules';
 import { matrixBonus } from './core-rules';
+import { advanceBooster, boosterActiveBonus, emptyBooster } from './booster-rules';
 import {
   LossContext,
   ONLINE,
@@ -82,6 +83,7 @@ export * from './fleet-rules';
 export * from './alloy-rules';
 export * from './core-rules';
 export * from './special-rules';
+export * from './booster-rules';
 
 function emptyDrones(): Record<DroneType, number> {
   const d = {} as Record<DroneType, number>;
@@ -129,6 +131,7 @@ export function newGame(commander: string, ship: string, now: number, seed: numb
     forge: emptyForge(),
     cargoLevel: 0,
     sensorArray: 0,
+    booster: emptyBooster(),
     drill: { powerLevel: 0, tier: 1, heat: 0, lockRemaining: 0, heatSinkLevel: 0, clamp: false },
     drones: emptyDrones(),
     dispatch: {},
@@ -748,8 +751,16 @@ export function cancelResearch(state: GameState, index: number): boolean {
 }
 
 /** Where research speed comes from: each part is a bonus fraction (0.2 = +20%). */
-export function researchSpeedParts(state: GameState): { science: number; medals: number; matrix: number; grant: number; fellowship: number } {
+export function researchSpeedParts(state: GameState): {
+  science: number;
+  medals: number;
+  matrix: number;
+  grant: number;
+  fellowship: number;
+  booster: number;
+} {
   return {
+    booster: boosterActiveBonus(state),
     science: postBonus(state, 'science'),
     medals: medalBonus(state, 'research'),
     matrix: matrixBonus(state, 'research'),
@@ -758,10 +769,10 @@ export function researchSpeedParts(state: GameState): { science: number; medals:
   };
 }
 
-/** Research seconds that pass per real second. A research grant multiplies everything else. */
+/** Research seconds that pass per real second. Grants and the Hyperthought Engine multiply everything else. */
 export function researchSpeed(state: GameState): number {
   const p = researchSpeedParts(state);
-  return (1 + p.science) * (1 + p.medals + p.matrix + p.fellowship) * (1 + p.grant);
+  return (1 + p.science) * (1 + p.medals + p.matrix + p.fellowship) * (1 + p.grant) * (1 + p.booster);
 }
 
 function advanceResearch(state: GameState, dt: number): ResearchDone[] {
@@ -944,6 +955,7 @@ function advance(
   events.alloys = advanceForge(state, dt);
   const charted = advanceScan(state, dt);
   if (charted) events.charted.push(charted.name);
+  advanceBooster(state, dt);
   events.research = advanceResearch(state, dt);
   advanceTrade(state, dt, events, ctx.offline);
   advanceFold(state);

@@ -388,6 +388,15 @@ export class GameService {
     this.act(E.buySensorArray, () => this.audio.buy());
   }
 
+  /** Hyperthought Engine on/off and its Survey Data reserve. */
+  setBooster(on: boolean): void {
+    this.act((s) => E.setBooster(s, on), () => this.audio.blip());
+  }
+
+  cycleBoosterReserve(): void {
+    this.act((s) => (E.cycleReserve(s), true), () => this.audio.blip());
+  }
+
   sell(ore: OreId): void {
     this.act((s) => E.sell(s, ore) > 0, () => this.audio.sell());
   }
