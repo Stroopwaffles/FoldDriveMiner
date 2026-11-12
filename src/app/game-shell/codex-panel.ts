@@ -7,11 +7,25 @@ import { GameService } from '../services/game.service';
   selector: 'fdm-codex-panel',
   template: `
     <div class="codex">
+      <div class="howto">
+        <b>SET BONUSES</b> switch on by themselves once you've <b>identified</b> every anomaly in a set at least once.
+        Identify an anomaly by scanning its signal in <b>SIGNALS</b>. Passing anomalies leave after a while, so scan them quickly.
+        Set bonuses are permanent and stay through every Fold Jump.
+      </div>
       <div class="sets">
         @for (set of sets(); track set.id) {
           <div class="set" [class.done]="set.done">
             <div class="set-name">{{ set.name }} <span class="dim">{{ set.found }}/{{ set.total }}</span></div>
-            <div class="small" [class.ok]="set.done" [class.dim]="!set.done">{{ set.done ? 'COMPLETE — ' : 'Complete for: ' }}{{ set.bonus }}</div>
+            <div class="small" [class.ok]="set.done" [class.dim]="!set.done">{{ set.done ? 'ACTIVE: ' : 'Bonus when complete: ' }}{{ set.bonus }}</div>
+            <div class="members">
+              @for (m of set.members; track m.kind) {
+                <div class="member" [class.found]="m.found" [style.--rc]="m.color">
+                  <span class="tick">{{ m.found ? '✓' : '○' }}</span>
+                  <span class="m-name">{{ m.found ? m.name : '???' }}</span>
+                  <span class="m-hint">{{ m.hint }}</span>
+                </div>
+              }
+            </div>
           </div>
         }
       </div>
@@ -83,6 +97,46 @@ import { GameService } from '../services/game.service';
       &.done {
         border: 1px solid var(--ok);
         background: rgba(109, 255, 155, 0.06);
+      }
+    }
+    .howto {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      border-left: 2px solid var(--cyan);
+      padding: 0.3rem 0.6rem;
+      background: rgba(79, 227, 255, 0.05);
+      b {
+        color: var(--cyan);
+        font-weight: normal;
+      }
+    }
+    .members {
+      margin-top: 0.35rem;
+      display: grid;
+      gap: 2px;
+    }
+    .member {
+      display: flex;
+      gap: 0.4rem;
+      align-items: baseline;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      .tick {
+        width: 0.8rem;
+      }
+      &.found {
+        color: var(--text);
+        .tick {
+          color: var(--ok);
+        }
+      }
+      .m-name {
+        color: var(--rc);
+      }
+      .m-hint {
+        margin-left: auto;
+        font-size: 0.62rem;
+        text-align: right;
       }
     }
     .set-name {
@@ -161,8 +215,16 @@ export class CodexPanel {
   protected readonly sets = computed(() => {
     const codex = this.s().anomalies.codex;
     return CODEX_SETS.map((set) => {
-      const found = set.kinds.filter((k) => (codex[k] ?? 0) > 0).length;
-      return { ...set, found, total: set.kinds.length, done: found === set.kinds.length };
+      const depth = this.s().sector.depth;
+      const members = set.kinds.map((k) => {
+        const def = ANOMALIES.find((a) => a.kind === k)!;
+        const found = (codex[k] ?? 0) > 0;
+        const where = def.fixed ? 'stays put' : 'passing';
+        const hint = found ? '' : depth < def.minDepth ? `${def.rarity} · from depth ${def.minDepth}` : `${def.rarity} · ${where}`;
+        return { kind: k, name: def.name, found, hint, color: RARITY_COLOR[def.rarity] };
+      });
+      const found = members.filter((m) => m.found).length;
+      return { ...set, members, found, total: set.kinds.length, done: found === set.kinds.length };
     });
   });
 
