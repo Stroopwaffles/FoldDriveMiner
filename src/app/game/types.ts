@@ -337,7 +337,7 @@ export interface StockItem {
 
 export interface MerchantFleet {
   clan: ClanId;
-  /** Seconds before they fold out. */
+  /** Seconds before they depart. */
   remaining: number;
   stock: StockItem[];
   /** Captain's favor: deliver ore before they leave. */

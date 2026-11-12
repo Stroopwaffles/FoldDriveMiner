@@ -24,7 +24,7 @@ function run(s: GameState, sec: number, step = 1) {
 }
 
 describe('milestone 5b: merchant convoys', () => {
-  it('a convoy arrives once you are earning, then folds out', () => {
+  it('a convoy arrives once you are earning, then departs', () => {
     const s = rich();
     s.trade.nextIn = 1;
     run(s, 2);

@@ -567,7 +567,7 @@ function advanceMerchants(state: GameState, dt: number, events: TickEvents, offl
   if (t.fleet) {
     t.fleet.remaining -= dt;
     if (t.fleet.remaining <= 0) {
-      news(events, `${clanDef(t.fleet.clan).name} have folded out. Safe travels.`, true);
+      news(events, `${clanDef(t.fleet.clan).name} have burned out for the shipping lanes. Safe travels.`, true);
       t.fleet = null;
     }
     return;
