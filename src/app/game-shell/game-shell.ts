@@ -30,7 +30,7 @@ import { ArchivePanel } from './archive-panel';
 import { StoryScene } from '../ui/story-scene';
 import { Eyecatch } from '../ui/eyecatch';
 import * as ST from '../game/story-rules';
-import { EPILOGUE, episodeDef } from '../game/story-data';
+import { LAST_OFFER, MASTER_EPILOGUE, EPILOGUE, episodeDef } from '../game/story-data';
 import { JumpOverlay } from '../ui/jump-overlay';
 import * as F from '../game/fold-rules';
 import { SortieModal } from './sortie-modal';
@@ -130,7 +130,9 @@ export class GameShell {
     const s = this.s();
     const ep = ST.pendingEpisode(s);
     if (ep) return { side: false, label: `EPISODE ${String(ep).padStart(2, '0')}`, title: episodeDef(ep)!.title };
-    if (ST.pendingEpilogue(s)) return { side: false, epilogue: true, label: 'EPILOGUE', title: EPILOGUE.title };
+    if (ST.pendingEpilogue(s)) return { side: false, epilogue: 'break', label: 'EPILOGUE', title: EPILOGUE.title };
+    if (ST.pendingMasterEnding(s)) return { side: false, epilogue: 'master', label: 'EPILOGUE', title: MASTER_EPILOGUE.title };
+    if (ST.pendingOffer(s)) return { side: false, epilogue: 'offer', label: 'SECOND CHANCE', title: LAST_OFFER.title };
     const side = ST.pendingSide(s);
     if (side) return { side: true, label: `SIDE STORY ${String(side).padStart(2, '0')}`, title: ST.sideStory(side).title };
     return null;
@@ -269,7 +271,10 @@ export class GameShell {
   protected playStory(): void {
     const p = this.pendingStory();
     if (!p) return;
-    if ('epilogue' in p && p.epilogue) this.game.playEpilogue();
+    const which = 'epilogue' in p ? p.epilogue : null;
+    if (which === 'break') this.game.playEpilogue();
+    else if (which === 'master') this.game.playMasterEnding();
+    else if (which === 'offer') this.game.playOffer();
     else if (p.side) this.game.playSide();
     else this.game.playEpisode();
   }

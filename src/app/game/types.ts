@@ -457,6 +457,12 @@ export interface StoryState {
   sideWatched: number;
   /** Break the Cycle's epilogue: 0 not yet, 1 arrived (waiting to be watched), 2 watched. */
   epilogue?: number;
+  /** Master the Cycle's ending (first Deep Fold): 0 not yet, 1 waiting, 2 watched. */
+  masterEnding?: number;
+  /** The Jackal's last offer: 0 not yet, 1 waiting for an answer, 2 refused, 3 accepted (now Break). */
+  offer?: number;
+  /** Deep Folds made when the offer was last refused (she asks again after the next one). */
+  offerRefusedAt?: number;
   /** Commendations earned: id → playtime second. */
   medals: Record<string, number>;
   logbook: LogEntry[];

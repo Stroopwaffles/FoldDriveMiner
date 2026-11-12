@@ -3,7 +3,7 @@ import { BackgroundId, backgroundDef } from '../game/crew-data';
 import { formatDuration } from '../game/format';
 import { BONUS_LABEL, BonusKind, CATEGORIES, MEDALS } from '../game/medal-data';
 import * as S from '../game/sector-rules';
-import { ACTS, EPILOGUE, EPISODES, FINALE, episodeGoals } from '../game/story-data';
+import { ACTS, EPILOGUE, EPISODES, FINALE, LAST_OFFER, MASTER_EPILOGUE, episodeGoals } from '../game/story-data';
 import * as ST from '../game/story-rules';
 import { LogEntry } from '../game/types';
 import { AudioService } from '../services/audio.service';
@@ -48,6 +48,8 @@ export class ArchivePanel {
   /** Progress toward the next episode's milestone. */
   protected readonly Math = Math;
   protected readonly epilogueTitle = EPILOGUE.title;
+  protected readonly masterTitle = MASTER_EPILOGUE.title;
+  protected readonly offerTitle = LAST_OFFER.title;
   protected readonly nextGoals = computed(() => {
     const s = this.s();
     const g = episodeGoals(s.story.unlocked + 1, s);

@@ -153,6 +153,14 @@ export const MEDALS: readonly MedalDef[] = [
     check: (s) => s.story.choice === 'break' && (s.story.epilogue ?? 0) >= 1,
   },
   {
+    id: 'long_harvest', name: 'The Long Harvest', category: 'story', desc: 'Master the Cycle and make a Deep Fold.', bonus: P(0.05),
+    check: (s) => (s.story.masterEnding ?? 0) >= 1,
+  },
+  {
+    id: 'second_chance', name: 'Second Chance', category: 'story', desc: "Accept the Jackal's last offer.", bonus: R(0.03),
+    check: (s) => s.story.offer === 3,
+  },
+  {
     id: 'side', name: 'Between Episodes', category: 'story', desc: 'Watch 3 side stories.', bonus: R(0.02),
     check: (s) => s.story.sideWatched >= 3,
   },

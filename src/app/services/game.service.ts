@@ -13,7 +13,7 @@ import * as A from '../game/anomaly-rules';
 import * as F from '../game/fold-rules';
 import { ARRIVAL } from '../game/fold-data';
 import * as ST from '../game/story-rules';
-import { ACTS, EPILOGUE, FINALE, FINAL_EPISODE, FinaleChoice, SceneSetting, StoryVoice, episodeDef, sceneSetting } from '../game/story-data';
+import { ACTS, EPILOGUE, FINALE, FINAL_EPISODE, LAST_OFFER, MASTER_EPILOGUE, FinaleChoice, SceneSetting, StoryVoice, episodeDef, sceneSetting } from '../game/story-data';
 import { BONUS_LABEL, medalDef } from '../game/medal-data';
 import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
@@ -98,7 +98,7 @@ export interface EpisodeCard {
 
 /** A story scene playing full screen: title card (index -1), dialogue, then the finale choice. */
 export interface Scene {
-  kind: 'episode' | 'side' | 'epilogue';
+  kind: 'episode' | 'side' | 'epilogue' | 'master_epilogue' | 'offer';
   n: number;
   label: string;
   title: string;
@@ -1240,6 +1240,10 @@ export class GameService {
         ? `NOW PLAYING · EPISODE ${pending}: ${episodeDef(pending)!.title}`
         : ST.pendingEpilogue(r.state)
           ? `EPILOGUE · ${EPILOGUE.title}`
+          : ST.pendingMasterEnding(r.state)
+            ? `EPILOGUE · ${MASTER_EPILOGUE.title}`
+            : ST.pendingOffer(r.state)
+              ? `SECOND CHANCE · ${LAST_OFFER.title}`
           : next
             ? `NEXT EPISODE · ${next.title}`
             : undefined,
@@ -1258,6 +1262,12 @@ export class GameService {
           : ['VESPER', `Fold Resonance +${r.gained}. Production is now ×${F.resonanceMult(r.state).toFixed(2)} from Resonance. Spend it in the FOLD tab's Jump Core.`],
         ...(ST.pendingEpilogue(r.state)
           ? ([['VESPER', 'We have reached the edge of the charted frontier. Incoming transmission: the Epilogue. Press PLAY in the comm log when you are ready.']] as [Speaker, string][])
+          : []),
+        ...(ST.pendingMasterEnding(r.state)
+          ? ([['VESPER', 'The first Deep Fold is complete. Incoming transmission: the Epilogue. Press PLAY in the comm log when you are ready.']] as [Speaker, string][])
+          : []),
+        ...(ST.pendingOffer(r.state)
+          ? ([['VESPER', 'A red frame is holding off the bow, not attacking. She wants to talk. Press PLAY in the comm log.']] as [Speaker, string][])
           : []),
       ],
     });
@@ -1314,6 +1324,44 @@ export class GameService {
       replay: num <= s.story.watched,
       finale: num === FINAL_EPISODE && !s.story.choice,
       setting: sceneSetting('episode', num),
+    });
+  }
+
+  /** Master the Cycle's ending, at the first Deep Fold. */
+  playMasterEnding(): void {
+    const s = this._state();
+    if (!s || !s.story.masterEnding) return;
+    this.audio.select();
+    this.scene.set({
+      kind: 'master_epilogue',
+      n: 0,
+      label: 'EPILOGUE',
+      title: MASTER_EPILOGUE.title,
+      act: 'The cycle, mastered',
+      lines: MASTER_EPILOGUE.lines.map(([w, t]) => [w, this.fill(t)] as [Speaker, string]),
+      index: -1,
+      replay: s.story.masterEnding === 2,
+      finale: false,
+      setting: 'void',
+    });
+  }
+
+  /** The Jackal's last offer: ends on the same two doors as the finale. */
+  playOffer(): void {
+    const s = this._state();
+    if (!s || !ST.pendingOffer(s)) return;
+    this.audio.select();
+    this.scene.set({
+      kind: 'offer',
+      n: 0,
+      label: 'SECOND CHANCE',
+      title: LAST_OFFER.title,
+      act: 'After the harvest',
+      lines: LAST_OFFER.lines.map(([w, t]) => [w, this.fill(t)] as [Speaker, string]),
+      index: -1,
+      replay: false,
+      finale: true,
+      setting: 'battle',
     });
   }
 
@@ -1387,6 +1435,8 @@ export class GameService {
     if (!sc || !s || sc.replay) return;
     if (sc.kind === 'episode') ST.watchEpisode(s, sc.n);
     else if (sc.kind === 'epilogue') ST.watchEpilogue(s);
+    else if (sc.kind === 'master_epilogue') ST.watchMasterEnding(s);
+    else if (sc.kind === 'offer') return;
     else ST.watchSide(s, sc.n);
     this.publish();
     this.save();
@@ -1394,7 +1444,17 @@ export class GameService {
 
   chooseFinale(c: FinaleChoice): void {
     const s = this._state();
-    if (!s || !ST.chooseFinale(s, c)) return;
+    if (!s) return;
+    if (this.scene()?.kind === 'offer') {
+      if (!ST.answerOffer(s, c)) return;
+      this.scene.set(null);
+      this.audio.overdrive();
+      (c === 'break' ? LAST_OFFER.accept : LAST_OFFER.decline).forEach(([w, t], i) => this.say(w, this.fill(t), 400 + i * 2000));
+      this.publish();
+      this.save();
+      return;
+    }
+    if (!ST.chooseFinale(s, c)) return;
     this.scene.set(null);
     this.audio.overdrive();
     FINALE[c].aftermath.forEach(([w, t], i) => this.say(w, this.fill(t), 400 + i * 2000));

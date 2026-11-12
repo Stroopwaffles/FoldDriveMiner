@@ -8,7 +8,7 @@ import { matrixBonus } from './core-rules';
 import { addStoryPilot } from './crew-rules';
 import { BonusKind, MEDALS } from './medal-data';
 import { sectorOf } from './sector-rules';
-import { EPISODES, FINAL_EPISODE, FinaleChoice, SIDE_STORIES, STORY } from './story-data';
+import { LAST_OFFER, EPISODES, FINAL_EPISODE, FinaleChoice, SIDE_STORIES, STORY } from './story-data';
 import { GameState, LogEntry, LogSnap, PilotState, StoryState, TickEvents } from './types';
 
 export function emptyStory(): StoryState {
@@ -43,6 +43,40 @@ export function pendingEpisode(state: GameState): number | null {
 export function pendingSide(state: GameState): number | null {
   const st = state.story;
   return st.sideWatched < st.side ? st.sideWatched + 1 : null;
+}
+
+/** True while Master the Cycle's ending is waiting to be watched. */
+export function pendingMasterEnding(state: GameState): boolean {
+  return state.story.masterEnding === 1;
+}
+
+export function watchMasterEnding(state: GameState): boolean {
+  if (!state.story.masterEnding) return false;
+  state.story.masterEnding = 2;
+  return true;
+}
+
+/** True while the Jackal's last offer is waiting for an answer. */
+export function pendingOffer(state: GameState): boolean {
+  return state.story.offer === 1 && state.story.choice === 'master';
+}
+
+/**
+ * Answers the Jackal's last offer. 'break' switches this save to Break the Cycle for good (the
+ * frontier epilogue then waits at depth 10); 'master' refuses, and she asks again next Deep Fold.
+ */
+export function answerOffer(state: GameState, c: FinaleChoice): boolean {
+  const st = state.story;
+  if (!pendingOffer(state)) return false;
+  if (c === 'break') {
+    st.choice = 'break';
+    st.offer = 3;
+    if (state.sector.depth >= FOLD.frontierDepth && !st.epilogue) st.epilogue = 1;
+  } else {
+    st.offer = 2;
+    st.offerRefusedAt = state.fold.deepFolds ?? 0;
+  }
+  return true;
 }
 
 /** True while Break the Cycle's epilogue is waiting to be watched. */
@@ -225,5 +259,12 @@ export function carryStory(old: GameState, next: GameState, resonance: number): 
   if (next.story.choice) next.story.side++;
   // Break the Cycle: reaching the charted frontier is the ending.
   if (next.story.choice === 'break' && next.sector.depth >= FOLD.frontierDepth && !next.story.epilogue) next.story.epilogue = 1;
+  // Master the Cycle: the first Deep Fold is the ending; after more, the Jackal asks once more.
+  const folds = next.fold.deepFolds ?? 0;
+  if (next.story.choice === 'master') {
+    if (folds >= 1 && !next.story.masterEnding) next.story.masterEnding = 1;
+    const offer = next.story.offer ?? 0;
+    if (folds >= LAST_OFFER.afterDeepFolds && offer !== 1 && offer !== 3 && folds > (next.story.offerRefusedAt ?? 0)) next.story.offer = 1;
+  }
   openLog(next);
 }

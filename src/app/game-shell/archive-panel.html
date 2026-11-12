@@ -59,19 +59,44 @@
             }
           </div>
         }
-        @if (st.story.epilogue) {
-          <div class="act">Epilogue · Beyond the frontier</div>
+        @if (st.story.masterEnding || st.story.offer || st.story.epilogue) {
+          <div class="act">Epilogues</div>
           <div class="ep-list">
-            <div class="ep" [class.ready]="st.story.epilogue === 1" [class.watched]="st.story.epilogue === 2">
-              <span class="ep-n">EP</span>
-              <span class="ep-title">{{ epilogueTitle }}</span>
-              <button type="button" class="btn small" [class.btn-primary]="st.story.epilogue === 1" (click)="game.playEpilogue()">
-                {{ st.story.epilogue === 1 ? '▶ PLAY' : '↺ REPLAY' }}
-              </button>
-            </div>
+            @if (st.story.masterEnding) {
+              <div class="ep" [class.ready]="st.story.masterEnding === 1" [class.watched]="st.story.masterEnding === 2">
+                <span class="ep-n">M</span>
+                <span class="ep-title">{{ masterTitle }}</span>
+                <button type="button" class="btn small" [class.btn-primary]="st.story.masterEnding === 1" (click)="game.playMasterEnding()">
+                  {{ st.story.masterEnding === 1 ? '▶ PLAY' : '↺ REPLAY' }}
+                </button>
+              </div>
+            }
+            @if (st.story.offer) {
+              <div class="ep" [class.ready]="st.story.offer === 1" [class.watched]="st.story.offer !== 1">
+                <span class="ep-n">?</span>
+                <span class="ep-title">{{ offerTitle }}</span>
+                @if (st.story.offer === 1) {
+                  <button type="button" class="btn small btn-primary" (click)="game.playOffer()">▶ ANSWER</button>
+                } @else {
+                  <span class="queued">{{ st.story.offer === 3 ? 'ACCEPTED' : 'REFUSED · ASKS AGAIN NEXT DEEP FOLD' }}</span>
+                }
+              </div>
+            }
+            @if (st.story.epilogue) {
+              <div class="ep" [class.ready]="st.story.epilogue === 1" [class.watched]="st.story.epilogue === 2">
+                <span class="ep-n">B</span>
+                <span class="ep-title">{{ epilogueTitle }}</span>
+                <button type="button" class="btn small" [class.btn-primary]="st.story.epilogue === 1" (click)="game.playEpilogue()">
+                  {{ st.story.epilogue === 1 ? '▶ PLAY' : '↺ REPLAY' }}
+                </button>
+              </div>
+            }
           </div>
-        } @else if (st.story.choice === 'break') {
+        }
+        @if (st.story.choice === 'break' && !st.story.epilogue) {
           <p class="dim small">Break the Cycle: reach sector depth 10, the edge of the charted frontier, for the epilogue.</p>
+        } @else if (st.story.choice === 'master' && !st.story.masterEnding) {
+          <p class="dim small">Master the Cycle: make your first Deep Fold (from depth 6) for the epilogue.</p>
         }
         @if (sides().length) {
           <div class="act">Side Stories · Between the folds</div>

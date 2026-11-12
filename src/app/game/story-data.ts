@@ -381,6 +381,47 @@ export const EPILOGUE: { title: string; lines: Line[] } = {
   ],
 };
 
+/** Master the Cycle's ending: the first Deep Fold. */
+export const MASTER_EPILOGUE: { title: string; lines: Line[] } = {
+  title: 'The Long Harvest',
+  lines: [
+    ['HALE', 'Your first Deep Fold. Do you know what you\'ve done, Commander? You folded the harvest into itself.'],
+    ['VESPER', 'Depth one. Again. But the Echoes remember every run before it.'],
+    ['ANSEL', 'The charts are in my hand once more. Older ink this time. Thicker.'],
+    ['JACKAL', 'Hull eight, owner of the loop. How does the crown fit?'],
+    ['SAFFI', 'Rei...'],
+    ['JACKAL', 'Don\'t, Saffi. You chose. All of you chose.'],
+    ['KIT', 'For the record, the clocks are still wrong. I\'ve stopped winding them.'],
+    ['HALE', 'Every loop richer than the last. Meridian thanks you, Commander. Forever.'],
+    ['VESPER', 'The cycle is yours now. It will not let go easily.'],
+  ],
+};
+
+/** The Jackal's second chance for Master players: after enough Deep Folds, she asks once more. */
+export const LAST_OFFER = {
+  title: "The Jackal's Last Offer",
+  /** Deep Folds before she comes; after a refusal she asks again on the next Deep Fold. */
+  afterDeepFolds: 3,
+  lines: [
+    ['VESPER', 'Unregistered frame holding off the bow. She is not raiding, Commander. She is waiting.'],
+    ['JACKAL', 'Three Deep Folds. Three times you burned everything down to keep the harvest turning.'],
+    ['JACKAL', "I've watched hull eight do this before. It doesn't end. It just gets quieter."],
+    ['SAFFI', 'Rei. Why are you here?'],
+    ['JACKAL', 'Because the drive can still be broken. Once. I kept the tools.'],
+    ['HALE', 'Commander, do not listen to her. Everything you own runs on the cycle.'],
+    ['JACKAL', "Break it with me and we fly out past the charts. Or don't, and I'll ask again next fold. I always do."],
+  ] as Line[],
+  accept: [
+    ['JACKAL', 'Then we fly together, {ship}. For real this time.'],
+    ['VESPER', 'Fold Drive reconfigured. The Deep Fold is gone. The frontier is not: depth ten, Commander.'],
+    ['HALE', 'You will regret this.'],
+  ] as Line[],
+  decline: [
+    ['JACKAL', "Then I'll see you next fold. And the one after that."],
+    ['VESPER', 'Resonance harvest holding.'],
+  ] as Line[],
+};
+
 export interface FinaleDef {
   id: FinaleChoice;
   name: string;

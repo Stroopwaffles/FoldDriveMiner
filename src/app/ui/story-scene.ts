@@ -43,8 +43,13 @@ import { StoryBackdrop } from './story-backdrop';
           </div>
         } @else {
           <div class="choice">
-            <div class="choose-title">THE CYCLE <span class="kana">ループ</span></div>
-            <p class="dim">This choice is permanent for this save.</p>
+            @if (sc.kind === 'offer') {
+              <div class="choose-title">THE LAST OFFER <span class="kana">さいごのもうしで</span></div>
+              <p class="dim">Choose Break and the switch is permanent. Stay, and she asks again after your next Deep Fold.</p>
+            } @else {
+              <div class="choose-title">THE CYCLE <span class="kana">ループ</span></div>
+              <p class="dim">This choice is permanent for this save.</p>
+            }
             <div class="doors">
               @for (f of finales; track f.id) {
                 <button type="button" class="door" [class]="'door ' + f.id" [class.on]="picked() === f.id" (click)="pick(f.id)">
@@ -60,7 +65,7 @@ import { StoryBackdrop } from './story-backdrop';
               }
             </div>
             <button type="button" class="confirm" [disabled]="!picked()" (click)="confirm()">
-              {{ picked() ? 'CONFIRM: ' + finale(picked()!).name.toUpperCase() : 'CHOOSE A DOOR' }}
+              {{ picked() ? 'CONFIRM: ' + (sc.kind === 'offer' && picked() === 'master' ? 'STAY THE COURSE' : finale(picked()!).name.toUpperCase()) : 'CHOOSE A DOOR' }}
             </button>
           </div>
         }
