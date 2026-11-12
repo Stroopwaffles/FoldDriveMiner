@@ -3,6 +3,7 @@ import { FINALE, FinaleChoice } from '../game/story-data';
 import { AudioService } from '../services/audio.service';
 import { GameService, SPEAKER_NAMES } from '../services/game.service';
 import { SpeakerPortrait } from './speaker-portrait';
+import { StoryBackdrop } from './story-backdrop';
 
 /**
  * A story episode, full screen: title card, then a visual-novel scene
@@ -11,11 +12,13 @@ import { SpeakerPortrait } from './speaker-portrait';
  */
 @Component({
   selector: 'fdm-story-scene',
-  imports: [SpeakerPortrait],
+  imports: [SpeakerPortrait, StoryBackdrop],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
     @if (game.scene(); as sc) {
       <div class="scene" [class.card]="sc.index < 0" role="dialog" [attr.aria-label]="sc.label + ' ' + sc.title">
+        <fdm-story-backdrop [setting]="sc.setting" />
+        <div class="shade" [class.talk]="sc.index >= 0"></div>
         @if (sc.index < 0) {
           <div class="title-card" (click)="next()">
             <div class="stripe"></div>
@@ -78,6 +81,17 @@ import { SpeakerPortrait } from './speaker-portrait';
       color: var(--text);
       font-family: var(--font-mono);
       overflow: hidden;
+    }
+    /* Darkens the backdrop a little on the title card, more under dialogue so the text reads. */
+    .shade {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 50%, rgba(5, 6, 15, 0.05), rgba(5, 6, 15, 0.3));
+      transition: background 0.6s;
+      &.talk {
+        background: linear-gradient(180deg, transparent 0%, transparent 45%, rgba(5, 6, 15, 0.8) 100%);
+      }
     }
     .title-card {
       position: absolute;

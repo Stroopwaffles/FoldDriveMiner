@@ -13,7 +13,7 @@ import * as A from '../game/anomaly-rules';
 import * as F from '../game/fold-rules';
 import { ARRIVAL } from '../game/fold-data';
 import * as ST from '../game/story-rules';
-import { ACTS, FINALE, FINAL_EPISODE, FinaleChoice, StoryVoice, episodeDef } from '../game/story-data';
+import { ACTS, FINALE, FINAL_EPISODE, FinaleChoice, SceneSetting, StoryVoice, episodeDef, sceneSetting } from '../game/story-data';
 import { BONUS_LABEL, medalDef } from '../game/medal-data';
 import * as S from '../game/sector-rules';
 import * as TR from '../game/trade-rules';
@@ -106,6 +106,8 @@ export interface Scene {
   replay: boolean;
   /** Ends on the permanent finale choice. */
   finale: boolean;
+  /** The animated backdrop behind it. */
+  setting: SceneSetting;
 }
 
 const SPEAKER_PITCH: Record<Speaker, number> = {
@@ -1220,6 +1222,7 @@ export class GameService {
       index: -1,
       replay: num <= s.story.watched,
       finale: num === FINAL_EPISODE && !s.story.choice,
+      setting: sceneSetting('episode', num),
     });
   }
 
@@ -1240,6 +1243,7 @@ export class GameService {
       index: -1,
       replay: num <= s.story.sideWatched,
       finale: false,
+      setting: sceneSetting('side', num),
     });
   }
 

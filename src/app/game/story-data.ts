@@ -21,6 +21,24 @@ export interface EpisodeDef {
   joins?: 'saffi' | 'ansel';
 }
 
+/** The animated backdrop behind a story scene. */
+export type SceneSetting = 'bridge' | 'belt' | 'hangar' | 'battle' | 'beacon' | 'fold' | 'wrecks' | 'station' | 'nebula' | 'void';
+
+/** Backdrop per episode, by episode number (index 0 unused). */
+export const EPISODE_SETTINGS: readonly SceneSetting[] = [
+  'bridge',
+  'bridge', 'belt', 'belt', 'hangar', 'hangar', 'battle', 'beacon', 'fold', // Act I
+  'beacon', 'battle', 'wrecks', 'nebula', 'battle', 'station', 'fold', 'beacon', 'bridge', // Act II
+  'void', 'hangar', 'nebula', 'void', 'battle', 'void', 'fold', 'void', 'fold', // Act III
+];
+
+/** Backdrop per side story, by number (index 0 unused). */
+export const SIDE_SETTINGS: readonly SceneSetting[] = ['nebula', 'station', 'hangar', 'beacon', 'bridge', 'battle', 'hangar'];
+
+export function sceneSetting(kind: 'episode' | 'side', n: number): SceneSetting {
+  return (kind === 'episode' ? EPISODE_SETTINGS[n] : SIDE_SETTINGS[n]) ?? 'nebula';
+}
+
 export const ACTS = ['', 'Act I · Frontier', 'Act II · Signal', 'Act III · Fold'] as const;
 
 /**

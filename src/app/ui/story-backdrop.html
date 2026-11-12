@@ -1,0 +1,191 @@
+@for (set of scene(); track set) {
+  <div class="bd" [class]="'bd ' + set" [class.still]="still" aria-hidden="true">
+    @if (stars(); as st) {
+      <fdm-starfield [speed]="st.speed" [tint]="st.tint" [still]="still" />
+    }
+
+    @switch (set) {
+      <!-- ---------------- cockpit: stars streaming past the canopy ---------------- -->
+      @case ('bridge') {
+        <div class="planet-glow"></div>
+        <svg class="canopy" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0,0 H100 V100 H0 Z M14,8 L86,8 L96,62 L4,62 Z" fill-rule="evenodd" />
+          <line x1="50" y1="8" x2="50" y2="62" />
+          <line x1="14" y1="8" x2="30" y2="62" />
+          <line x1="86" y1="8" x2="70" y2="62" />
+        </svg>
+        <div class="reticle"><span></span></div>
+        <div class="console">
+          @for (l of lamps; track l) {
+            <span [style.animation-delay.s]="l * 0.37"></span>
+          }
+        </div>
+      }
+
+      <!-- ---------------- asteroid belt with drone lights ---------------- -->
+      @case ('belt') {
+        @for (r of rocks; track $index) {
+          <svg
+            class="rock"
+            viewBox="-24 -24 48 48"
+            [style.top.%]="r.y"
+            [style.--s]="r.s"
+            [style.animation-duration.s]="r.dur"
+            [style.animation-delay.s]="r.delay"
+          >
+            <polygon [attr.points]="rock" [style.animation-duration.s]="r.spin" />
+          </svg>
+        }
+        @for (d of drones; track d.i) {
+          <span class="drone" [style.left.%]="d.x" [style.top.%]="d.y" [style.animation-delay.s]="-d.r * 12"></span>
+        }
+      }
+
+      <!-- ---------------- hangar: girders, lamps, welding sparks ---------------- -->
+      @case ('hangar') {
+        <div class="bay"></div>
+        @for (g of girders; track g) {
+          <div class="girder" [style.left.%]="g"></div>
+        }
+        <div class="lamps">
+          @for (l of lamps; track l) {
+            <span [style.animation-delay.s]="l * 0.25"></span>
+          }
+        </div>
+        <div class="searchlight"></div>
+        <div class="weld">
+          @for (s of sparks; track s.i) {
+            <span [style.--dx]="(s.x - 50) * 2.4 + 'px'" [style.animation-delay.s]="-s.r * 1.4"></span>
+          }
+        </div>
+        <div class="floor"></div>
+      }
+
+      <!-- ---------------- firefight: red alert, lasers, blasts ---------------- -->
+      @case ('battle') {
+        @for (r of raiders; track $index) {
+          <svg
+            class="raider"
+            viewBox="0 0 60 30"
+            [style.top.%]="r.y"
+            [style.--s]="r.s"
+            [style.animation-duration.s]="r.dur"
+            [style.animation-delay.s]="r.delay"
+          >
+            <polygon points="0,15 22,4 60,10 46,15 60,20 22,26" />
+          </svg>
+        }
+        @for (l of lasers; track l.i) {
+          <span
+            class="laser"
+            [class.blue]="l.i % 2"
+            [style.top.%]="l.y"
+            [style.--rot]="(l.r - 0.5) * 30 + 'deg'"
+            [style.animation-delay.s]="-l.x / 30"
+          ></span>
+        }
+        @for (b of blasts; track b.i) {
+          <span class="blast" [style.left.%]="b.x" [style.top.%]="b.y" [style.animation-delay.s]="b.r * 4"></span>
+        }
+        <div class="alert"></div>
+      }
+
+      <!-- ---------------- beacon: rings of signal and static ---------------- -->
+      @case ('beacon') {
+        <div class="source">
+          @for (r of rings; track r) {
+            <span class="ring" [style.animation-delay.s]="r * 1.2"></span>
+          }
+          <span class="core"></span>
+        </div>
+        <svg class="wave" viewBox="0 0 400 40" preserveAspectRatio="none">
+          <path d="M0,20 Q10,2 20,20 T40,20 T60,20 Q70,36 80,20 T100,20 T120,20 Q130,4 140,20 T160,20 T180,20 Q190,38 200,20 T220,20 T240,20 Q250,2 260,20 T280,20 T300,20 Q310,36 320,20 T340,20 T360,20 Q370,4 380,20 T400,20" />
+        </svg>
+        <div class="static"></div>
+      }
+
+      <!-- ---------------- the fold tunnel ---------------- -->
+      @case ('fold') {
+        <div class="tunnel"></div>
+        <div class="streaks">
+          @for (s of streaks; track $index) {
+            <span [style.--a]="s.a + 'deg'" [style.animation-delay.s]="-s.d"></span>
+          }
+        </div>
+        @for (r of rings; track r) {
+          <span class="fring" [style.animation-delay.s]="r * 0.6"></span>
+        }
+        <div class="eye"></div>
+      }
+
+      <!-- ---------------- derelict wreck field ---------------- -->
+      @case ('wrecks') {
+        <div class="fog"></div>
+        @for (h of hulks; track $index) {
+          <svg
+            class="hulk"
+            viewBox="-90 -30 180 60"
+            [style.left.%]="h.x"
+            [style.top.%]="h.y"
+            [style.--s]="h.s"
+            [style.--rot]="h.rot + 'deg'"
+            [style.animation-duration.s]="h.dur"
+          >
+            <polygon [attr.points]="hull" />
+            <line x1="-30" y1="-20" x2="-10" y2="20" class="crack" />
+            <circle cx="50" cy="0" r="3" class="blink" />
+            <circle cx="-50" cy="6" r="2" class="blink late" />
+          </svg>
+        }
+        @for (d of debris; track d.i) {
+          <span class="bit" [style.left.%]="d.x" [style.top.%]="d.y" [style.animation-delay.s]="-d.r * 30"></span>
+        }
+      }
+
+      <!-- ---------------- station, planet and traffic ---------------- -->
+      @case ('station') {
+        <div class="planet"></div>
+        <svg class="station-ring" viewBox="-100 -100 200 200">
+          <circle r="80" class="rim" />
+          <circle r="64" class="rim inner" />
+          <line x1="-80" y1="0" x2="80" y2="0" />
+          <line x1="0" y1="-80" x2="0" y2="80" />
+          <circle r="16" class="hub" />
+          @for (l of lamps; track l) {
+            <circle [attr.cx]="72 * cos(l * 60)" [attr.cy]="72 * sin(l * 60)" r="3" class="win" [style.animation-delay.s]="l * 0.4" />
+          }
+        </svg>
+        @for (t of traffic; track t.i) {
+          <span class="ship" [style.top.%]="20 + t.y * 0.5" [style.animation-duration.s]="14 + t.r * 16" [style.animation-delay.s]="-t.x / 5"></span>
+        }
+      }
+
+      <!-- ---------------- drifting nebula ---------------- -->
+      @case ('nebula') {
+        @for (c of clouds; track $index) {
+          <div
+            class="cloud"
+            [style.left.%]="c.x"
+            [style.top.%]="c.y"
+            [style.width.vmax]="c.w"
+            [style.background]="'radial-gradient(closest-side, ' + c.c + ', transparent)'"
+            [style.animation-duration.s]="c.dur"
+          ></div>
+        }
+        @for (t of twinkles; track t.i) {
+          <span class="twinkle" [style.left.%]="t.x" [style.top.%]="t.y" [style.animation-delay.s]="-t.r * 4"></span>
+        }
+      }
+
+      <!-- ---------------- the void: a slow rift, motes falling in ---------------- -->
+      @case ('void') {
+        <div class="rift"></div>
+        <div class="rift-glow"></div>
+        @for (m of motes; track m.i) {
+          <span class="mote" [style.--x]="(m.x - 50) * 1.2 + 'vw'" [style.--y]="(m.y - 50) * 1.2 + 'vh'" [style.animation-delay.s]="-m.r * 9"></span>
+        }
+      }
+    }
+    <div class="scan"></div>
+  </div>
+}
