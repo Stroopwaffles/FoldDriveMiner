@@ -217,7 +217,7 @@ export const EPISODES: readonly EpisodeDef[] = [
     ],
   },
   {
-    n: 19, act: 3, title: 'Anchors', hint: 'Raise a pilot to level 25.', trigger: (s) => maxLevel(s) >= 25,
+    n: 19, act: 3, title: 'Anchors', hint: 'Raise a pilot to level 20.', trigger: (s) => maxLevel(s) >= 20,
     lines: [
       ['ANSEL', "Have you noticed the crew never forgets? Ships reset. Ledgers reset. We don't."],
       ['SAFFI', 'Pilots are anchors. That is what the test program called us. I thought it was a metaphor.'],
